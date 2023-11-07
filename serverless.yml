@@ -1,0 +1,71 @@
+service: omni-dw-backend-services
+
+provider:
+    name: aws
+    region: ${opt:region, 'us-east-1'}
+    stage: ${opt:stage, 'dev'}
+    versionFunctions: false
+    tags: ${self:custom.tags}
+    stackTags: ${self:custom.tags}
+    vpc:
+        securityGroupIds:
+            - ${ssm:/omni-dw/${self:provider.stage}/lambda/sgId}
+        subnetIds:
+            - ${ssm:/omni-dw/${self:provider.stage}/lambda/subnetA}
+    iamRoleStatements:
+        - Effect: "Allow"
+          Action:
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+              - "ec2:CreateNetworkInterface"
+              - "ec2:DescribeNetworkInterfaces"
+              - "ec2:DeleteNetworkInterface"
+              - "ec2:AssignPrivateIpAddresses"
+              - "ec2:UnassignPrivateIpAddresses"
+          Resource: "*"
+        - Effect: Allow
+          Action:
+              - s3:GetObject
+              - s3:ListBucket
+              - s3:PutObject
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:GetItem
+              - dynamodb:Query
+              - dynamodb:DeleteItem
+          Resource: "*"
+    environment:
+        REGION: ${self:custom.region}
+        STAGE: ${opt:stage, 'dev'}
+
+    deploymentBucket:
+        name: ${ssm:/omni-dw/${self:provider.stage}/sls/deployment/bucket}
+        serverSideEncryption: AES256
+
+custom:
+    region: ${opt:region, 'us-east-1'}
+    stage: ${opt:stage, 'dev'}
+    tags:
+        Application: OmniDataWarehouseBackendServiceIndex
+        CreateBy: BizCloudExperts
+        Environment: ${self:custom.stage}
+
+plugins:
+    - serverless-offline
+
+package:
+    individually: true
+functions:
+    hello: ${file(config/functions/hello.yml):function}
+
+layers:
+    OmniTacIndexLayer:
+        path: lambdaLayer/lib
+        name: ${self:service}-layer-${self:provider.stage}
+        description: Omni Tac Index lambda layer for all node modules - ${self:provider.stage}
+        compatibleRuntimes:
+            - nodejs14.x
+            - nodejs18.x
+        retain: false
+# resources:
