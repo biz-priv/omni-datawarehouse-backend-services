@@ -233,18 +233,19 @@ def upload_file_to_s3(presigned_url, file_path):
 
 
 def get_data_from_reference_table(order_no):
+    params = {
+        'TableName': REFERENCE_TABLE,
+        'IndexName': REFERENCE_TABLE_ORDER_NO_INDEX,
+        'KeyConditionExpression': "FK_OrderNo = :FK_OrderNo",
+        'FilterExpression': "(FK_RefTypeId = :FK_RefTypeId)",
+        'ExpressionAttributeValues': {
+            ":FK_OrderNo": {'S': order_no},
+            ":FK_RefTypeId": {'S': "OD#"}
+        },
+    }
+    LOGGER.info(f"response: {params}")
     try:
         # Define the query parameters
-        params = {
-            'TableName': REFERENCE_TABLE,
-            'IndexName': REFERENCE_TABLE_ORDER_NO_INDEX,
-            'KeyConditionExpression': "FK_OrderNo = :FK_OrderNo",
-            'FilterExpression': "(FK_RefTypeId = :FK_RefTypeId)",
-            'ExpressionAttributeValues': {
-                ":FK_OrderNo": {'S': order_no},
-                ":FK_RefTypeId": {'S': "OD#"}
-            },
-        }
 
         # Query the DynamoDB table
         response = dynamodb.query(**params)
@@ -256,7 +257,7 @@ def get_data_from_reference_table(order_no):
         else:
             return None
     except Exception as e:
-        LOGGER.info(f"Unable to insert item. Error: {e}")
+        LOGGER.info(f"Unable to query item. Error: {e}")
         raise e
 
 
