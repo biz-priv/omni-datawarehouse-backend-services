@@ -16,6 +16,7 @@
     },
     "devDependencies": {
         "serverless": "2.72.3",
+        "serverless-layers": "^2.7.0",
         "serverless-offline": "^8.8.0"
     }
 }
