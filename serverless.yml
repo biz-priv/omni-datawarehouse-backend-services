@@ -63,7 +63,7 @@ functions:
     shipment-header-stream-to-dynamoDB: ${file(config/functions/shipment-header-stream-to-dynamoDB.yml):function}
 
 layers:
-    OmniTacIndexLayer:
+    DWBackend:
         path: lambdaLayer/lib
         name: ${self:service}-layer-${self:provider.stage}
         description: Omni Tac Index lambda layer for all node modules - ${self:provider.stage}
