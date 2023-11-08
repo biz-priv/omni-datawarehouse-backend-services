@@ -4,8 +4,8 @@ function:
   description: shipment header stream to dynamoDB - ${self:provider.stage}
   runtime: nodejs18.x
   timeout: 300
-  layers:
-    - !Ref DWBackendLambdalayer
+  # layers:
+  #   - !Ref DWBackendLambdalayer
   memorySize: 512
 
   package:
