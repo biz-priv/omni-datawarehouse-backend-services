@@ -1,4 +1,0 @@
-function:
-    name: hello
-    handler: src/hello.handler
-    runtime: nodejs18.x

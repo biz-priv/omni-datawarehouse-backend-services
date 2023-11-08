@@ -57,8 +57,6 @@ plugins:
 package:
     individually: true
 functions:
-    hello: ${file(config/functions/hello.yml):function}
-
     #  lambda's responsible for inserting values from streams to shipment-header table
     shipment-header-stream-to-dynamoDB: ${file(config/functions/shipment-header-stream-to-dynamoDB.yml):function}
 
