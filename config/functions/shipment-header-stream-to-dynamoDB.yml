@@ -5,7 +5,7 @@ function:
   runtime: nodejs18.x
   timeout: 300
   layers:
-    - !Ref DWBackendLambdalayer
+    - !Ref DWBackendLambdaLayer
   memorySize: 512
 
   package:
