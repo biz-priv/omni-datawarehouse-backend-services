@@ -1,0 +1,50 @@
+---
+function:
+  handler: src/pod_doc_upload/index.handler
+  name: ${self:service}-upload-pod-doc-${self:provider.stage}
+  description: upload pod doc - ${self:provider.stage}
+  runtime: python3.11
+  timeout: 500
+  # layers:
+  #   - !Ref DWAPILayerLambdaLayer
+  events:
+    - sqs:
+        arn:
+          Fn::GetAtt:
+            - ShipmentFileTableStreamQueue
+            - Arn
+  package:
+    patterns:
+      - "!**/*"
+      - "src/pod_doc_upload/*"
+      - "src/shared/**"
+  environment:
+    SHIPPEO_POD_DOC_UPLOAD_WEBSLI_TOKEN: ${ssm:/omni-dw-api-services/${self:provider.stage}/shippeo-pod-doc-upload/websli-token}
+    AMAZON_POD_DOC_UPLOAD_WEBSLI_TOKEN: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod-doc-upload/websli-token}
+
+    REGION: ${self:provider.region}
+    STAGE: ${self:provider.stage}
+    LOG_TABLE: ${ssm:/omni-dw-api-services/${self:provider.stage}/pod-uploaded-docs-logs/ddb.tableName}
+    SHIPMENT_HEADER_TABLE_STREAM_QLQ: !Ref ShipmentFileTableStreamDLQ
+    SNS_TOPIC_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
+    SHIPPEO_USERNAME: ${ssm:/omni-dw-api-services/${self:provider.stage}/shippeo-pod/username~true}
+    SHIPPEO_PASSWORD: ${ssm:/omni-dw-api-services/${self:provider.stage}/shippeo-pod/password~true}
+    SHIPPEO_UPLOAD_DOC_URL: ${ssm:/omni-dw-api-services/${self:provider.stage}/shippeo-pod/upload-document-url}
+    SHIPPEO_GET_TOKEN_URL: ${ssm:/omni-dw-api-services/${self:provider.stage}/shippeo-pod/get-token-url}
+    WT_WEBSLI_API_URL: ${ssm:/omni-dw-api-services/${self:provider.stage}/pod-doc-upload/websli-api-url}
+    TOKEN_EXPIRATION_DAYS: ${ssm:/omni-dw-api-services/${self:provider.stage}/shippeo-pod/token-expiration-days}
+
+    # Amazon pod related env variables
+    AMAZON_USER_NAME: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/user-name}
+    AMAZON_PASSWORD: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/password}
+    TRANSACTION_TABLE: ${ssm:/omni-dw-api-services/${self:provider.stage}/pod-transactions/ddb.tableName}
+    REFERENCE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.tableName}
+    REFERENCE_TABLE_ORDER_NO_INDEX: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.orderNoIndex}
+    COGNITO_CLIENT_ID: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/cognito-client-id}
+    COGNITO_IDENTITY_POOL_ID: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/cognito-identity-pool-id}
+    COGNITO_REGION: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/cognito-region}
+    COGNITO_USER_POOL_ID: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/cognito-user-pool-id}
+    HRPSL_HOST: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/hrpsl-host}
+    HRPSL_REGION: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/hrpsl-region}
+    HRPSL_SERVICE: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/hrpsl-service}
+    HRPSL_STAGE: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/hrpsl-stage}
