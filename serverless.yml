@@ -34,6 +34,7 @@ provider:
               - dynamodb:GetItem
               - dynamodb:Query
               - dynamodb:DeleteItem
+              - dynamodb:Scan
           Resource: "*"
     environment:
         REGION: ${self:custom.region}
