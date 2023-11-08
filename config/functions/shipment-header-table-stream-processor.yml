@@ -1,6 +1,6 @@
 function:
   handler: src/shipment_header_table_stream_processor/index.handler
-  name: ${self:service}-shipment-header-table-stream-processor-${self:provider.stage}
+  name: ${self:service}-shipment-header-stream-processor-${self:provider.stage}
   description: process and filters shipment header table stream - ${self:provider.stage}
   runtime: nodejs18.x
   timeout: 500

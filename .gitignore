@@ -141,4 +141,3 @@ doc.txt
 test.js
 package-lock.json
 infra/.terraform/**
-test_events

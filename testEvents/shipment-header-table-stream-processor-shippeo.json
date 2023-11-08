@@ -1,0 +1,202 @@
+{
+	"Records": [
+		{
+			"eventID": "cde2dfb3dd2e177db58cdf7157b5c807",
+			"eventName": "INSERT",
+			"eventVersion": "1.1",
+			"eventSource": "aws:dynamodb",
+			"awsRegion": "us-east-1",
+			"dynamodb": {
+				"ApproximateCreationDateTime": 1693310507,
+				"Keys": {
+					"PK_OrderNo": {
+						"S": "4919500"
+					}
+				},
+				"NewImage": {
+					"FK_FirmsCode": {
+						"S": ""
+					},
+					"DestinationPort": {
+						"S": ""
+					},
+					"FK_ProductCode": {
+						"S": ""
+					},
+					"Housebill": {
+						"S": "6986204"
+					},
+					"ShipmentType": {
+						"S": "D"
+					},
+					"FK_PLStatus": {
+						"S": ""
+					},
+					"ShipmentDateTimeZone": {
+						"S": ""
+					},
+					"PK_OrderNo": {
+						"S": "4919500"
+					},
+					"ETADateTimeZone": {
+						"S": ""
+					},
+					"FK_CategoryCode": {
+						"S": "ALL,PICK UP,QUICK VIEW,ROUTE OUT,TEI"
+					},
+					"ScheduledBy": {
+						"S": "B"
+					},
+					"DateTimePosted": {
+						"S": "1900-01-01 00:00:00.000"
+					},
+					"Tariff": {
+						"S": ""
+					},
+					"ShipmentDateTime": {
+						"S": "2023-08-29 02:00:00.000"
+					},
+					"DestArrivalDateTime": {
+						"S": "NULL"
+					},
+					"ScheduledDateTime": {
+						"S": "2023-09-01 01:00:00.000"
+					},
+					"FK_ServiceLevelId": {
+						"S": "3A"
+					},
+					"AssignedInvNo": {
+						"S": "0"
+					},
+					"FK_ExemptionCode": {
+						"S": ""
+					},
+					"FK_ReasonCode": {
+						"S": ""
+					},
+					"FK_Salesperson": {
+						"S": "LGB05"
+					},
+					"ControllingStation": {
+						"S": "AUS"
+					},
+					"DestAirport": {
+						"S": "MIA"
+					},
+					"FK_ModeId": {
+						"S": "DOMAIR"
+					},
+					"FK_EquipmentCode": {
+						"S": ""
+					},
+					"FK_RegionCode": {
+						"S": "FL,EAST"
+					},
+					"ReadyDateTimeRange": {
+						"S": "1900-01-01 00:00:00.000"
+					},
+					"FK_ContainerCode": {
+						"S": ""
+					},
+					"HazmatCode": {
+						"S": ""
+					},
+					"ScheduledDateTimeRange": {
+						"S": "2023-09-01 00:00:00.000"
+					},
+					"FK_IncoTermCode": {
+						"S": ""
+					},
+					"OrgAirport": {
+						"S": "MIA"
+					},
+					"FK_OrderStatusId": {
+						"S": "WEB"
+					},
+					"ReadyDateTime": {
+						"S": "2023-08-29 02:00:00.000"
+					},
+					"FK_InsuranceType": {
+						"S": "LL"
+					},
+					"ReceivedDateTime": {
+						"S": "NULL"
+					},
+					"BillNo": {
+						"S": "9146"
+					},
+					"FK_ControlCustomerNo": {
+						"S": "1891"
+					},
+					"PODDateTimeZone": {
+						"S": ""
+					},
+					"TariffCode": {
+						"S": ""
+					},
+					"RcvdDateTime": {
+						"S": "1900-01-01 00:00:00.000"
+					},
+					"ReadyDateTimeZone": {
+						"S": ""
+					},
+					"FK_ProjectCode": {
+						"S": ""
+					},
+					"HandlingStation": {
+						"S": "AUS"
+					},
+					"ShipQuote": {
+						"S": "S"
+					},
+					"MasterAirWaybill": {
+						"S": ""
+					},
+					"PODDateTime": {
+						"S": "1900-01-01 00:00:00.000"
+					},
+					"LoadBoardID": {
+						"S": "0"
+					},
+					"OrderDate": {
+						"S": "2023-08-29 07:00:43.000"
+					},
+					"FK_TractorCode": {
+						"S": "NULL"
+					},
+					"PODName": {
+						"S": ""
+					},
+					"CloseTime": {
+						"S": "2023-08-29 00:00:00.000"
+					},
+					"Insurance": {
+						"S": "0.0000"
+					},
+					"PODDateTimeEntered": {
+						"S": "1900-01-01 00:00:00.000"
+					},
+					"ScheduledDateTimeZone": {
+						"S": ""
+					},
+					"UserId": {
+						"S": "biztest"
+					},
+					"InsertedTimeStamp": {
+						"S": "2023:08:29 07:01:47"
+					},
+					"TotalMiles": {
+						"S": "0.00"
+					},
+					"ETADateTime": {
+						"S": "1900-01-01 00:00:00.000"
+					}
+				},
+				"SequenceNumber": "1947504400000000039518082966",
+				"SizeBytes": 1237,
+				"StreamViewType": "NEW_AND_OLD_IMAGES"
+			},
+			"eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-header-dev/stream/2023-02-27T07:58:54.654"
+		}
+	]
+}

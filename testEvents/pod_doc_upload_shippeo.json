@@ -1,0 +1,20 @@
+{
+	"Records": [
+		{
+			"messageId": "9f736f99-49fa-4782-8e7d-f92101cac918",
+			"receiptHandle": "AQEBXXEGkX3Z9yUaPUSF7mNpqTIyCstYVq0+b3Manzw+4VY+cD1zcYApCrqv2yE2eWdKAmjaK8EahRZwLRn89G059paBoaVNe8dd5VxJ1jtqtL4wIBwUYEPMrLY0iQzNS4OqNp8boXhlGI+6nUFeQJPD1kvkcnteU3BU2PGBMdWZVV6OUIVU3pHQ0Yk5my8UcH52LrpfvZ6DmmEMQ1UUSlhPw/0lcECXgpW5tVf6Q9LozF/l6/PheFv5mMjgbqzLKF/MyUPjhuij0vzuhDQ5BQtzX6yNc13oj5JgwvER0CBwFn/SPhoCjmTFF+Xz+ho2EPV0CLNL6MJVmMaepCKdpDk0qfW1RUiT2f9U/XyPm6jjNc1/My5jZOkmS3q/NN8IvtafyQHQJzbXkCVZZgADv68yKQCKDjLng/XYASXGEOc1v2peg8wXZrIzhISzn1vpikLi",
+			"body": "{\"Item\":{\"PODDateTimeZone\":\"\",\"FK_ContainerCode\":\"\",\"ETADateTime\":\"1900-01-01 00:00:00.000\",\"BillNo\":\"20802\",\"PODDateTime\":\"1900-01-01 00:00:00.000\",\"FK_ExemptionCode\":\"\",\"HandlingStation\":\"AUS\",\"FK_FirmsCode\":\"\",\"FK_ModeId\":\"DOMAIR\",\"ReadyDateTime\":\"2023-08-29 02:00:00.000\",\"FK_CategoryCode\":\"ALL,PICK UP,QUICK VIEW,ROUTE OUT,TEI\",\"ScheduledDateTime\":\"2023-09-01 01:00:00.000\",\"PODDateTimeEntered\":\"1900-01-01 00:00:00.000\",\"OrgAirport\":\"MIA\",\"FK_InsuranceType\":\"LL\",\"ControllingStation\":\"AUS\",\"ShipmentType\":\"D\",\"CloseTime\":\"2023-08-29 00:00:00.000\",\"ReceivedDateTime\":\"NULL\",\"AssignedInvNo\":\"0\",\"FK_IncoTermCode\":\"\",\"FK_PLStatus\":\"\",\"DestArrivalDateTime\":\"NULL\",\"PODName\":\"\",\"ETADateTimeZone\":\"\",\"FK_ReasonCode\":\"\",\"ReadyDateTimeRange\":\"1900-01-01 00:00:00.000\",\"ShipQuote\":\"S\",\"FK_ControlCustomerNo\":\"1891\",\"ShipmentDateTimeZone\":\"\",\"PK_OrderNo\":\"5343210\",\"ScheduledDateTimeRange\":\"2023-09-01 00:00:00.000\",\"FK_RegionCode\":\"FL,EAST\",\"ScheduledBy\":\"B\",\"DateTimePosted\":\"1900-01-01 00:00:00.000\",\"DestAirport\":\"MIA\",\"InsertedTimeStamp\":\"2023:09:22 11:22:26\",\"OrderDate\":\"2023-08-29 07:00:43.000\",\"FK_Salesperson\":\"LGB05\",\"ReadyDateTimeZone\":\"\",\"Tariff\":\"\",\"Insurance\":\"0.0000\",\"UserId\":\"biztest\",\"TotalMiles\":\"0.00\",\"HazmatCode\":\"\",\"FK_ServiceLevelId\":\"3A\",\"LoadBoardID\":\"0\",\"ScheduledDateTimeZone\":\"\",\"MasterAirWaybill\":\"\",\"RcvdDateTime\":\"1900-01-01 00:00:00.000\",\"FK_TractorCode\":\"NULL\",\"FK_ProjectCode\":\"\",\"FK_EquipmentCode\":\"\",\"FK_OrderStatusId\":\"WEB\",\"FK_ProductCode\":\"\",\"ShipmentDateTime\":\"2023-08-29 02:00:00.000\",\"Housebill\":\"6986204\",\"TariffCode\":\"\",\"DestinationPort\":\"\"},\"Client\":\"shippeo\",\"FileHeaderTableData\":{\"DMS_TS\":\"2023-09-01 19:12:50.293000\",\"PK_FileNo\":\"2230132\",\"InsertedTimeStamp\":\"2023:09:01 14:13:53\",\"FileData\":\"NULL\",\"FileName\":\"HCPOD723596.pdf\",\"FK_OrderNo\":\"4919500\",\"UploadDateTime\":\"2023-09-01 14:12:50.000\",\"FileType\":\"S\",\"IncludeImageAutoStatusEmail\":\"NULL\",\"PrintDocInv\":\"N\",\"FK_DocType\":\"HCPOD\",\"CustomerAccess\":\"Y\"}}",
+			"attributes": {
+				"ApproximateReceiveCount": "1",
+				"SentTimestamp": "1693323791434",
+				"SenderId": "AROAU2XMJTS2T67LQAZTF:aws-sdk-js-1693323749697",
+				"ApproximateFirstReceiveTimestamp": "1693323791443"
+			},
+			"messageAttributes": {},
+			"md5OfBody": "c5bd21ad280975b64563d31f56137189",
+			"eventSource": "aws:sqs",
+			"eventSourceARN": "arn:aws:sqs:us-east-1:332281781429:omni-dw-api-shipment-file-table-stream-queue-dev",
+			"awsRegion": "us-east-1"
+		}
+	]
+}
