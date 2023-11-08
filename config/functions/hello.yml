@@ -1,3 +1,0 @@
-function:
-    name: hello
-    handler: src/hello.handler
