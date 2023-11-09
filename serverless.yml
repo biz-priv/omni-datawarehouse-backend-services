@@ -65,7 +65,7 @@ functions:
     shipment-desc-stream-to-dynamoDB: ${file(config/functions/shipment-desc-stream-to-dynamoDB.yml):function}
     shipment-milestone-stream-to-dynamoDB: ${file(config/functions/shipment-milestone-stream-to-dynamoDB.yml):function}
     shipper-stream-to-dynamoDB: ${file(config/functions/shipper-stream-to-dynamoDB.yml):function}
-    shipment-milestone-details-stream-to-dynamoDB: ${file(config/functions/shipment-milestone-details-stream-to-dynamoDB.yml):function}
+    milestone-details-stream-to-dynamoDB: ${file(config/functions/milestone-details-stream-to-dynamoDB.yml):function}
     tracking-notes-stream-to-dynamoDB: ${file(config/functions/tracking-notes-stream-to-dynamoDB.yml):function}
 
 layers:

@@ -1,6 +1,6 @@
 function:
-  handler: src/shipment_detail_collector/shipment_milestone_details_stream_to_dynamoDB.handler
-  name: ${self:service}-shipment-milestone-details-stream-to-dynamoDB-${self:provider.stage}
+  handler: src/shipment_detail_collector/milestone_details_stream_to_dynamoDB.handler
+  name: ${self:service}-milestone-details-stream-to-dynamoDB-${self:provider.stage}
   description: shipment milestone details stream to dynamoDB - ${self:provider.stage}
   runtime: nodejs18.x
   timeout: 300
@@ -11,7 +11,7 @@ function:
   package:
     patterns:
       - "!**/*"
-      - "src/shipment_detail_collector/shipment_milestone_details_stream_to_dynamoDB.js"
+      - "src/shipment_detail_collector/milestone_details_stream_to_dynamoDB.js"
       - "src/shared/**"
 
   events:
