@@ -4,7 +4,7 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
 const ddb = new AWS.DynamoDB.DocumentClient();
 const { get } = require("lodash");
 const moment = require('moment');
-const { getDynamodbData } = require("../shared/commonFunctions/shipment_details");
+const { getDynamodbData } = require("../shared/common_functions/shipment_details");
 
 //const { refParty, pieces, actualWeight, ChargableWeight, weightUOM, getTime, locationFunc, getShipmentDate, getPickupTime, upsertItem, MappingDataToInsert, getDynamodbData } = require("../../shared/commonFunctions/shipment_details");
 //const { tableValues,weightDimensionValue,INDEX_VALUES,customerTypeValue, } = require("../../shared/constants/shipment_details");

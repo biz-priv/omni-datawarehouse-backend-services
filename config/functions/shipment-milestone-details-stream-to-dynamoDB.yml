@@ -1,7 +1,7 @@
 function:
-  handler: src/shipment_detail_collector/shipment_header_stream_to_dynamoDB.handler
-  name: ${self:service}-shipment-header-stream-to-dynamoDB-${self:provider.stage}
-  description: shipment header stream to dynamoDB - ${self:provider.stage}
+  handler: src/shipment_detail_collector/shipment_milestone_details_stream_to_dynamoDB.handler
+  name: ${self:service}-shipment-milestone-details-stream-to-dynamoDB-${self:provider.stage}
+  description: shipment milestone details stream to dynamoDB - ${self:provider.stage}
   runtime: nodejs18.x
   timeout: 300
   layers:
@@ -11,11 +11,11 @@ function:
   package:
     patterns:
       - "!**/*"
-      - "src/shipment_detail_collector/shipment_header_stream_to_dynamoDB.js"
+      - "src/shipment_detail_collector/shipment_milestone_details_stream_to_dynamoDB.js"
       - "src/shared/**"
 
   events:
-    - stream: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.streamArn~true}
+    - stream: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-milestone-detail/ddb.streamArn~true}
   environment:
     SHIPMENT_DETAILS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/shipmentDetails/table}
     SHIPMENT_DETAILS_HOUSEBILL_INDEX: ${ssm:/omni-dw/${self:provider.stage}/shipmentDetails/houseBillKey/index}
