@@ -325,10 +325,12 @@ async function MappingDataToInsert(data, timeZoneTable) {
         "statusTime": await getTime(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, null), get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventTimeZone`, null), timeZoneTable)
       }],
       "locations": await locationFunc(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, null), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, null)),
-      "EventDateTime": get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, null),
-      "EventDate": moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, null)).format("YYYY-MM-DD"),
-      "OrderDateTime": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, null),
-      "OrderDate": moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, null)).format("YYYY-MM-DD")
+      "EventDateTime": get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00 00:00:00.000'),
+      "EventDate": moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00')).format("YYYY-MM-DD"),
+      "EventYear": moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900')).format("YYYY"),
+      "OrderDateTime": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00 00:00:00.000'),
+      "OrderDate": moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00')).format("YYYY-MM-DD"),
+      "OrderYear": moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY"),
     }
     
     const ignoreFields = ['masterbill', 'pickupTime', 'estimatedDepartureTime', 'estimatedArrivalTime', 'scheduledDeliveryTime', 'deliveryTime', 'podName'];
@@ -366,7 +368,7 @@ async function MappingDataToInsert(data, timeZoneTable) {
           Key: {
             HouseBillNumber: houseBillNumber,
           },
-          UpdateExpression: 'SET #fileNumber = :fileNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #status = :status',
+          UpdateExpression: 'SET #fileNumber = :fileNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear, #status = :status',
           ExpressionAttributeNames: {
             '#fileNumber': 'fileNumber',
             '#masterbill': 'masterbill',
@@ -393,8 +395,10 @@ async function MappingDataToInsert(data, timeZoneTable) {
             '#locations': 'locations',
             '#EventDateTime': 'EventDateTime',
             '#EventDate': 'EventDate',
+            '#EventYear': 'EventYear',
             '#OrderDateTime': 'OrderDateTime',
             '#OrderDate': 'OrderDate',
+            '#OrderYear': 'OrderYear',
             '#status': 'status',
           },
           ExpressionAttributeValues: {
@@ -423,8 +427,10 @@ async function MappingDataToInsert(data, timeZoneTable) {
             ':locations': item.locations,
             ':EventDateTime': item.EventDateTime,
             ':EventDate': item.EventDate,
+            ':EventYear': item.EventYear,
             ':OrderDateTime': item.OrderDateTime,
             ':OrderDate': item.OrderDate,
+            ':OrderYear': item.OrderYear,
             ':status': item.status,
           },
         };

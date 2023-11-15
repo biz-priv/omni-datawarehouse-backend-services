@@ -1,4 +1,4 @@
-service: omni-dw-bknd
+service: omni-dw-backend-services
 
 provider:
     name: aws

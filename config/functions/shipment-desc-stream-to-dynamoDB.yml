@@ -1,6 +1,6 @@
 function:
   handler: src/shipment_detail_collector/shipment_desc_stream_to_dynamoDB.handler
-  name: ${self:service}-shipment-desc-stream-to-dynamoDB-${self:provider.stage}
+  name: ${self:service}-shipment-desc-stream-${self:provider.stage}
   description: shipment desc stream to dynamoDB - ${self:provider.stage}
   runtime: nodejs18.x
   timeout: 300
@@ -15,7 +15,10 @@ function:
       - "src/shared/**"
 
   events:
-    - stream: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-desc/ddb.streamArn~true}
+    - stream: 
+        arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-desc/ddb.streamArn~true}
+        batchSize: 5
+        maximumRetryAttempts: 3
   environment:
     SHIPMENT_DETAILS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/shipmentDetails/table}
     SHIPMENT_DETAILS_HOUSEBILL_INDEX: ${ssm:/omni-dw/${self:provider.stage}/shipmentDetails/houseBillKey/index}
