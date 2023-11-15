@@ -14,7 +14,7 @@ module.exports.handler = async (event) => {
     const unmarshalledData = Converter.unmarshall(record.dynamodb.NewImage);
     let orderNo = unmarshalledData.FK_OrderNo;
     console.info("orderNo", orderNo);
-    if (orderNo !== "" && orderNo !== null) {
+    if (orderNo !== "" && orderNo !== null && unmarshalledData.FK_OrderStatusId ==  "PUP") {
       await getDynamodbData(orderNo);
     }
   }
