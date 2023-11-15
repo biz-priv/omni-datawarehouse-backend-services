@@ -16,9 +16,9 @@ function:
 
   events:
     - stream: 
-        arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consignee/ddb.streamArn~true}\
+        arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consignee/ddb.streamArn~true}
         batchSize: 5
-        maximumRetryAttempts: 3 
+        maximumRetryAttempts: 3
   environment:
     SHIPMENT_DETAILS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/shipmentDetails/table}
     SHIPMENT_DETAILS_HOUSEBILL_INDEX: ${ssm:/omni-dw/${self:provider.stage}/shipmentDetails/houseBillKey/index}
