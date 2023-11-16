@@ -63,8 +63,9 @@ def handler(event, context):
         LOGGER.info("client: %s", client)
         LOGGER.info("file_header_table_data: %s", file_header_table_data)
 
-        if client == 'shippeo':
-            process_shippeo(order_no, housebill_no, file_header_table_data)
+        # Commented the shippeo, will have to uncomment this when we push shippeo into production.
+        # if client == 'shippeo':
+        #     process_shippeo(order_no, housebill_no, file_header_table_data)
 
         if client == 'amazon':
             process_amazon(order_no, housebill_no,
@@ -354,8 +355,8 @@ def upload_docs(upload_to_url, token, house_bill_no, doc_type):
 
 def call_wt_rest_api(housebill, websli_token, doc_type):
     try:
-        url = f"https://websli.omnilogistics.com/wtProd/getwtdoc/v1/json/{websli_token}/housebill={housebill}/doctype={doc_type}"
-        # url = f"{WT_WEBSLI_API_URL}/{websli_token}/housebill={housebill}/doctype={doc_type}"
+        # url = f"https://websli.omnilogistics.com/wtProd/getwtdoc/v1/json/{websli_token}/housebill={housebill}/doctype={doc_type}"
+        url = f"{WT_WEBSLI_API_URL}/{websli_token}/housebill={housebill}/doctype={doc_type}"
         LOGGER.info(f"url: {url}")
         response = requests.get(url)
 

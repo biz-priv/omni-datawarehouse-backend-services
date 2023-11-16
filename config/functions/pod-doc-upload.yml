@@ -5,8 +5,6 @@ function:
   description: upload pod doc - ${self:provider.stage}
   runtime: python3.11
   timeout: 500
-  # layers:
-  #   - !Ref DWAPILayerLambdaLayer
   events:
     - sqs:
         arn:
