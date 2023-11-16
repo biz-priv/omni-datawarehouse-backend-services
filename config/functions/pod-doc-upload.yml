@@ -34,7 +34,7 @@ function:
 
     # Amazon pod related env variables
     AMAZON_USER_NAME: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/user-name}
-    AMAZON_PASSWORD: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/password}
+    AMAZON_PASSWORD: ${ssm:/omni-dw-api-services/${self:provider.stage}/amazon-pod/password~true}
     TRANSACTION_TABLE: ${ssm:/omni-dw-api-services/${self:provider.stage}/pod-transactions/ddb.tableName}
     REFERENCE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.tableName~true}
     REFERENCE_TABLE_ORDER_NO_INDEX: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.orderNoIndex}

@@ -7,13 +7,7 @@ async function Query(params) {
         const data = await dbRead(params);
         return data;
     } catch (e) {
-        console.error(
-            "DynamoDb query error. ",
-            " Params: ",
-            params,
-            " Error: ",
-            e
-        );
+        console.error("DynamoDb query error. ", " Params: ", params, " Error: ", e);
     }
 }
 
@@ -36,13 +30,7 @@ async function Put(params) {
         const data = await db.put(params).promise();
         return data;
     } catch (e) {
-        console.error(
-            "DynamoDb put error. ",
-            " Params: ",
-            params,
-            " Error: ",
-            e
-        );
+        console.error("DynamoDb put error. ", " Params: ", params, " Error: ", e);
         throw e;
     }
 }
@@ -52,13 +40,7 @@ async function Update(params) {
         const data = await db.update(params).promise();
         return data;
     } catch (e) {
-        console.error(
-            "DynamoDb update error. ",
-            " Params: ",
-            params,
-            " Error: ",
-            e
-        );
+        console.error("DynamoDb update error. ", " Params: ", params, " Error: ", e);
         throw e;
     }
 }
@@ -68,13 +50,7 @@ async function Get(params) {
         const data = await db.get(params).promise();
         return data;
     } catch (e) {
-        console.error(
-            "DynamoDb get error. ",
-            " Params: ",
-            params,
-            " Error: ",
-            e
-        );
+        console.error("DynamoDb get error. ", " Params: ", params, " Error: ", e);
         throw e;
     }
 }
@@ -108,17 +84,11 @@ async function Scan(params) {
     try {
         do {
             items = await db.scan(params).promise();
-            items.Items.forEach((item) => scanResults.push(item));
-            params.ExclusiveStartKey = items.LastEvaluatedKey;
+            get(items, "Items", []).forEach((item) => scanResults.push(item));
+            params.ExclusiveStartKey = get(items, "LastEvaluatedKey");
         } while (typeof items.LastEvaluatedKey !== "undefined");
     } catch (e) {
-        console.error(
-            "DynamoDb scan error. ",
-            " Params: ",
-            params,
-            " Error: ",
-            e
-        );
+        console.error("DynamoDb scan error. ", " Params: ", params, " Error: ", e);
         throw e;
     }
     return scanResults;

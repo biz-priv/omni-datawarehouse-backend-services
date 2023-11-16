@@ -47,7 +47,7 @@ async function getObject(bucket, key) {
         return get(s3File, "Body", "").toString("utf-8").trim();
     } catch (e) {
         console.error("s3 get object error: ", e);
-        throw await e;
+        throw  e;
     }
 }
 
@@ -117,37 +117,6 @@ async function moveObject(bucket, source, destination) {
             })
             .promise();
     } catch (e) {
-        console.error("s3 move object error: ", e);
-        throw e;
-    }
-}
-
-/**
- * The function moves an object from a source path to a destination path in an AWS S3 bucket and
- * deletes the original object.
- * @param bucket - The name of the S3 bucket where the object is located and where it will be moved to.
- * @param source - The source parameter is a string representing the S3 object path of the object to be
- * moved.
- * @param destination - The destination path where the object will be moved to in the S3 bucket.
- */
-async function moveRESAObject(bucket, source, destination) {
-    const sourceArray = source.split("/");
-    sourceArray.shift();
-    const sourcePath = sourceArray.join("/");
-    try {
-        const params = {
-            Bucket: bucket,
-            CopySource: source,
-            Key: destination,
-        };
-        await s3.copyObject(params).promise();
-        console.log("Bucket", bucket);
-        console.log("Path", sourcePath);
-        await s3.deleteObject({ Bucket: bucket, Key: sourcePath }).promise();
-        console.log("Deleted ***************** ", bucket);
-        console.log("Deleted ***************** ", sourcePath);
-    } catch (e) {
-        console.log({ bucket, source, destination, sourcePath });
         console.error("s3 move object error: ", e);
         throw e;
     }
