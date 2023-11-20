@@ -8,7 +8,7 @@ provider:
     tags: ${self:custom.tags}
     stackTags: ${self:custom.tags}
     runtime: python3.11
-    role: ${ssm:/omni-dw/${self:provider.stage}/lambda/role}
+    # role: ${ssm:/omni-dw/${self:provider.stage}/lambda/role}
     vpc:
         securityGroupIds:
             - ${ssm:/omni-dw/${self:provider.stage}/lambda/sgId}
@@ -47,6 +47,10 @@ provider:
               - secretsmanager:*
               - sns:*
             #   - states:*
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - states:*
           Resource: "*"
     environment:
         REGION: ${self:custom.region}
