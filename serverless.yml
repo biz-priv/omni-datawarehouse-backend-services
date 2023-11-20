@@ -126,6 +126,7 @@ package:
 functions:
     pod-doc-upload: ${file(config/functions/pod-doc-upload.yml):function}
     shipment-header-table-stream-processor: ${file(config/functions/shipment-header-table-stream-processor.yml):function}
+    ltl-batch-rating: ${file(config/functions/ltl-batch-rating.yml):function}
 
 stepFunctions:
     stateMachines:
