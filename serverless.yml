@@ -8,6 +8,7 @@ provider:
     tags: ${self:custom.tags}
     stackTags: ${self:custom.tags}
     runtime: python3.11
+    role: ${ssm:/omni-dw/${self:provider.stage}/lambda/role}
     vpc:
         securityGroupIds:
             - ${ssm:/omni-dw/${self:provider.stage}/lambda/sgId}
