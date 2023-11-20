@@ -13,7 +13,7 @@ module.exports.handler = async (event, context) => {
 
         for (const record of get(event, "Records", [])) {
             console.info("🚀 ~ file: shipment_header_table_stream_processor.js:11 ~ event.Records.forEach ~ record:", JSON.stringify(record));
-            if (get(record, "eventName") === "INSERT") {
+            if (["INSERT" || "MODIFY"].includes(get(record, "eventName"))) {
                 const billNumber = Number(get(record, "dynamodb.NewImage.BillNo.S", null));
                 const orderNo = Number(get(record, "dynamodb.NewImage.PK_OrderNo.S", null));
 
