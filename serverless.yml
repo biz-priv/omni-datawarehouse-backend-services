@@ -46,7 +46,7 @@ provider:
               - sqs:SendMessage
               - secretsmanager:*
               - sns:*
-            #   - states:*
+              - states:*
           Resource: "*"
         # - Effect: Allow
         #   Action:
