@@ -1,0 +1,6 @@
+{
+  "sonarlint.connectedMode.project": {
+    "connectionId": "bizcloud-experts",
+    "projectKey": "bizcloud-experts_omni-datawarehouse-api-services"
+  }
+}
