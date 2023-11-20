@@ -12,7 +12,7 @@ function:
               batchSize: 1
               maximumRetryAttempts: 3
               filterPatterns:
-                  - { "eventName": "INSERT" }
+                  - { eventName: "INSERT" }
     package:
         patterns:
             - "!**/*"
