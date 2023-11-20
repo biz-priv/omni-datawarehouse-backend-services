@@ -75,7 +75,7 @@ functions:
 
 stepFunctions:
     stateMachines:
-        ltl-batch-rating-state-machine: ${file(config/step-functions/batch-rating-state-machine.yml):stateMachine}
+        ltl-batch-rating-state-machine: ${file(config/step-functions/ltl-batch-rating-state-machine.yml):stateMachine}
 
 resources:
     Resources:
