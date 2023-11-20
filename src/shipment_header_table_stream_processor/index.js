@@ -16,6 +16,11 @@ module.exports.handler = async (event, context) => {
             if (get(record, "eventName") === "MODIFY") {
                 const billNumber = Number(get(record, "dynamodb.NewImage.BillNo.S", null));
                 const orderNo = Number(get(record, "dynamodb.NewImage.PK_OrderNo.S", null));
+                const houseBill = Number(get(record, "dynamodb.NewImage.Housebill.S", null));
+
+                const transactionTableData = await getTransactionTableData(orderNo, houseBill);
+                console.info(`🙂 -> file: index.js:22 -> transactionTableData:`, transactionTableData);
+                if (transactionTableData) return "Document already send.";
 
                 const allowedBillNumbers = [9146, 53478];
                 if (!allowedBillNumbers.includes(billNumber)) {
@@ -142,4 +147,28 @@ async function publishSNSTopic(e) {
         Subject: `Error on ${functionName} lambda.`,
         Message: `Error: ${e.message}`,
     });
+}
+
+async function getTransactionTableData(orderNumber, houseBillNumber) {
+    const params = {
+        TableName: TRANSACTION_TABLE,
+        KeyConditionExpression: "orderNumber = :orderNumber AND houseBillNumber = :houseBillNumber",
+        FilterExpression: "#status = :status",
+        ExpressionAttributeValues: {
+            ":orderNumber": orderNumber + "",
+            ":houseBillNumber": houseBillNumber + "",
+            ":status": "SUCCESS",
+        },
+        ExpressionAttributeNames: {
+            "#status": "status",
+        },
+    };
+    try {
+        const response = await dynamoDB.query(params).promise();
+        console.info(`getTransactionTableData -> Response: ${JSON.stringify(response)}`);
+        return get(response, "Items", []).length > 0;
+    } catch (error) {
+        console.error(`getTransactionTableData -> Unable to query. Error: ${error}`);
+        return false;
+    }
 }
