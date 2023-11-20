@@ -141,6 +141,5 @@ module.exports = {
     getListObjects,
     moveObject,
     getGzipObject,
-    moveRESAObject,
     deleteObject,
 };
