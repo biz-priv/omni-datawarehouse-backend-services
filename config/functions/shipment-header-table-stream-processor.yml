@@ -11,8 +11,8 @@ function:
               arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.streamArn~true}
               batchSize: 1
               maximumRetryAttempts: 3
-              filterPatterns:
-                  - { eventName: "INSERT" }
+            #   filterPatterns:
+            #       - { eventName: "INSERT" }
     package:
         patterns:
             - "!**/*"
