@@ -48,10 +48,10 @@ provider:
               - sns:*
             #   - states:*
           Resource: "*"
-        - Effect: Allow
-          Action:
-            - states:*
-          Resource: "*"
+        # - Effect: Allow
+        #   Action:
+        #     - states:*
+        #   Resource: "*"
     environment:
         REGION: ${self:custom.region}
         STAGE: ${opt:stage, 'dev'}
