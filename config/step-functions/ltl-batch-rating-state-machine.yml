@@ -7,7 +7,7 @@ stateMachine:
         States:
             PublishEvents:
                 Type: Task
-                Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${self:service}-ltl-batch-rating-${self:provider.stage}''
+                Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${self:service}-ltl-batch-rating-${self:provider.stage}'
                 Next: EndChoice
             EndChoice:
                 Type: Choice
