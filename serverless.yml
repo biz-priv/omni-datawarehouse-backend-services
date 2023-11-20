@@ -46,7 +46,7 @@ provider:
               - sqs:SendMessage
               - secretsmanager:*
               - sns:*
-              - states:*
+            #   - states:*
           Resource: "*"
     environment:
         REGION: ${self:custom.region}
@@ -70,6 +70,54 @@ custom:
 
 package:
     individually: true
+
+# resources:
+#     Resources:
+#         DwBackendRole:
+#             Type: AWS::IAM::Role
+#             Properties:
+#                 RoleName: ShippeoPODRole
+#                 AssumeRolePolicyDocument:
+#                     Version: "2012-10-17"
+#                     Statement:
+#                         - Effect: Allow
+#                           Principal:
+#                               Service: lambda.amazonaws.com
+#                 Policies:
+#                     -   PolicyName: omni-dw-api-services-dev-shippeo-pod-role
+#                         PolicyDocument:
+#                             Version: "2012-10-17"
+#                             Statement:
+#                                 - Effect: Allow
+#                                   Action:
+#                                         - s3:GetObject
+#                                         - s3:ListBucket
+#                                         - s3:PutObject
+#                                         - dynamodb:PutItem
+#                                         - dynamodb:UpdateItem
+#                                         - dynamodb:GetItem
+#                                         - dynamodb:Query
+#                                         - dynamodb:DeleteItem
+#                                         - dynamodb:Scan
+#                                         - sqs:GetQueueUrl
+#                                         - sqs:GetQueueAttributes
+#                                         - sqs:ReceiveMessage
+#                                         - sqs:DeleteMessage
+#                                         - sqs:SendMessageBatch
+#                                         - sqs:SendMessage
+#                                         - secretsmanager:*
+#                                         - sns:*
+#                                         - states:*
+#                                         - logs:CreateLogGroup
+#                                         - logs:CreateLogStream
+#                                         - logs:PutLogEvents
+#                                         - ec2:CreateNetworkInterface
+#                                         - ec2:DescribeNetworkInterfaces
+#                                         - ec2:DetachNetworkInterface
+#                                         - ec2:DeleteNetworkInterface
+#                                         - ec2:AssignPrivateIpAddresses
+#                                         - ec2:UnassignPrivateIpAddresses
+#                                   Resource: "*"
 
 functions:
     pod-doc-upload: ${file(config/functions/pod-doc-upload.yml):function}
