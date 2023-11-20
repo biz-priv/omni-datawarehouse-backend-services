@@ -12,6 +12,7 @@
         "aws-sdk": "^2.1163.0",
         "lodash": "^4.17.21",
         "moment-timezone": "^0.5.39",
+        "serverless-step-functions": "^3.17.0",
         "uuid": "^9.0.1"
     },
     "devDependencies": {
