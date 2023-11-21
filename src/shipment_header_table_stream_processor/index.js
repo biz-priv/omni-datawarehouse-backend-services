@@ -17,7 +17,8 @@ module.exports.handler = async (event, context) => {
                 const billNumber = Number(get(record, "dynamodb.NewImage.BillNo.S", null));
                 const orderNo = Number(get(record, "dynamodb.NewImage.PK_OrderNo.S", null));
 
-                const allowedBillNumbers = [9146, 53478];
+                const allowedBillNumbers = [53478]; //Remove this when enabling Shippeo
+                // const allowedBillNumbers = [9146, 53478]; //Uncomment this for Shippeo
                 if (!allowedBillNumbers.includes(billNumber)) {
                     console.info(`${billNumber} is not in ${allowedBillNumbers}: SKIPPING`);
                     return;
