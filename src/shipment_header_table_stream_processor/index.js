@@ -22,7 +22,8 @@ module.exports.handler = async (event, context) => {
                 console.info(`🙂 -> file: index.js:22 -> transactionTableData:`, transactionTableData);
                 if (transactionTableData) return "Document already send.";
 
-                const allowedBillNumbers = [9146, 53478];
+                const allowedBillNumbers = [53478]; //Remove this when enabling Shippeo
+                // const allowedBillNumbers = [9146, 53478]; //Uncomment this for Shippeo
                 if (!allowedBillNumbers.includes(billNumber)) {
                     console.info(`${billNumber} is not in ${allowedBillNumbers}: SKIPPING`);
                     return;
