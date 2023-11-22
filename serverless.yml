@@ -71,11 +71,14 @@ package:
 functions:
     pod-doc-upload: ${file(config/functions/pod-doc-upload.yml):function}
     shipment-header-table-stream-processor: ${file(config/functions/shipment-header-table-stream-processor.yml):function}
+    ltl-rating-log-insertion: ${file(config/functions/ltl-rating-log-insertion.yml):function}
 
 resources:
     Resources:
         ShipmentFileTableStreamQueue: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamQueue}
         ShipmentFileTableStreamDLQ: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamDLQ}
+        LtlRatingLogInsertionQueue: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionQueue}
+        LtlRatingLogInsertionDLQ: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionDLQ}
 
 layers:
     DWBackend:
