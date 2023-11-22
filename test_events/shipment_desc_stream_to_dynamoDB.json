@@ -1,0 +1,334 @@
+{
+    "Records": [
+        {
+            "eventID": "f3ad15a79d4bb57c8dda85cb9394469c",
+            "eventName": "INSERT",
+            "eventVersion": "1.1",
+            "eventSource": "aws:dynamodb",
+            "awsRegion": "us-east-1",
+            "dynamodb": {
+                "ApproximateCreationDateTime": 1699386050,
+                "Keys": {
+                    "SeqNo": {
+                        "S": "1"
+                    },
+                    "FK_OrderNo": {
+                        "S": "5344019"
+                    }
+                },
+                "NewImage": {
+                    "FK_PieceTypeId": {
+                        "S": "PLT"
+                    },
+                    "HandlingUnits": {
+                        "S": "0"
+                    },
+                    "HeightCM": {
+                        "S": "76.2"
+                    },
+                    "TargetPayRateMin": {
+                        "S": "0.0000"
+                    },
+                    "Description": {
+                        "S": "COMPUTER EQUIPMENT 3481A"
+                    },
+                    "Skids": {
+                        "S": "0"
+                    },
+                    "DimWeight": {
+                        "S": "288.0"
+                    },
+                    "AdjSeqNo": {
+                        "S": "0"
+                    },
+                    "WeightDimension": {
+                        "S": "L"
+                    },
+                    "DeclareValue": {
+                        "S": "0.00"
+                    },
+                    "Density": {
+                        "S": "NULL"
+                    },
+                    "CubicFeet": {
+                        "S": "33.333"
+                    },
+                    "LengthDimension": {
+                        "S": "I"
+                    },
+                    "ConsolNo": {
+                        "S": "0"
+                    },
+                    "DimClass": {
+                        "S": "0"
+                    },
+                    "Hazmat": {
+                        "S": ""
+                    },
+                    "ManRef": {
+                        "S": ""
+                    },
+                    "NMFC": {
+                        "S": "NULL"
+                    },
+                    "DMS_TS": {
+                        "S": "2023-11-07 19:39:47.297000"
+                    },
+                    "Height": {
+                        "S": "30.0"
+                    },
+                    "InvLocation": {
+                        "S": ""
+                    },
+                    "MultistopDLSeqNo": {
+                        "S": "NULL"
+                    },
+                    "Width": {
+                        "S": "40.0"
+                    },
+                    "DimFactor": {
+                        "S": "200"
+                    },
+                    "Pieces": {
+                        "S": "1"
+                    },
+                    "ChargableWeightKilo": {
+                        "S": "131.0"
+                    },
+                    "SeqNo": {
+                        "S": "1"
+                    },
+                    "FK_OrderNo": {
+                        "S": "5344019"
+                    },
+                    "MultistopPUSeqNo": {
+                        "S": "NULL"
+                    },
+                    "WeightKilo": {
+                        "S": "81.5"
+                    },
+                    "EDILineNo": {
+                        "S": "0"
+                    },
+                    "ScheduleBNo": {
+                        "S": ""
+                    },
+                    "PClass": {
+                        "S": ""
+                    },
+                    "Weight": {
+                        "S": "179.0"
+                    },
+                    "WidthCM": {
+                        "S": "101.6"
+                    },
+                    "TargetPayRateMax": {
+                        "S": "0.0000"
+                    },
+                    "Length": {
+                        "S": "48.0"
+                    },
+                    "LengthCM": {
+                        "S": "121.9"
+                    },
+                    "InsertedTimeStamp": {
+                        "S": "2023:11:07 13:40:49"
+                    },
+                    "CubicMeters": {
+                        "S": "0.944"
+                    },
+                    "DimWeightKilo": {
+                        "S": "131.0"
+                    },
+                    "FileId": {
+                        "S": "D"
+                    },
+                    "stops": {
+                        "S": "0"
+                    },
+                    "DensityKilo": {
+                        "S": "NULL"
+                    },
+                    "PalletBreakDown": {
+                        "S": ""
+                    },
+                    "ChargableWeight": {
+                        "S": "288.0"
+                    },
+                    "FK_HUPieceTypeId": {
+                        "S": ""
+                    }
+                },
+                "SequenceNumber": "2343389700000000049794454592",
+                "SizeBytes": 690,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+            },
+            "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-desc-dev/stream/2023-02-27T08:02:36.561"
+        },
+        {
+            "eventID": "c5305337d20ec8b8fcc0d3d808f381b9",
+            "eventName": "INSERT",
+            "eventVersion": "1.1",
+            "eventSource": "aws:dynamodb",
+            "awsRegion": "us-east-1",
+            "dynamodb": {
+                "ApproximateCreationDateTime": 1699386050,
+                "Keys": {
+                    "SeqNo": {
+                        "S": "2"
+                    },
+                    "FK_OrderNo": {
+                        "S": "5344019"
+                    }
+                },
+                "NewImage": {
+                    "FK_PieceTypeId": {
+                        "S": "PLT"
+                    },
+                    "HandlingUnits": {
+                        "S": "0"
+                    },
+                    "HeightCM": {
+                        "S": "109.2"
+                    },
+                    "TargetPayRateMin": {
+                        "S": "0.0000"
+                    },
+                    "Description": {
+                        "S": "COMPUTER EQUIPMENT 3481A"
+                    },
+                    "Skids": {
+                        "S": "0"
+                    },
+                    "DimWeight": {
+                        "S": "542.0"
+                    },
+                    "AdjSeqNo": {
+                        "S": "0"
+                    },
+                    "WeightDimension": {
+                        "S": "L"
+                    },
+                    "DeclareValue": {
+                        "S": "0.00"
+                    },
+                    "Density": {
+                        "S": "NULL"
+                    },
+                    "CubicFeet": {
+                        "S": "62.708"
+                    },
+                    "LengthDimension": {
+                        "S": "I"
+                    },
+                    "ConsolNo": {
+                        "S": "0"
+                    },
+                    "DimClass": {
+                        "S": "0"
+                    },
+                    "Hazmat": {
+                        "S": ""
+                    },
+                    "ManRef": {
+                        "S": ""
+                    },
+                    "NMFC": {
+                        "S": "NULL"
+                    },
+                    "DMS_TS": {
+                        "S": "2023-11-07 19:39:47.307000"
+                    },
+                    "Height": {
+                        "S": "43.0"
+                    },
+                    "InvLocation": {
+                        "S": ""
+                    },
+                    "MultistopDLSeqNo": {
+                        "S": "NULL"
+                    },
+                    "Width": {
+                        "S": "45.0"
+                    },
+                    "DimFactor": {
+                        "S": "200"
+                    },
+                    "Pieces": {
+                        "S": "1"
+                    },
+                    "ChargableWeightKilo": {
+                        "S": "246.0"
+                    },
+                    "SeqNo": {
+                        "S": "2"
+                    },
+                    "FK_OrderNo": {
+                        "S": "5344019"
+                    },
+                    "MultistopPUSeqNo": {
+                        "S": "NULL"
+                    },
+                    "WeightKilo": {
+                        "S": "209.0"
+                    },
+                    "EDILineNo": {
+                        "S": "0"
+                    },
+                    "ScheduleBNo": {
+                        "S": ""
+                    },
+                    "PClass": {
+                        "S": ""
+                    },
+                    "Weight": {
+                        "S": "460.0"
+                    },
+                    "WidthCM": {
+                        "S": "114.3"
+                    },
+                    "TargetPayRateMax": {
+                        "S": "0.0000"
+                    },
+                    "Length": {
+                        "S": "56.0"
+                    },
+                    "LengthCM": {
+                        "S": "142.2"
+                    },
+                    "InsertedTimeStamp": {
+                        "S": "2023:11:07 13:40:49"
+                    },
+                    "CubicMeters": {
+                        "S": "1.775"
+                    },
+                    "DimWeightKilo": {
+                        "S": "246.0"
+                    },
+                    "FileId": {
+                        "S": "D"
+                    },
+                    "stops": {
+                        "S": "0"
+                    },
+                    "DensityKilo": {
+                        "S": "NULL"
+                    },
+                    "PalletBreakDown": {
+                        "S": ""
+                    },
+                    "ChargableWeight": {
+                        "S": "542.0"
+                    },
+                    "FK_HUPieceTypeId": {
+                        "S": ""
+                    }
+                },
+                "SequenceNumber": "2343389800000000049794454695",
+                "SizeBytes": 692,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+            },
+            "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-desc-dev/stream/2023-02-27T08:02:36.561"
+        }
+    ]
+}

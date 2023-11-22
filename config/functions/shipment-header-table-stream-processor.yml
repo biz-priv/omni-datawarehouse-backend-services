@@ -1,0 +1,26 @@
+function:
+    handler: src/shipment_header_table_stream_processor/index.handler
+    name: ${self:service}-shipment-header-stream-processor-${self:provider.stage}
+    description: process and filters shipment header table stream - ${self:provider.stage}
+    runtime: nodejs18.x
+    timeout: 500
+    layers:
+        - !Ref DWBackendLambdaLayer
+    events:
+        - stream:
+              arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.streamArn~true}
+              batchSize: 1
+              maximumRetryAttempts: 3
+            #   filterPatterns:
+            #       - { eventName: "INSERT" }
+    package:
+        patterns:
+            - "!**/*"
+            - "src/shipment_header_table_stream_processor/*"
+    environment:
+        SHIPMENT_HEADER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.tableName~true}
+        SHIPMENT_HEADER_TABLE_STREAM_QUEUE: !Ref ShipmentFileTableStreamQueue
+        SHIPMENT_FILE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-file/ddb.tableName~true}
+        TRANSACTION_TABLE: ${ssm:/omni-dw-api-services/${self:provider.stage}/pod-transactions/ddb.tableName}
+        SNS_TOPIC_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
+        STAGE: ${self:provider.stage}

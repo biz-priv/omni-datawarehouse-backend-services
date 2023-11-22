@@ -261,14 +261,14 @@ async function getDynamodbData(value){
     }
     console.log("dynamodb", dynamodbData);
     
-    mainResponse["shipmentDetailResponse"] = [];
-    mainResponse["shipmentDetailResponse"].push(
+    shipmentDetailObj = [];
+    shipmentDetailObj.push(
       await MappingDataToInsert(dynamodbData, timeZoneTable)
     );
-    console.log("mainResponse", mainResponse);
+    console.log("shipmentDetailObj", shipmentDetailObj);
   
     await upsertItem(process.env.SHIPMENT_DETAILS_Collector_TABLE, {
-      ...mainResponse.shipmentDetailResponse[0],
+      ...shipmentDetailObj[0],
     });
   } catch (error) {
     console.log("getDynamodbData: ", error);

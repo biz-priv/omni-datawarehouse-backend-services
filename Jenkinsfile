@@ -41,7 +41,6 @@ pipeline {
             when {
                 anyOf {
                     branch 'master';
-                    branch 'stage';
                     branch 'develop';
                     branch 'feature/31197';
                 }

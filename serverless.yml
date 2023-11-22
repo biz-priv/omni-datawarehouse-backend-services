@@ -7,6 +7,7 @@ provider:
     versionFunctions: false
     tags: ${self:custom.tags}
     stackTags: ${self:custom.tags}
+    runtime: python3.11
     vpc:
         securityGroupIds:
             - ${ssm:/omni-dw/${self:provider.stage}/lambda/sgId}
@@ -15,14 +16,15 @@ provider:
     iamRoleStatements:
         - Effect: "Allow"
           Action:
-              - "logs:CreateLogGroup"
-              - "logs:CreateLogStream"
-              - "logs:PutLogEvents"
-              - "ec2:CreateNetworkInterface"
-              - "ec2:DescribeNetworkInterfaces"
-              - "ec2:DeleteNetworkInterface"
-              - "ec2:AssignPrivateIpAddresses"
-              - "ec2:UnassignPrivateIpAddresses"
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - ec2:CreateNetworkInterface
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DetachNetworkInterface
+              - ec2:DeleteNetworkInterface
+              - ec2:AssignPrivateIpAddresses
+              - ec2:UnassignPrivateIpAddresses
           Resource: "*"
         - Effect: Allow
           Action:
@@ -35,6 +37,14 @@ provider:
               - dynamodb:Query
               - dynamodb:DeleteItem
               - dynamodb:Scan
+              - sqs:GetQueueUrl
+              - sqs:GetQueueAttributes
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:SendMessageBatch
+              - sqs:SendMessage
+              - secretsmanager:*
+              - sns:*
           Resource: "*"
     environment:
         REGION: ${self:custom.region}
@@ -51,9 +61,10 @@ custom:
         Application: OmniDataWarehouseBackendServiceIndex
         CreateBy: BizCloudExperts
         Environment: ${self:custom.stage}
-
-plugins:
-    - serverless-offline
+    serverless-layers:
+        functions:
+            - pod-doc-upload
+        dependenciesPath: ./requirements.txt
 
 package:
     individually: true
@@ -67,6 +78,13 @@ functions:
     shipper-stream-to-dynamoDB: ${file(config/functions/shipper-stream-to-dynamoDB.yml):function}
     shipment-milestone-details-stream-to-dynamoDB: ${file(config/functions/shipment-milestone-details-stream-to-dynamoDB.yml):function}
     tracking-notes-stream-to-dynamoDB: ${file(config/functions/tracking-notes-stream-to-dynamoDB.yml):function}
+    pod-doc-upload: ${file(config/functions/pod-doc-upload.yml):function}
+    shipment-header-table-stream-processor: ${file(config/functions/shipment-header-table-stream-processor.yml):function}
+
+resources:
+    Resources:
+        ShipmentFileTableStreamQueue: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamQueue}
+        ShipmentFileTableStreamDLQ: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamDLQ}
 
 layers:
     DWBackend:
@@ -77,4 +95,6 @@ layers:
             - nodejs14.x
             - nodejs18.x
         retain: false
-# resources:
+
+plugins:
+  - serverless-layers
