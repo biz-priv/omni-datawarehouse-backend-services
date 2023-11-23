@@ -1,11 +1,6 @@
 ---
 stateMachine:
     name: ${self:service}-ltl-batch-rating-state-machine-${self:provider.stage}
-    events:
-        - sqs:
-            arn: ${ssm:/omni-dw-api-services/${self:provider.stage}/ltl-batch-rating/file-queue-arn~true}
-            batchSize: 10
-            functionResponseType: ReportBatchItemFailures
     definition:
         Comment: "State machine to get ltl rating"
         StartAt: PublishEvents
