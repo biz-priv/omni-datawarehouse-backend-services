@@ -4,6 +4,8 @@ const { v4 } = require("uuid");
 const s3 = new AWS.S3({ region: process.env.REGION });
 const XLSX = require("xlsx");
 const moment = require("moment-timezone");
+const { putObject, checkIfObjectExists } = require("../shared/s3");
+const fs = require("fs");
 let limit = 20;
 let offset = null;
 module.exports.handler = async (event, context, callback) => {
@@ -22,7 +24,7 @@ module.exports.handler = async (event, context, callback) => {
                     console.info(`🙂 -> file: index.js:17 -> bucket:`, bucket);
                     const key = get(s3Body, "object.key");
                     console.info(`🙂 -> file: index.js:19 -> key:`, key);
-                    return await startNextStep({ limit, offset: 0, bucket, key });
+                    return await startNextStep({ offset: 0, bucket, key });
                 })
             );
         }
@@ -40,20 +42,23 @@ module.exports.handler = async (event, context, callback) => {
         const payload = sliceArrayIntoChunks(s3Object, limit, offset);
         let allPayload = await doApiReq(payload);
         allPayload = flattenArray(allPayload);
-        const existingFileKey = `output/${key.split("/")[1]}`;
-        let existingData = await getExcel(bucket, existingFileKey);
+        const fileName = key.split("/")[1];
+        const existingFileKey = `output/${fileName}`;
+        let existingData = [];
+        const objectExists = checkIfObjectExists(bucket, existingFileKey);
+        if (objectExists) existingData = await getExcel(bucket, existingFileKey);
         console.info(`🙂 -> file: index.js:43 -> existingData:`, existingData);
-        if (!existingData) existingData = [];
         console.info(`🙂 -> file: index.js:45 -> existingData:`, existingData);
         const finalData = existingData.concat(allPayload);
         console.info(`🙂 -> file: index.js:47 -> finalData:`, finalData);
         const newSheet = XLSX.utils.json_to_sheet(finalData);
         console.info(`🙂 -> file: excelTest.js:36 -> allPayload:`, newSheet);
+        const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, newSheet);
-        XLSX.writeFile(workbook, `tmp/${key}`);
-        await uploadToS3(`tmp/${key}`, key);
+        XLSX.writeFile(workbook, `tmp/${fileName}.xlsx`);
+        await uploadToS3(`tmp/${fileName}.xlsx`, fileName);
         if (offset < totalLength) {
-            return callback(null, { hasMoreData: "true", limit, offset: offset + limit, bucket, key });
+            return callback(null, { hasMoreData: "true", offset: offset + limit, bucket, key });
         } else {
             return callback(null, { hasMoreData: "false" });
         }
@@ -99,13 +104,14 @@ async function getExcel(bucket, key) {
                 })
                 .on("error", function (data) {
                     console.error(`Got an error: ${data}`);
+                    if (data === "NoSuchKey: The specified key does not exist.") resolve([]);
                     reject(false);
                 })
                 .on("end", async () => {
                     const buff = Buffer.concat(item);
                     const wb = XLSX.read(buff);
                     const first_ws = wb.Sheets[wb.SheetNames[0]];
-                    const data = XLSX.XLSX.utils.sheet_to_json(first_ws);
+                    const data = XLSX.utils.sheet_to_json(first_ws);
                     resolve(data);
                 });
         } catch (error) {
@@ -153,7 +159,7 @@ async function doApiReq(toJSON) {
             if (get(row, "DropAppt")) payload["ltlRateRequest"]["accessorialList"].push("APPTD");
             if (get(row, "DropInside")) payload["ltlRateRequest"]["accessorialList"].push("INDEL");
             if (get(row, "DropResi")) payload["ltlRateRequest"]["accessorialList"].push("RESDE");
-            console.info(`🙂 -> file: index.js:151 -> payload:`, payload);
+            console.info(`🙂 -> file: index.js:151 -> payload:`, JSON.stringify(payload));
             const response = await callLtlCarrierApi(payload);
             const ratesArray = get(response, "ltlRateResponse", []);
             const data = ratesArray.map((rate) => ({ reference, shipperZip: get(row, "ShipperZip"), consigneeZip: get(row, "ConsigneeZip"), pieces: get(row, "Pieces"), weight: get(row, "WeightLBs"), length: get(row, "Length1"), width: get(row, "Width1"), height: get(row, "Height1"), hazmat: get(row, "Hazardous"), freightClass: get(row, "Class"), carrier: get(rate, "carrier"), transitDays: get(rate, "transitDays"), quoteNumber: get(rate, "quoteNumber", ""), totalRate: get(rate, "totalRate"), serviceLevel: get(rate, "serviceLevel", ""), serviceLevelDescription: get(rate, "serviceLevelDescription", "") }));
