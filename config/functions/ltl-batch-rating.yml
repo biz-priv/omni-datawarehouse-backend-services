@@ -14,8 +14,8 @@ function:
               batchSize: 1
               functionResponseType: ReportBatchItemFailures
     package:
-        include:
+        patterns:
             - src/ltl_batch_rating.js
             - shared/**
     environment:
-        LTL_BATCH_RATING_STATE_MACHINE: !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${self:service}-ltl-batch-rating-state-machine-${self:provider.stage}'
+        LTL_BATCH_RATING_STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${self:service}-ltl-batch-rating-state-machine-${self:provider.stage}"
