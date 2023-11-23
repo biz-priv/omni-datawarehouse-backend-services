@@ -45,7 +45,9 @@ provider:
               - sqs:SendMessage
               - secretsmanager:*
               - sns:*
+              - states:*
           Resource: "*"
+
     environment:
         REGION: ${self:custom.region}
         STAGE: ${opt:stage, 'dev'}
@@ -68,10 +70,16 @@ custom:
 
 package:
     individually: true
+
 functions:
     pod-doc-upload: ${file(config/functions/pod-doc-upload.yml):function}
     shipment-header-table-stream-processor: ${file(config/functions/shipment-header-table-stream-processor.yml):function}
     ltl-rating-log-insertion: ${file(config/functions/ltl-rating-log-insertion.yml):function}
+    ltl-batch-rating: ${file(config/functions/ltl-batch-rating.yml):function}
+
+stepFunctions:
+    stateMachines:
+        ltl-batch-rating-state-machine: ${file(config/step-functions/ltl-batch-rating-state-machine.yml):stateMachine}
 
 resources:
     Resources:
@@ -91,4 +99,5 @@ layers:
         retain: false
 
 plugins:
-  - serverless-layers
+    - serverless-layers
+    - serverless-step-functions
