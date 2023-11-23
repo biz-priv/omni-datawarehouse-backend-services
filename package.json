@@ -10,6 +10,7 @@
     "license": "ISC",
     "dependencies": {
         "aws-sdk": "^2.1163.0",
+        "axios": "^1.6.2",
         "lodash": "^4.17.21",
         "moment-timezone": "^0.5.39",
         "serverless-step-functions": "^3.17.0",
