@@ -5,8 +5,7 @@ const s3 = new AWS.S3({ region: process.env.REGION });
 const XLSX = require("xlsx");
 const moment = require("moment-timezone");
 const { putObject, checkIfObjectExists } = require("../shared/s3");
-const fs = require("fs");
-let limit = 20;
+let limit = 15;
 let offset = null;
 module.exports.handler = async (event, context, callback) => {
     try {
@@ -28,37 +27,39 @@ module.exports.handler = async (event, context, callback) => {
                 })
             );
         }
-        const input = get(event, "input", {});
-        console.info(`🙂 -> file: index.js:28 -> input:`, input);
-        offset = parseInt(get(input, "offset", 0));
-        const bucket = get(input, "bucket");
+        offset = parseInt(get(event, "offset", 0));
+        const bucket = get(event, "bucket");
         console.info(`🙂 -> file: index.js:30 -> bucket:`, bucket);
-        const key = get(input, "key", "");
+        const key = get(event, "key", "");
         console.info(`🙂 -> file: index.js:32 -> key:`, key);
         const s3Object = await getExcel(bucket, key);
         console.info(`🙂 -> file: index.js:31 -> s3Object:`, s3Object);
         if (!s3Object) throw new Error("Error getting file form s3.");
         const totalLength = s3Object.length;
+        console.info(`🙂 -> file: index.js:42 -> totalLength:`, totalLength);
         const payload = sliceArrayIntoChunks(s3Object, limit, offset);
         let allPayload = await doApiReq(payload);
         allPayload = flattenArray(allPayload);
         const fileName = key.split("/")[1];
         const existingFileKey = `output/${fileName}`;
         let existingData = [];
-        const objectExists = checkIfObjectExists(bucket, existingFileKey);
+        console.info(`🙂 -> file: index.js:48 -> existingFileKey:`, existingFileKey);
+        const objectExists = await checkIfObjectExists(bucket, existingFileKey);
+        console.info(`🙂 -> file: index.js:49 -> objectExists:`, objectExists);
         if (objectExists) existingData = await getExcel(bucket, existingFileKey);
         console.info(`🙂 -> file: index.js:43 -> existingData:`, existingData);
-        console.info(`🙂 -> file: index.js:45 -> existingData:`, existingData);
         const finalData = existingData.concat(allPayload);
         console.info(`🙂 -> file: index.js:47 -> finalData:`, finalData);
         const newSheet = XLSX.utils.json_to_sheet(finalData);
         console.info(`🙂 -> file: excelTest.js:36 -> allPayload:`, newSheet);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, newSheet);
-        XLSX.writeFile(workbook, `tmp/${fileName}.xlsx`);
-        await uploadToS3(`tmp/${fileName}.xlsx`, fileName);
-        if (offset < totalLength) {
-            return callback(null, { hasMoreData: "true", offset: offset + limit, bucket, key });
+        XLSX.utils.book_append_sheet(workbook, newSheet, "Result");
+        const s3Body = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+        await uploadToS3(s3Body, existingFileKey);
+        const updatedOffset = offset + limit;
+        console.info(`🙂 -> file: index.js:63 -> updatedOffset:`, updatedOffset);
+        if (updatedOffset <= totalLength) {
+            return callback(null, { hasMoreData: "true", offset: updatedOffset, bucket, key });
         } else {
             return callback(null, { hasMoreData: "false" });
         }
@@ -72,7 +73,7 @@ async function startNextStep(input) {
     try {
         const params = {
             stateMachineArn: process.env.LTL_BATCH_RATING_STATE_MACHINE,
-            input: JSON.stringify({ input }),
+            input: JSON.stringify(input),
         };
         const stepfunctions = new AWS.StepFunctions();
         await stepfunctions.startExecution(params).promise();
@@ -192,6 +193,6 @@ function sliceArrayIntoChunks(array, limit, offset) {
     return array.slice(startIndex, endIndex);
 }
 
-async function uploadToS3(path, key) {
-    await putObject(fs.createReadStream(path), key, "omni-dw-api-services-ltl-batch-rating-bucket-dev", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+async function uploadToS3(body, key) {
+    await putObject(body, key, "omni-dw-api-services-ltl-batch-rating-bucket-dev", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 }
