@@ -2,6 +2,7 @@ const AWS = require("aws-sdk");
 const { get } = require("lodash");
 const { v4 } = require("uuid");
 const s3 = new AWS.S3({ region: process.env.REGION });
+const ses = new AWS.SES({ region: process.env.REGION });
 const XLSX = require("xlsx");
 const moment = require("moment-timezone");
 const { putObject, checkIfObjectExists } = require("../shared/s3");
@@ -28,39 +29,62 @@ module.exports.handler = async (event, context, callback) => {
             );
         }
         offset = parseInt(get(event, "offset", 0));
+
         const bucket = get(event, "bucket");
         console.info(`🙂 -> file: index.js:30 -> bucket:`, bucket);
+
         const key = get(event, "key", "");
         console.info(`🙂 -> file: index.js:32 -> key:`, key);
+
         const s3Object = await getExcel(bucket, key);
         console.info(`🙂 -> file: index.js:31 -> s3Object:`, s3Object);
+
         if (!s3Object) throw new Error("Error getting file form s3.");
+
         const totalLength = s3Object.length;
         console.info(`🙂 -> file: index.js:42 -> totalLength:`, totalLength);
+
         const payload = sliceArrayIntoChunks(s3Object, limit, offset);
+
         let allPayload = await doApiReq(payload);
         allPayload = flattenArray(allPayload);
+
         const fileName = key.split("/")[1];
         const existingFileKey = `output/${fileName}`;
+
         let existingData = [];
         console.info(`🙂 -> file: index.js:48 -> existingFileKey:`, existingFileKey);
+
         const objectExists = await checkIfObjectExists(bucket, existingFileKey);
         console.info(`🙂 -> file: index.js:49 -> objectExists:`, objectExists);
+
         if (objectExists) existingData = await getExcel(bucket, existingFileKey);
         console.info(`🙂 -> file: index.js:43 -> existingData:`, existingData);
+
         const finalData = existingData.concat(allPayload);
         console.info(`🙂 -> file: index.js:47 -> finalData:`, finalData);
+
         const newSheet = XLSX.utils.json_to_sheet(finalData);
         console.info(`🙂 -> file: excelTest.js:36 -> allPayload:`, newSheet);
+
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, newSheet, "Result");
         const s3Body = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
         await uploadToS3(s3Body, existingFileKey);
         const updatedOffset = offset + limit;
         console.info(`🙂 -> file: index.js:63 -> updatedOffset:`, updatedOffset);
+
         if (updatedOffset <= totalLength) {
             return callback(null, { hasMoreData: "true", offset: updatedOffset, bucket, key });
         } else {
+            const fromEmail = "omnidev@bizcloudexperts.com";
+            const toEmail = ["jahir.uddin@bizcloudexperts.com"];
+            const html = `<h3>Rating result.</h3>`;
+            const subject = "Rating result.";
+            const attachment_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            const attachment_filename = fileName + ".xlsx";
+            const attachment = s3Body;
+            await sendMailWithAttachment({ fromEmail, toEmail, html, subject, attachment_type, attachment_filename, attachment });
             return callback(null, { hasMoreData: "false" });
         }
     } catch (err) {
@@ -195,4 +219,41 @@ function sliceArrayIntoChunks(array, limit, offset) {
 
 async function uploadToS3(body, key) {
     await putObject(body, key, "omni-dw-api-services-ltl-batch-rating-bucket-dev", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+}
+
+async function sendMailWithAttachment({ fromEmail, toEmail, html, subject, attachment_type, attachment_filename, attachment }) {
+    console.info(`🙂 -> file: index.js:225 -> fromEmail, toEmail, html, subject, attachment_type, attachment_filename, attachment:`, fromEmail, toEmail, html, subject, attachment_type, attachment_filename, attachment);
+    try {
+        const boundary = `----=_Part${Math.random().toString().substr(2)}`;
+        const rawMessage = [
+            `From: ${fromEmail}`,
+            `To: ${toEmail}`,
+            `Subject: ${subject}`,
+            `MIME-Version: 1.0`,
+            `Content-Type: multipart/alternative; boundary="${boundary}"`, // For sending both plaintext & html content
+            `\n`,
+            `--${boundary}`,
+            `Content-Type: text/html; charset=utf-8`,
+            `Content-Transfer-Encoding: 7bit`,
+            `\n`,
+            html,
+            `--${boundary}`,
+            `Content-Type: ${attachment_type}; charset=utf-8`,
+            `Content-Disposition: attachment; filename = ${attachment_filename}`,
+            `\n`,
+            attachment,
+            `\n`,
+            `--${boundary}--`,
+        ];
+        console.log("rawMessage", JSON.stringify(rawMessage));
+        let params = {
+            Destinations: [...toEmail],
+            RawMessage: { Data: rawMessage.join("\n") },
+        };
+        console.log("params", JSON.stringify(params, null, 2));
+        return await ses.sendRawEmail(params).promise();
+    } catch (error) {
+        console.log("error", error);
+        throw new Error("Email send failed");
+    }
 }

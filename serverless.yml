@@ -46,6 +46,7 @@ provider:
               - secretsmanager:*
               - sns:*
               - states:*
+              - ses:SendRawEmail
           Resource: "*"
 
     environment:
