@@ -6,7 +6,7 @@ const ses = new AWS.SES({ region: process.env.REGION });
 const XLSX = require("xlsx");
 const moment = require("moment-timezone");
 const { putObject, checkIfObjectExists } = require("../shared/s3");
-let limit = 15;
+let limit = 10;
 let offset = null;
 module.exports.handler = async (event, context, callback) => {
     try {
@@ -74,17 +74,18 @@ module.exports.handler = async (event, context, callback) => {
         const updatedOffset = offset + limit;
         console.info(`🙂 -> file: index.js:63 -> updatedOffset:`, updatedOffset);
 
-        if (updatedOffset <= totalLength) {
+        if (updatedOffset < totalLength) {
             return callback(null, { hasMoreData: "true", offset: updatedOffset, bucket, key });
         } else {
             const fromEmail = "omnidev@bizcloudexperts.com";
             const toEmail = ["jahir.uddin@bizcloudexperts.com"];
-            const html = `<h3>Rating result.</h3>`;
             const subject = "Rating result.";
-            const attachment_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            const attachment_filename = fileName + ".xlsx";
-            const attachment = s3Body;
-            await sendMailWithAttachment({ fromEmail, toEmail, html, subject, attachment_type, attachment_filename, attachment });
+            const getPresignedUrl = await getS3PresignedUrl(bucket, existingFileKey);
+            console.info(`🙂 -> file: index.js:85 -> getPresignedUrl:`, getPresignedUrl);
+            if (!getPresignedUrl) throw new Error("Failed to generate Presigned Url");
+            const html = `<h3>Rating result.</h3><br/><h4>Here is the link to the file: </h4> <a href="${getPresignedUrl}">${getPresignedUrl}</a>
+            <br/><strong style="color: red">NOTE: This link is valid for 10 minutes.</strong>`;
+            await sendMailWithoutAttachment({ fromEmail, toEmail, html, subject });
             return callback(null, { hasMoreData: "false" });
         }
     } catch (err) {
@@ -212,8 +213,8 @@ async function callLtlCarrierApi(payload) {
 }
 
 function sliceArrayIntoChunks(array, limit, offset) {
-    const startIndex = offset * limit;
-    const endIndex = startIndex + limit;
+    const endIndex = offset + limit;
+    const startIndex = endIndex - limit;
     return array.slice(startIndex, endIndex);
 }
 
@@ -221,8 +222,7 @@ async function uploadToS3(body, key) {
     await putObject(body, key, "omni-dw-api-services-ltl-batch-rating-bucket-dev", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 }
 
-async function sendMailWithAttachment({ fromEmail, toEmail, html, subject, attachment_type, attachment_filename, attachment }) {
-    console.info(`🙂 -> file: index.js:225 -> fromEmail, toEmail, html, subject, attachment_type, attachment_filename, attachment:`, fromEmail, toEmail, html, subject, attachment_type, attachment_filename, attachment);
+async function sendMailWithoutAttachment({ fromEmail, toEmail, html, subject }) {
     try {
         const boundary = `----=_Part${Math.random().toString().substr(2)}`;
         const rawMessage = [
@@ -237,23 +237,30 @@ async function sendMailWithAttachment({ fromEmail, toEmail, html, subject, attac
             `Content-Transfer-Encoding: 7bit`,
             `\n`,
             html,
-            `--${boundary}`,
-            `Content-Type: ${attachment_type}; charset=utf-8`,
-            `Content-Disposition: attachment; filename = ${attachment_filename}`,
-            `\n`,
-            attachment,
-            `\n`,
             `--${boundary}--`,
         ];
-        console.log("rawMessage", JSON.stringify(rawMessage));
         let params = {
             Destinations: [...toEmail],
             RawMessage: { Data: rawMessage.join("\n") },
         };
-        console.log("params", JSON.stringify(params, null, 2));
         return await ses.sendRawEmail(params).promise();
     } catch (error) {
         console.log("error", error);
         throw new Error("Email send failed");
+    }
+}
+
+async function getS3PresignedUrl(bucket, object) {
+    const params = {
+        Bucket: bucket,
+        Key: object,
+        Expires: 6000,
+    };
+    console.info(`🙂 -> file: ltl_batch_rating.js:69 -> params:`, params);
+    try {
+        return await s3.getSignedUrlPromise("getObject", params);
+    } catch (error) {
+        console.error(`🙂 -> file: ltl_batch_rating.js:74 -> error:`, error);
+        return false;
     }
 }
