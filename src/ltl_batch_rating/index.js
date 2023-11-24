@@ -78,7 +78,7 @@ module.exports.handler = async (event, context, callback) => {
             return callback(null, { hasMoreData: "true", offset: updatedOffset, bucket, key });
         } else {
             const fromEmail = "omnidev@bizcloudexperts.com";
-            const toEmail = ["jahir.uddin@bizcloudexperts.com"];
+            const toEmail = ["jahir.uddin@bizcloudexperts.com", "krithika.shivaram@bizcloudexperts.com"];
             const subject = "Rating result.";
             const getPresignedUrl = await getS3PresignedUrl(bucket, existingFileKey);
             console.info(`🙂 -> file: index.js:85 -> getPresignedUrl:`, getPresignedUrl);
