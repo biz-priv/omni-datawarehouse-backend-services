@@ -1,5 +1,5 @@
 function:
-  handler: src/shipment_detail_collector/shipment_desc_stream_to_dynamoDB.handler
+  handler: src/shipment_detail_collector/index.handler
   name: ${self:service}-shipment-desc-stream-${self:provider.stage}
   description: shipment desc stream to dynamoDB - ${self:provider.stage}
   runtime: nodejs18.x
@@ -11,7 +11,7 @@ function:
   package:
     patterns:
       - "!**/*"
-      - "src/shipment_detail_collector/shipment_desc_stream_to_dynamoDB.js"
+      - "src/shipment_detail_collector/index.js"
       - "src/shared/**"
 
   events:

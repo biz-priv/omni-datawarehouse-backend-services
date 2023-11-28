@@ -2,20 +2,15 @@ const AWS = require("aws-sdk");
 const moment = require('moment');
 const { get } = require('lodash');
 const ddb = new AWS.DynamoDB.DocumentClient();
-//const dynamodb = new AWS.DynamoDB.DocumentClient();
-
 const s3 = new AWS.S3();
 const athena = new AWS.Athena();
 
 const util = require('util');
 const setTimeoutPromise = util.promisify(setTimeout);
 
-//const csvtojson = require('csvtojson');
-
 const tracking_notes_table = process.env.TRACKING_NOTES_TABLE
 
 const { tableValues, weightDimensionValue, INDEX_VALUES, customerTypeValue } = require("../constants/shipment_details");
-//const { number } = require("joi");
 
 async function refParty(customerType) {
   try {
@@ -76,7 +71,6 @@ async function weightUOM(weightDimension) {
 async function getPickupTime(dateTime, dateTimeZone, timeZoneTable) {
   try {
     const result = await getTime(dateTime, dateTimeZone, timeZoneTable)
-    // console.log("pick up time====>", result)
     if (result == 0 || result == null || result == "" || result.substring(0, 4) == "1900") {
       return ""
     }
@@ -96,7 +90,7 @@ async function getTime(dateTime, dateTimeZone, timeZoneTable) {
     inputDate.subtract(Number(timeZoneTable[dateTimeZone].HoursAway), 'hours');
     let convertedDate = inputDate.format('YYYY-MM-DDTHH:mm:ss');
     if (weekNumber < 0 && weekNumber > 52) {
-      console.log("wrong week number");
+      console.info("wrong week number");
     } else if (weekNumber > 11 && weekNumber < 44) {
       convertedDate = convertedDate + "-05:00";
     } else {
@@ -146,7 +140,6 @@ async function locationFunc(pKeyValue, houseBill) {
 
 async function trackingNotesDataParse(item) {
   try {
-    // console.log(item)
     const note = item.Note
     const parseArray = note.split(" ")
     const latitude = parseArray[2].split("=")[1]
@@ -159,11 +152,9 @@ async function trackingNotesDataParse(item) {
 
 async function getShipmentDate(dateTime) {
   try {
-    // console.log("shipment date time", dateTime)
     if (dateTime == 0 || dateTime == null) {
       return ""
     } else {
-      // console.log(dateTime.substring(0, 10))
       return dateTime.substring(0, 10)
     }
   } catch (error) {
@@ -205,10 +196,8 @@ async function getDynamodbData(value){
         dynamodbData[tableValue.tableName] = data.Items;
       })
     );
-    console.log("dynamodbData",dynamodbData)
 
     const PK_ServiceLevelId = get(dynamodbData,`${process.env.SHIPMENT_HEADER_TABLE}[0].FK_ServiceLevelId`,null);
-    console.log("PK_ServiceLevelId", PK_ServiceLevelId);
   
     if (PK_ServiceLevelId != null || PK_ServiceLevelId != "") {
       /*
@@ -224,18 +213,15 @@ async function getDynamodbData(value){
           ":pKey": PK_ServiceLevelId,
         },
       };
-      console.log("servicelevelsTableParams", servicelevelsTableParams);
       const servicelevelsTableResult = await ddb.query(servicelevelsTableParams).promise();
       dynamodbData[process.env.SERVICE_LEVEL_TABLE] =servicelevelsTableResult.Items;
     }
 
     const FK_ServiceLevelId = get(dynamodbData,`${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_ServiceLevelId`,null);
     const FK_OrderStatusId = get(dynamodbData,`${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderStatusId`,null);
-    console.log("FK_ServiceLevelId", FK_ServiceLevelId);
-    console.log("FK_OrderStatusId", FK_OrderStatusId);
   
     if (FK_ServiceLevelId == null ||FK_ServiceLevelId == " " ||FK_ServiceLevelId == "" ||FK_OrderStatusId == null ||FK_OrderStatusId == "") {
-      console.log("no servicelevelId for ",get(dynamodbData,`${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderNo `, null ));
+      console.info("no servicelevelId for ",get(dynamodbData,`${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderNo `, null ));
     } else {
       /*
        *Dynamodb data from milestone table
@@ -254,24 +240,21 @@ async function getDynamodbData(value){
           ":IsPublic": "Y",
         },
       };
-      //console.log("milestone params", milestoneTableParams);
       const milestoneTableResult = await ddb.query(milestoneTableParams).promise();
-      console.log("milestoneTableResult", milestoneTableResult);
       dynamodbData[process.env.MILESTONE_TABLE] = milestoneTableResult.Items;
     }
-    console.log("dynamodb", dynamodbData);
     
-    shipmentDetailObj = [];
+    let shipmentDetailObj = [];
     shipmentDetailObj.push(
       await MappingDataToInsert(dynamodbData, timeZoneTable)
     );
-    console.log("shipmentDetailObj", shipmentDetailObj);
+    console.info("shipmentDetailObj", shipmentDetailObj);
   
     await upsertItem(process.env.SHIPMENT_DETAILS_Collector_TABLE, {
       ...shipmentDetailObj[0],
     });
   } catch (error) {
-    console.log("getDynamodbData: ", error);
+    console.error("getDynamodbData: ", error);
   }
 }
 
@@ -434,14 +417,14 @@ async function MappingDataToInsert(data, timeZoneTable) {
             ':status': item.status,
           },
         };
-        console.log("Updated")
+        console.info("Updated")
         return await ddb.update(params).promise();
       } else {
         params = {
           TableName: tableName,
           Item: item,
         };
-        console.log("inserted")
+        console.info("inserted")
         return await ddb.put(params).promise();
       }
     } catch (e) {
