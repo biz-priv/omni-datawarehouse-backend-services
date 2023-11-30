@@ -204,6 +204,7 @@ async function callLtlCarrierApi(payload) {
         method: "post",
         maxBodyLength: Infinity,
         url: "https://dev-api.omnilogistics.com/v1/shipment/ltlrate",
+        // url: "https://dev-api.omnilogistics.com/v1/shipment/ltlrate",
         headers: {
             "Content-Type": "application/json",
             "x-api-key": "CpC6AEaO6earvSLEAGRgm4ph3jPFj0eU6IUzIQX7",
