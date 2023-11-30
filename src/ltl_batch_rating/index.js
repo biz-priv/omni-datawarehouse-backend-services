@@ -3,6 +3,7 @@ const { get } = require("lodash");
 const { v4 } = require("uuid");
 const s3 = new AWS.S3({ region: process.env.REGION });
 const ses = new AWS.SES({ region: process.env.REGION });
+const sqs = new AWS.SQS({ region: process.env.REGION });
 const XLSX = require("xlsx");
 const moment = require("moment-timezone");
 const { putObject, checkIfObjectExists } = require("../shared/s3");
@@ -24,7 +25,9 @@ module.exports.handler = async (event, context, callback) => {
                     console.info(`🙂 -> file: index.js:17 -> bucket:`, bucket);
                     const key = get(s3Body, "object.key");
                     console.info(`🙂 -> file: index.js:19 -> key:`, key);
-                    return await startNextStep({ offset: 0, bucket, key });
+                    await startNextStep({ offset: 0, bucket, key });
+                    const receiptHandle = get(record, "receiptHandle", null);
+                    return await deleteSqsMessage(receiptHandle);
                 })
             );
         }
@@ -261,6 +264,24 @@ async function getS3PresignedUrl(bucket, object) {
         return await s3.getSignedUrlPromise("getObject", params);
     } catch (error) {
         console.error(`🙂 -> file: ltl_batch_rating.js:74 -> error:`, error);
+        return false;
+    }
+}
+
+async function deleteSqsMessage(receiptHandle) {
+    console.info(`🙂 -> file: index.js:271 -> receiptHandle:`, receiptHandle);
+    console.info(`🙂 -> file: index.js:277 -> process.env.BATCH_RATING_QUEUE:`, process.env.BATCH_RATING_QUEUE);
+    try {
+        if (receiptHandle)
+            await sqs
+                .deleteMessage({
+                    QueueUrl: process.env.BATCH_RATING_QUEUE,
+                    ReceiptHandle: receiptHandle,
+                })
+                .promise();
+        return true;
+    } catch (error) {
+        console.info(`🙂 -> file: index.js:279 -> error:`, error);
         return false;
     }
 }
