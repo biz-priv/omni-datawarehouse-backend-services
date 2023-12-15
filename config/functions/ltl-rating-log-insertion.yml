@@ -1,0 +1,21 @@
+function:
+    handler: src/ltl_rating_log_insertion/index.handler
+    name: ${self:service}-ltl-rating-log-insertion-${self:provider.stage}
+    description: insert log for ltl rating api- ${self:provider.stage}
+    runtime: nodejs18.x
+    timeout: 500
+    layers:
+        - !Ref DWBackendLambdaLayer
+    events:
+        - sqs:
+            arn:
+                Fn::GetAtt:
+                    - LtlRatingLogInsertionQueue
+                    - Arn
+    package:
+        patterns:
+            - "!**/*"
+            - "src/ltl_rating_log_insertion/*"
+    environment:
+        LTL_LOG_TABLE: ${ssm:/omni-dw-api-services/${self:provider.stage}/ltl-rating/log-table-name}
+        STAGE: ${self:provider.stage}

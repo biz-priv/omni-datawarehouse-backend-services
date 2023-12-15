@@ -45,7 +45,10 @@ provider:
               - sqs:SendMessage
               - secretsmanager:*
               - sns:*
+              - states:*
+              - ses:SendRawEmail
           Resource: "*"
+
     environment:
         REGION: ${self:custom.region}
         STAGE: ${opt:stage, 'dev'}
@@ -68,6 +71,7 @@ custom:
 
 package:
     individually: true
+
 functions:
     #  lambda's responsible for inserting values from streams to shipment-header table
     shipment-header-stream-to-dynamoDB: ${file(config/functions/shipment-header-stream-to-dynamoDB.yml):function}
@@ -81,21 +85,24 @@ functions:
     
     pod-doc-upload: ${file(config/functions/pod-doc-upload.yml):function}
     shipment-header-table-stream-processor: ${file(config/functions/shipment-header-table-stream-processor.yml):function}
+    ltl-rating-log-insertion: ${file(config/functions/ltl-rating-log-insertion.yml):function}
 
 resources:
     Resources:
         ShipmentFileTableStreamQueue: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamQueue}
         ShipmentFileTableStreamDLQ: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamDLQ}
+        LtlRatingLogInsertionQueue: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionQueue}
+        LtlRatingLogInsertionDLQ: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionDLQ}
 
 layers:
     DWBackend:
         path: lambdaLayer/lib
         name: ${self:service}-layer-${self:provider.stage}
-        description: Omni Tac Index lambda layer for all node modules - ${self:provider.stage}
+        description: omni-dw-backend-services lambda layer for all node modules - ${self:provider.stage}
         compatibleRuntimes:
             - nodejs14.x
             - nodejs18.x
         retain: false
 
 plugins:
-  - serverless-layers
+    - serverless-layers
