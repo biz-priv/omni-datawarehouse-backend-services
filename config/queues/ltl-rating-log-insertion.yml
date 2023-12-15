@@ -1,0 +1,13 @@
+LtlRatingLogInsertionDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+        QueueName: omni-dw-backend-ltl-rating-log-insertion-DLQ-${self:provider.stage}
+
+LtlRatingLogInsertionQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+        QueueName: omni-dw-backend-ltl-rating-log-insertion-queue-${self:provider.stage}
+        VisibilityTimeout: 500
+        RedrivePolicy:
+            deadLetterTargetArn: !GetAtt LtlRatingLogInsertionDLQ.Arn
+            maxReceiveCount: 3
