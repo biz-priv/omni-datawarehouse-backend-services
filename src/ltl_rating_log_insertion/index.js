@@ -13,7 +13,7 @@ module.exports.handler = async (event, context) => {
 };
 
 async function processRecord(record) {
-    const reference = get(record, "[0].reference", v4());
+    const reference = get(record, "payloadForQueue.[0].reference", v4());
     await Promise.all(
         get(record, "payloadForQueue", []).map(async (data, index) => {
             console.info(`🙂 -> file: index.js:16 -> index:`, index);
