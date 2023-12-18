@@ -1,6 +1,8 @@
 const { get } = require("lodash");
 const { v4 } = require("uuid");
 const { LTL_LOG_TABLE } = process.env;
+const AWS = require("aws-sdk");
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
 const moment = require("moment-timezone");
 let functionName;
 module.exports.handler = async (event, context) => {
@@ -13,7 +15,7 @@ module.exports.handler = async (event, context) => {
 async function processRecord(record) {
     const reference = get(record, "[0].reference", v4());
     await Promise.all(
-        dataArray.map(async (data, index) => {
+        get(record, "payloadForQueue", []).map(async (data, index) => {
             console.info(`🙂 -> file: index.js:16 -> index:`, index);
             console.info(`🙂 -> file: index.js:17 -> data:`, data);
             const pKey = reference;
