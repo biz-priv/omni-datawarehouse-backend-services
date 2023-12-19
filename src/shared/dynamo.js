@@ -98,6 +98,70 @@ async function batchWriteItems(params) {
     return await db.batchWrite(params).promise();
 }
 
+async function getQueryExpression(keys) {
+    let expression = "";
+    let expressionAtts = {};
+    Object.keys(keys).forEach((k) => {
+      expression += k + "=:" + k + " and ";
+      expressionAtts[":" + k] = keys[k];
+    });
+    expression = expression.substring(0, expression.lastIndexOf(" and "));
+    return [expression, expressionAtts];
+}
+
+async function queryWithPartitionKey(tableName, key) {
+    let params;
+    try {
+      const [expression, expressionAtts] = await getQueryExpression(key);
+      params = {
+        TableName: tableName,
+        KeyConditionExpression: expression,
+        ExpressionAttributeValues: expressionAtts,
+      };
+      return await dbReadWithLastEvaluatedKey(params);
+    } catch (e) {
+      console.error(
+        "Query Item With Partition key Error: ",
+        e,
+        "\nGet params: ",
+        params
+      );
+      throw "QueryItemError";
+    }
+  }
+  
+  async function dbReadWithLastEvaluatedKey(params) {
+    async function helper(params) {
+      let result = await db.query(params).promise();
+      let data = result.Items;
+      if (result.LastEvaluatedKey) {
+        params.ExclusiveStartKey = result.LastEvaluatedKey;
+        data = data.concat(await helper(params));
+      }
+      return data;
+    }
+    let readData = await helper(params);
+    return { Items: readData };
+  }
+
+  async function queryWithIndex(tableName, index, keys, otherParams = null) {
+    let params;
+    try {
+      const [expression, expressionAtts] = await getQueryExpression(keys);
+      params = {
+        TableName: tableName,
+        IndexName: index,
+        KeyConditionExpression: expression,
+        ExpressionAttributeValues: expressionAtts,
+      };
+      if (otherParams) params = { ...params, ...otherParams };
+      return await db.query(params).promise();
+    } catch (e) {
+      console.error("Query Item Error: ", e, "\nQuery params: ", params);
+      throw "QueryItemError";
+    }
+  }
+
 module.exports = {
     Query,
     Put,
@@ -108,4 +172,6 @@ module.exports = {
     deleteItem,
     batchWriteItems,
     updateItem,
+    queryWithPartitionKey,
+    queryWithIndex,
 };
