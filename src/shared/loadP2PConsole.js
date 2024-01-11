@@ -88,7 +88,9 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
           parseInt(e?.Height !== '' ? e?.Height : 0, 10) ===
         0;
       let packageType;
-      if(e.FK_PieceTypeId === 'BOX') packageType = 'BOX'; else if(e.FK_PieceTypeId === 'PLT') packageType = 'PAL'; else packageType = 'PIE';
+      if (e.FK_PieceTypeId === 'BOX') packageType = 'BOX';
+      else if (e.FK_PieceTypeId === 'PLT') packageType = 'PAL';
+      else packageType = 'PIE';
       return {
         packageType,
         quantity: e?.Pieces ?? '',
@@ -135,17 +137,15 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
     companyName: confirmationCost?.ShipName ?? '',
     cargo,
     scheduledDate: '',
-    specialInstructions: (
-      `${getNotesP2Pconsols(
-        confirmationCost?.PickupTimeRange ?? '',
-        confirmationCost?.PickupDateTime ?? '',
-        'p'
-      ) 
-      }\r\n${ 
+    specialInstructions: `${getNotesP2Pconsols(
+      confirmationCost?.PickupTimeRange ?? '',
+      confirmationCost?.PickupDateTime ?? '',
+      'p'
+    )}\r\n${
       confirmationCost?.ShipContact.length > 0 || confirmationCost?.ShipPhone.length > 0
-        ? `Contact ${  confirmationCost?.ShipContact  } ${  confirmationCost?.ShipPhone  }\r\n`
-        : ''}`
-    ).slice(0, 200),
+        ? `Contact ${confirmationCost?.ShipContact} ${confirmationCost?.ShipPhone}\r\n`
+        : ''
+    }`.slice(0, 200),
     cutoffDate: '',
   };
 
@@ -184,18 +184,15 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
     },
     companyName: confirmationCost?.ConName ?? '',
     scheduledDate: '',
-    specialInstructions: (
-      `${getNotesP2Pconsols(
-        confirmationCost?.DeliveryTimeRange,
-        confirmationCost?.DeliveryDateTime,
-        'd'
-      ) 
-      }\r\n${ 
+    specialInstructions: `${getNotesP2Pconsols(
+      confirmationCost?.DeliveryTimeRange,
+      confirmationCost?.DeliveryDateTime,
+      'd'
+    )}\r\n${
       confirmationCost?.ConContact.length > 0 || confirmationCost?.ConPhone.length > 0
-        ? `Contact ${  confirmationCost?.ConContact  } ${  confirmationCost?.ConPhone  }\r\n`
-        : '' 
-      }${confirmationCost?.DeliveryNote ?? ''}`
-    ).slice(0, 200),
+        ? `Contact ${confirmationCost?.ConContact} ${confirmationCost?.ConPhone}\r\n`
+        : ''
+    }${confirmationCost?.DeliveryNote ?? ''}`.slice(0, 200),
     cutoffDate: '',
   };
   const dtypeAddressData = await checkAddressByGoogleApi(dStopTypeData.address);
@@ -252,7 +249,7 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
       .filter((e) => e.stopType === 'P')
       .map((e) => {
         houseBillList = [...houseBillList, ...e.housebills];
-        return e
+        return e;
       });
 
     // preparing obj for dynamoDB omni-ivia
@@ -326,9 +323,9 @@ async function fetchDataFromTablesList(CONSOL_NO) {
 
     shipmentApar = shipmentApar.filter((e) => ['HS', 'TL'].includes(e.FK_ServiceId));
     let confirmationCost = [];
-      let shipmentDesc = [];
-      let shipmentHeader = [];
-      let shipmentInstructions = [];
+    let shipmentDesc = [];
+    let shipmentHeader = [];
+    let shipmentInstructions = [];
     let consolStopHeaders = [];
     let consolStopItems = [];
     for (let index = 0; index < shipmentApar.length; index++) {
@@ -567,10 +564,10 @@ function validateAndCheckIfDataSentToIvia(payload, ConsolNo) {
           }
         }
       } else if (errorMsg !== '') {
-          resolve({ check: false, errorMsg, isError: true });
-        } else {
-          resolve({ check: false, errorMsg: '', isError: false });
-        }
+        resolve({ check: false, errorMsg, isError: true });
+      } else {
+        resolve({ check: false, errorMsg: '', isError: false });
+      }
     } catch (error) {
       console.error('dynamoError:', error);
       resolve({ check: false, errorMsg: '', isError: false });

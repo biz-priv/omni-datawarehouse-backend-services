@@ -37,7 +37,7 @@ const {
   STAGE,
 } = process.env;
 // const IVIA_CARRIER_ID = "102"; //NOTE:- for stage IVIA need to change it later
-const globalConsolIndex = `omni-ivia-ConsolNo-index-${  STAGE}`;
+const globalConsolIndex = `omni-ivia-ConsolNo-index-${STAGE}`;
 
 const loadMultistopConsole = async (dynamoData, shipmentAparData) => {
   console.info('load-Multi-stop-Console');
@@ -141,11 +141,10 @@ const loadMultistopConsole = async (dynamoData, shipmentAparData) => {
     let spInsMsg = 'Pickup ';
     spInsMsg +=
       csh.ConsolStopTimeEnd > csh.ConsolStopTimeBegin
-        ? `between ${ 
-          moment(csh.ConsolStopTimeBegin).format('HH:mm') 
-          } and ${ 
-          moment(csh.ConsolStopTimeEnd).format('HH:mm')}`
-        : `at ${  moment(csh.ConsolStopTimeBegin).format('HH:mm')}`;
+        ? `between ${moment(csh.ConsolStopTimeBegin).format('HH:mm')} and ${moment(
+            csh.ConsolStopTimeEnd
+          ).format('HH:mm')}`
+        : `at ${moment(csh.ConsolStopTimeBegin).format('HH:mm')}`;
 
     /**
      * prepare the Pickup type obj from consolStopHeader
@@ -182,16 +181,14 @@ const loadMultistopConsole = async (dynamoData, shipmentAparData) => {
       },
       companyName: csh?.ConsolStopName,
       cargo,
-      scheduledDate:
-        `${csh.ConsolStopDate.split(' ')[0]  } ${  csh.ConsolStopTimeBegin.split(' ')?.[1] ?? ''}`,
-      specialInstructions: (
-        `${spInsMsg 
-        }\r\n${ 
+      scheduledDate: `${csh.ConsolStopDate.split(' ')[0]} ${
+        csh.ConsolStopTimeBegin.split(' ')?.[1] ?? ''
+      }`,
+      specialInstructions: `${spInsMsg}\r\n${
         csh?.ConsolStopContact.length > 0 || csh?.ConsolStopPhone.length > 0
-          ? `Contact ${  csh?.ConsolStopContact  } ${  csh?.ConsolStopPhone  }\r\n`
-          : '' 
-        }${csh.ConsolStopNotes}`
-      ).slice(0, 200),
+          ? `Contact ${csh?.ConsolStopContact} ${csh?.ConsolStopPhone}\r\n`
+          : ''
+      }${csh.ConsolStopNotes}`.slice(0, 200),
       cutoffDate: pcutoffVal,
     };
     return stopPayload;
@@ -220,11 +217,10 @@ const loadMultistopConsole = async (dynamoData, shipmentAparData) => {
     let spInsMsg = 'Deliver ';
     spInsMsg +=
       csh.ConsolStopTimeEnd > csh.ConsolStopTimeBegin
-        ? `between ${ 
-          moment(csh.ConsolStopTimeBegin).format('HH:mm') 
-          } and ${ 
-          moment(csh.ConsolStopTimeEnd).format('HH:mm')}`
-        : `at ${  moment(csh.ConsolStopTimeBegin).format('HH:mm')}`;
+        ? `between ${moment(csh.ConsolStopTimeBegin).format('HH:mm')} and ${moment(
+            csh.ConsolStopTimeEnd
+          ).format('HH:mm')}`
+        : `at ${moment(csh.ConsolStopTimeBegin).format('HH:mm')}`;
 
     /**
      * prepare Delivery type cutoffDate value
@@ -263,16 +259,14 @@ const loadMultistopConsole = async (dynamoData, shipmentAparData) => {
         zip: csh.ConsolStopZip,
       },
       companyName: csh?.ConsolStopName,
-      scheduledDate:
-        `${csh.ConsolStopDate.split(' ')?.[0]  } ${  csh.ConsolStopTimeBegin.split(' ')?.[1] ?? ''}`,
-      specialInstructions: (
-        `${spInsMsg 
-        }\r\n${ 
+      scheduledDate: `${csh.ConsolStopDate.split(' ')?.[0]} ${
+        csh.ConsolStopTimeBegin.split(' ')?.[1] ?? ''
+      }`,
+      specialInstructions: `${spInsMsg}\r\n${
         csh?.ConsolStopContact.length > 0 || csh?.ConsolStopPhone.length > 0
-          ? `Contact ${  csh?.ConsolStopContact  } ${  csh?.ConsolStopPhone  }\r\n`
-          : '' 
-        }${csh.ConsolStopNotes}`
-      ).slice(0, 200),
+          ? `Contact ${csh?.ConsolStopContact} ${csh?.ConsolStopPhone}\r\n`
+          : ''
+      }${csh.ConsolStopNotes}`.slice(0, 200),
       cutoffDate: dcutoffVal,
     };
     return stopPayload;
@@ -352,7 +346,7 @@ const loadMultistopConsole = async (dynamoData, shipmentAparData) => {
       .filter((e) => e.stopType === 'P')
       .map((e) => {
         houseBillList = [...houseBillList, ...e.housebills];
-        return e
+        return e;
       });
 
     // preparing obj for dynamoDB omni-ivia
@@ -391,7 +385,7 @@ const loadMultistopConsole = async (dynamoData, shipmentAparData) => {
     await put(params);
   }
 
-  return false
+  return false;
 };
 
 /**
@@ -421,7 +415,9 @@ function getCargoData(shipmentDesc, ele) {
           parseInt(e?.Height !== '' ? e?.Height : 0, 10) ===
         0;
       let packageType;
-      if(e.FK_PieceTypeId === 'BOX') packageType = 'BOX'; else if(e.FK_PieceTypeId === 'PLT') packageType = 'PAL'; else packageType = 'PIE';
+      if (e.FK_PieceTypeId === 'BOX') packageType = 'BOX';
+      else if (e.FK_PieceTypeId === 'PLT') packageType = 'PAL';
+      else packageType = 'PIE';
       return {
         packageType,
         quantity: e?.Pieces ?? '',
@@ -447,7 +443,7 @@ function getCargoData(shipmentDesc, ele) {
  */
 function validateAndCheckIfDataSentToIvia(payload, ConsolNo) {
   // eslint-disable-next-line no-async-promise-executor
-  return new Promise( async (resolve) => {
+  return new Promise(async (resolve) => {
     const errorMsg = validatePayload(payload);
     console.info('errorMsg', errorMsg);
 
@@ -477,7 +473,7 @@ function validateAndCheckIfDataSentToIvia(payload, ConsolNo) {
             return x.InsertedTimeStamp < y.InsertedTimeStamp ? 1 : -1;
           })[0];
 
-          if (get(errorObj,'data') && errorObj.data !== JSON.stringify(payload)) {
+          if (get(errorObj, 'data') && errorObj.data !== JSON.stringify(payload)) {
             if (errorMsg !== '') {
               resolve({ check: false, errorMsg, isError: true });
             } else {
@@ -488,10 +484,10 @@ function validateAndCheckIfDataSentToIvia(payload, ConsolNo) {
           }
         }
       } else if (errorMsg !== '') {
-          resolve({ check: false, errorMsg, isError: true });
-        } else {
-          resolve({ check: false, errorMsg: '', isError: false });
-        }
+        resolve({ check: false, errorMsg, isError: true });
+      } else {
+        resolve({ check: false, errorMsg: '', isError: false });
+      }
     } catch (error) {
       console.error('dynamoError:', error);
       resolve({ check: false, errorMsg: '', isError: false });
@@ -530,10 +526,10 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     shipmentApar = shipmentApar.Items;
 
     let shipmentInstructions = [];
-      let shipmentHeader = [];
-      let shipmentDesc = [];
-      let consolStopHeaders = [];
-      let consolStopItems = [];
+    let shipmentHeader = [];
+    let shipmentDesc = [];
+    let consolStopHeaders = [];
+    let consolStopItems = [];
     for (let index = 0; index < shipmentApar.length; index++) {
       const element = shipmentApar[index];
       /**
