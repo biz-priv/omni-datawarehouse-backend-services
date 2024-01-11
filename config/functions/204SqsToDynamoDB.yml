@@ -10,10 +10,10 @@ function:
     - { Ref: DWBackendLambdaLayer }
   package:
     include:
-      - "src/204SqsToDynamoDB/**"
-      - "src/shared/**"
+      - 'src/204SqsToDynamoDB/**'
+      - 'src/shared/**'
     exclude:
-      - "**/*"
+      - '**/*'
   environment:
     SHIPMENT_APAR_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.tableName~true}
     SHIPMENT_HEADER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.tableName~true}

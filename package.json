@@ -1,22 +1,55 @@
 {
-    "name": "omni-dw-backend-services",
-    "version": "1.0.0",
-    "description": "",
-    "main": "index.js",
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-        "aws-sdk": "^2.1163.0",
-        "lodash": "^4.17.21",
-        "moment-timezone": "^0.5.39",
-        "uuid": "^9.0.1"
-    },
-    "devDependencies": {
-        "serverless": "2.72.3",
-        "serverless-layers": "^2.7.0",
-        "serverless-offline": "^8.8.0"
+  "name": "omni-dw-backend-services",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint  --ignore-path .gitignore .",
+    "lint:updated": "pipe-git-updated --ext=js -- eslint --ignore-path .gitignore",
+    "prettier-check": "prettier -c \"**/*.{css,html,js,json,md,yaml,yml}\"",
+    "prettier-check:updated": "pipe-git-updated --ext=css --ext=html --ext=js --ext=json --ext=md --ext=yaml --ext=yml -- prettier -c",
+    "prettify": "prettier --write \"**/*.{css,html,js,json,md,yaml,yml}\"",
+    "prettify:updated": "pipe-git-updated --ext=css --ext=html --ext=js --ext=json --ext=md --ext=yaml --ext=yml -- prettier --write"
+  },
+  "author": "",
+  "license": "ISC",
+  "eslintConfig": {
+    "extends": "@serverless/eslint-config/node",
+    "root": true,
+    "ignorePatterns": [
+      "src/pod_doc_upload/*",
+      "src/shipment_header_table_stream_processor/*",
+      "src/shipment_detail_collector/*",
+      "src/shared/amazonPODHelperFiles/*",
+      "src/shared/dynamo.js",
+      "src/shared/sns.js",
+      "src/shared/s3.js"
+    ],
+    "rules": {
+      "no-console": "off",
+      "no-restricted-syntax": [
+        "error",
+        {
+          "selector": "CallExpression[callee.object.name='console'][callee.property.name!=/^(error|info)$/]",
+          "message": "Unexpected property on console object was called"
+        }
+      ]
     }
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1163.0",
+    "lodash": "^4.17.21",
+    "moment-timezone": "^0.5.39",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@serverless/eslint-config": "^5.1.0",
+    "eslint": "^8.56.0",
+    "eslint-plugin-import": "^2.29.1",
+    "git-list-updated": "^1.2.1",
+    "prettier": "^3.1.1",
+    "serverless": "2.72.3",
+    "serverless-layers": "^2.7.0",
+    "serverless-offline": "^8.8.0"
+  }
 }

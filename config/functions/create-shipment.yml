@@ -9,10 +9,10 @@ function:
     - { Ref: DWBackendLambdaLayer }
   package:
     include:
-      - "src/204create-shipment/**"
-      - "src/shared/**"
+      - 'src/204create-shipment/**'
+      - 'src/shared/**'
     exclude:
-      - "**/*"
+      - '**/*'
   events:
     - stream: ${ssm:/omni-ivia/${self:provider.stage}/ivia/ddb.streamArn}
   environment:

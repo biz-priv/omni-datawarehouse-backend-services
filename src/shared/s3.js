@@ -1,5 +1,5 @@
-const AWS = require("aws-sdk");
-const { get } = require("lodash");
+const AWS = require('aws-sdk');
+const { get } = require('lodash');
 const s3 = new AWS.S3({ region: process.env.REGION });
 
 /**
@@ -9,19 +9,19 @@ const s3 = new AWS.S3({ region: process.env.REGION });
  * @param bucket - The name of the S3 bucket where the object will be stored.
  */
 async function putObject(data, fileName, bucket, contentType) {
-    try {
-        const s3Params = {
-            Bucket: bucket,
-            Key: fileName,
-            ContentType: contentType,
-            Body: data,
-        };
+  try {
+    const s3Params = {
+      Bucket: bucket,
+      Key: fileName,
+      ContentType: contentType,
+      Body: data,
+    };
 
-        await s3.putObject(s3Params).promise();
-    } catch (e) {
-        console.error("s3 put object error: ", e);
-        throw e;
-    }
+    await s3.putObject(s3Params).promise();
+  } catch (e) {
+    console.error('s3 put object error: ', e);
+    throw e;
+  }
 }
 
 /**
@@ -34,21 +34,21 @@ async function putObject(data, fileName, bucket, contentType) {
  * specific error code and correlation ID.
  */
 async function getObject(bucket, key) {
-    try {
-        const params = {
-            Bucket: bucket,
-            Key: key,
-            ResponseContentType: "application/json",
-        };
-        console.log(`🙂 -> file: s3.js:42 -> params:`, params);
-        const s3File = await s3.getObject(params).promise();
-        console.log(`🙂 -> file: s3.js:44 -> s3File:`, s3File);
-        // return s3File
-        return get(s3File, "Body", "").toString("utf-8").trim();
-    } catch (e) {
-        console.error("s3 get object error: ", e);
-        throw  e;
-    }
+  try {
+    const params = {
+      Bucket: bucket,
+      Key: key,
+      ResponseContentType: 'application/json',
+    };
+    console.log(`🙂 -> file: s3.js:42 -> params:`, params);
+    const s3File = await s3.getObject(params).promise();
+    console.log(`🙂 -> file: s3.js:44 -> s3File:`, s3File);
+    // return s3File
+    return get(s3File, 'Body', '').toString('utf-8').trim();
+  } catch (e) {
+    console.error('s3 get object error: ', e);
+    throw e;
+  }
 }
 
 /**
@@ -60,19 +60,19 @@ async function getObject(bucket, key) {
  * gzip format.
  */
 async function getGzipObject(bucket, key) {
-    try {
-        const params = {
-            Bucket: bucket,
-            Key: key,
-            ResponseContentType: "application/json",
-        };
+  try {
+    const params = {
+      Bucket: bucket,
+      Key: key,
+      ResponseContentType: 'application/json',
+    };
 
-        const s3File = await s3.getObject(params).promise();
-        return s3File.Body;
-    } catch (e) {
-        console.error("s3 get object error: ", e);
-        throw e;
-    }
+    const s3File = await s3.getObject(params).promise();
+    return s3File.Body;
+  } catch (e) {
+    console.error('s3 get object error: ', e);
+    throw e;
+  }
 }
 
 /**
@@ -83,13 +83,13 @@ async function getGzipObject(bucket, key) {
  * `listObjectsV2` method of the AWS SDK for JavaScript.
  */
 async function getListObjects(bucket) {
-    try {
-        const fileList = await s3.listObjectsV2({ Bucket: bucket }).promise();
-        return fileList.Contents;
-    } catch (e) {
-        console.error("s3 get list objects error: ", e);
-        throw e;
-    }
+  try {
+    const fileList = await s3.listObjectsV2({ Bucket: bucket }).promise();
+    return fileList.Contents;
+  } catch (e) {
+    console.error('s3 get list objects error: ', e);
+    throw e;
+  }
 }
 
 /**
@@ -102,44 +102,44 @@ async function getListObjects(bucket) {
  * where the source object will be moved to.
  */
 async function moveObject(bucket, source, destination) {
-    try {
-        const params = {
-            Bucket: bucket,
-            CopySource: source,
-            Key: destination,
-        };
-        let sourceSplit = source.split("/");
-        await s3.copyObject(params).promise();
-        await s3
-            .deleteObject({
-                Bucket: bucket,
-                Key: sourceSplit.slice(1, sourceSplit.length).join("/"),
-            })
-            .promise();
-    } catch (e) {
-        console.error("s3 move object error: ", e);
-        throw e;
-    }
+  try {
+    const params = {
+      Bucket: bucket,
+      CopySource: source,
+      Key: destination,
+    };
+    let sourceSplit = source.split('/');
+    await s3.copyObject(params).promise();
+    await s3
+      .deleteObject({
+        Bucket: bucket,
+        Key: sourceSplit.slice(1, sourceSplit.length).join('/'),
+      })
+      .promise();
+  } catch (e) {
+    console.error('s3 move object error: ', e);
+    throw e;
+  }
 }
 
 async function deleteObject(bucket, key) {
-    try {
-        const params = {
-            Bucket: bucket,
-            Key: key,
-        };
-        await s3.deleteObject(params).promise();
-    } catch (e) {
-        console.error("s3 delete object error: ", e);
-        throw e;
-    }
+  try {
+    const params = {
+      Bucket: bucket,
+      Key: key,
+    };
+    await s3.deleteObject(params).promise();
+  } catch (e) {
+    console.error('s3 delete object error: ', e);
+    throw e;
+  }
 }
 
 module.exports = {
-    putObject,
-    getObject,
-    getListObjects,
-    moveObject,
-    getGzipObject,
-    deleteObject,
+  putObject,
+  getObject,
+  getListObjects,
+  moveObject,
+  getGzipObject,
+  deleteObject,
 };
