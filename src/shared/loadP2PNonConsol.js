@@ -1,3 +1,4 @@
+'use strict';
 const AWS = require('aws-sdk');
 const {
   getLiftGate,
@@ -10,18 +11,18 @@ const {
   checkAddressByGoogleApi,
   checkIfShipmentHeaderOrderDatePass,
 } = require('./dataHelper');
-const momentTZ = require('moment-timezone');
-const moment = require('moment');
+const moment = require('moment-timezone');
 const { v4: uuidv4 } = require('uuid');
-const { queryWithPartitionKey, queryWithIndex, Put } = require('./dynamo');
+const { queryWithPartitionKey, queryWithIndex, Put: put } = require('./dynamo');
 const { snsPublishMessage } = require('./sns');
 const { get } = require('lodash');
+
 const ddb = new AWS.DynamoDB.DocumentClient({
   region: process.env.REGION,
 });
 
 const {
-  SHIPMENT_APAR_TABLE, //"T19262"
+  SHIPMENT_APAR_TABLE, // "T19262"
   SHIPMENT_HEADER_TABLE,
   SHIPMENT_DESC_TABLE,
   CONFIRMATION_COST,
@@ -33,7 +34,7 @@ const {
   INSTRUCTIONS_INDEX_KEY_NAME,
   IVIA_DDB,
   EQUIPMENT_TABLE,
-  IVIA_VENDOR_ID,
+  // IVIA_VENDOR_ID,
   IVIA_CARRIER_ID,
 } = process.env;
 // const IVIA_CARRIER_ID = "102"; //NOTE:- for stage IVIA need to change it later
@@ -41,7 +42,7 @@ const {
 const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
   console.info('load-P2P-Non-Consol');
 
-  //get the primary key and All table list
+  // get the primary key and All table list
   const { tableList, primaryKeyValue } = getTablesAndPrimaryKey(
     dynamoData.dynamoTableName,
     dynamoData
@@ -73,13 +74,13 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
     return {};
   }
 
-  //only used for liftgate
+  // only used for liftgate
   const shipmentAparCargo = dataSet.shipmentAparCargo;
 
   // pick data from shipment_desc based on consol no = 0
   const shipmentDesc = dataSet.shipmentDesc.filter((e) => e.ConsolNo === '0');
 
-  //fetch notes from Instructions table based on shipment_apar table  FK_OrderNo data
+  // fetch notes from Instructions table based on shipment_apar table  FK_OrderNo data
   // getting pickup type notes based on Type == "P"
   const pInsNotes = shipmentInstructions
     .filter((si) => si.Type.toUpperCase() === 'P' && si.FK_OrderNo === shipmentApar.FK_OrderNo)
@@ -95,15 +96,14 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
   /**
    * if confirmationCost don't have any data then pick data from shipper and consignee table
    */
-  let ptype, dtype;
-  ptype = {
+  const ptype = {
     ...shipper,
     PickupTimeRange: shipmentHeader?.[0]?.ReadyDateTimeRange ?? '',
     PickupDateTime: shipmentHeader?.[0]?.ReadyDateTime ?? '',
     ScheduledBy: shipmentHeader?.[0]?.ScheduledBy ?? '',
     PickupNote: pInsNotes,
   };
-  dtype = {
+  const dtype = {
     ...consignee,
     DeliveryTimeRange: shipmentHeader?.[0]?.ScheduledDateTimeRange ?? '',
     DeliveryDateTime: shipmentHeader?.[0]?.ScheduledDateTime ?? '',
@@ -115,8 +115,8 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
   console.info('ptype', ptype);
   console.info('dtype', dtype);
 
-  //get all the housebill from shipmentHeader table
-  const housebill_delimited = shipmentHeader.map((e) => e.Housebill);
+  // get all the housebill from shipmentHeader table
+  const housebillDelimited = shipmentHeader.map((e) => e.Housebill);
 
   /**
    * preparing cargo obj form table shipmentDesc based on shipmentAPAR.FK_OrderNo
@@ -124,25 +124,26 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
   const cargo = shipmentDesc
     .map((e) => {
       const checkIfZero =
-        parseInt(e?.Length != '' ? e?.Length : 0) +
-          parseInt(e?.Width != '' ? e?.Width : 0) +
-          parseInt(e?.Height != '' ? e?.Height : 0) ===
-        0
-          ? true
-          : false;
+        parseInt(e?.Length !== '' ? e?.Length : 0, 10) +
+          parseInt(e?.Width !== '' ? e?.Width : 0, 10) +
+          parseInt(e?.Height !== '' ? e?.Height : 0, 10) ===
+        0;
+      let packageType;
+      if (e.FK_PieceTypeId === 'BOX') packageType = 'BOX';
+      else if (e.FK_PieceTypeId === 'PLT') packageType = 'PAL';
+      else packageType = 'PIE';
       return {
-        packageType:
-          e.FK_PieceTypeId === 'BOX' ? 'BOX' : e.FK_PieceTypeId === 'PLT' ? 'PAL' : 'PIE',
+        packageType,
         quantity: e?.Pieces ?? 0,
-        length: checkIfZero ? 1 : parseInt(e?.Length),
-        width: checkIfZero ? 1 : parseInt(e?.Width),
-        height: checkIfZero ? 1 : parseInt(e?.Height),
-        weight: e?.Weight ? parseInt(e?.Weight) : 0,
+        length: checkIfZero ? 1 : parseInt(e?.Length, 10),
+        width: checkIfZero ? 1 : parseInt(e?.Width, 10),
+        height: checkIfZero ? 1 : parseInt(e?.Height, 10),
+        weight: e?.Weight ? parseInt(e?.Weight, 10) : 0,
         stackable: 'Y', // hardcode
         turnable: 'Y', // hardcode
       };
     })
-    .filter((e) => e.quantity != '' && e.quantity != 0 && e.quantity != '0');
+    .filter((e) => e.quantity !== '' && e.quantity !== 0 && e.quantity !== '0');
 
   /**
    * preparing pickup type stop obj from table ConfirmationCost based on shipmentAPAR.FK_OrderNo
@@ -156,7 +157,7 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
   const pStopTypeData = {
     stopType: 'P',
     stopNum: 0,
-    housebills: housebill_delimited,
+    housebills: housebillDelimited,
     address: {
       address1: ptype.ShipAddress1,
       address2: ptype.ShipAddress2,
@@ -166,16 +167,17 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
       zip: ptype.ShipZip,
     },
     companyName: ptype.ShipName,
-    cargo: cargo,
+    cargo,
     scheduledDate: '',
-    specialInstructions: (
-      getNotesP2Pconsols(ptype.PickupTimeRange, ptype.PickupDateTime, 'p') +
-      '\r\n' +
-      (ptype.ShipContact.length > 0 || ptype.ShipPhone.length > 0
-        ? 'Contact ' + ptype.ShipContact + ' ' + ptype.ShipPhone + '\r\n'
-        : '') +
-      ptype.PickupNote
-    ).slice(0, 200),
+    specialInstructions: `${getNotesP2Pconsols(
+      ptype.PickupTimeRange,
+      ptype.PickupDateTime,
+      'p'
+    )}\r\n${
+      ptype.ShipContact.length > 0 || ptype.ShipPhone.length > 0
+        ? `Contact ${ptype.ShipContact} ${ptype.ShipPhone}\r\n`
+        : ''
+    }${ptype.PickupNote}`.slice(0, 200),
     cutoffDate: '',
   };
 
@@ -184,7 +186,7 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
   pStopTypeData.scheduledDate = await getGMTDiff(ptype.PickupDateTime, ptypeAddressData);
 
   if (ptype.PickupTimeRange) {
-    if (ptype.PickupTimeRange.slice(11) == '00:00:00.000') {
+    if (ptype.PickupTimeRange.slice(11) === '00:00:00.000') {
       pStopTypeData.cutoffDate = null;
     } else {
       pStopTypeData.cutoffDate = await getGMTDiff(ptype.PickupTimeRange, ptypeAddressData);
@@ -203,21 +205,19 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
    * specialInstructions:- check getNotesP2Pconsols() function and added DeliveryNote
    */
   let delNotes = '';
-  if (dtype.ScheduledBy == 'T') {
-    delNotes =
-      'Deliver between ' +
-      moment(dtype.DeliveryDateTime).format('HH:mm') +
-      ' and ' +
-      moment(dtype.DeliveryTimeRange).format('HH:mm');
-  } else if (dtype.ScheduledBy == 'B') {
-    delNotes = 'Deliver by ' + moment(dtype.DeliveryDateTime).format('HH:mm');
+  if (dtype.ScheduledBy === 'T') {
+    delNotes = `Deliver between ${moment(dtype.DeliveryDateTime).format('HH:mm')} and ${moment(
+      dtype.DeliveryTimeRange
+    ).format('HH:mm')}`;
+  } else if (dtype.ScheduledBy === 'B') {
+    delNotes = `Deliver by ${moment(dtype.DeliveryDateTime).format('HH:mm')}`;
   } else {
-    delNotes = 'Deliver at ' + moment(dtype.DeliveryDateTime).format('HH:mm');
+    delNotes = `Deliver at ${moment(dtype.DeliveryDateTime).format('HH:mm')}`;
   }
   const dStopTypeData = {
     stopType: 'D',
     stopNum: 1,
-    housebills: housebill_delimited,
+    housebills: housebillDelimited,
     address: {
       address1: dtype.ConAddress1,
       address2: dtype.ConAddress2,
@@ -228,14 +228,11 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
     },
     companyName: dtype.ConName,
     scheduledDate: '',
-    specialInstructions: (
-      delNotes +
-      '\r\n' +
-      (dtype.ConContact.length > 0 || dtype.ConPhone.length > 0
-        ? 'Contact ' + dtype.ConContact + ' ' + dtype.ConPhone + '\r\n'
-        : '') +
-      dtype.DeliveryNote
-    ).slice(0, 200),
+    specialInstructions: `${delNotes}\r\n${
+      dtype.ConContact.length > 0 || dtype.ConPhone.length > 0
+        ? `Contact ${dtype.ConContact} ${dtype.ConPhone}\r\n`
+        : ''
+    }${dtype.DeliveryNote}`.slice(0, 200),
     cutoffDate: '',
   };
 
@@ -244,7 +241,7 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
   dStopTypeData.scheduledDate = await getGMTDiff(dtype.DeliveryDateTime, dtypeAddressData);
 
   if (dtype.DeliveryTimeRange) {
-    if (dtype.DeliveryTimeRange.slice(11) == '00:00:00.000') {
+    if (dtype.DeliveryTimeRange.slice(11) === '00:00:00.000') {
       dStopTypeData.cutoffDate = null;
     } else {
       dStopTypeData.cutoffDate = await getGMTDiff(dtype.DeliveryTimeRange, dtypeAddressData);
@@ -261,19 +258,22 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
   const total = dataSet.shipmentApar[0].Total;
 
   const instructionNoteArray = shipmentInstructions.filter((esh) => esh.Type === 'S');
-  const instructionNote = '\r\n' + get(instructionNoteArray[0], 'Note', '');
+  // const instructionNote = `\r\n${get(instructionNoteArray[0], 'Note', '')}`;
 
-  const notesValue =
-    get(equipment, 'Description', '') + '\r\n' + get(instructionNoteArray[0], 'Note', '');
+  const notesValue = `${get(equipment, 'Description', '')}\r\n${get(
+    instructionNoteArray[0],
+    'Note',
+    ''
+  )}`;
   console.info('notes', notesValue);
 
-  //IVIA payload
+  // IVIA payload
   const iviaPayload = {
     carrierId: IVIA_CARRIER_ID, // IVIA_CARRIER_ID = dev 1000025 stage = 102
     refNums: {
-      refNum1: housebill_delimited[0] ?? '', // tbl_shipmentHeader.pk_orderNo as hwb/ tbl_confirmationCost.consolNo(if it is a consol)
-      refNum2: customer?.CustName?.slice(0, 19) ?? '', //customee name
-      refNum3: get(shipmentHeader[0], 'HandlingStation', ''), //HandlingStation
+      refNum1: housebillDelimited[0] ?? '', // tbl_shipmentHeader.pk_orderNo as hwb/ tbl_confirmationCost.consolNo(if it is a consol)
+      refNum2: customer?.CustName?.slice(0, 19) ?? '', // customee name
+      refNum3: get(shipmentHeader[0], 'HandlingStation', ''), // HandlingStation
     },
     shipmentDetails: {
       stops: [pStopTypeData, dStopTypeData],
@@ -295,15 +295,16 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
     shipmentApar
   );
   if (!check) {
-    //save to dynamo DB
+    // save to dynamo DB
     let houseBillList = [];
     iviaPayload.shipmentDetails.stops
       .filter((e) => e.stopType === 'P')
       .map((e) => {
         houseBillList = [...houseBillList, ...e.housebills];
+        return e;
       });
 
-    //preparing obj for dynamoDB omni-ivia
+    // preparing obj for dynamoDB omni-ivia
     const iviaTableData = {
       id: uuidv4(),
       data: JSON.stringify(iviaPayload),
@@ -311,7 +312,7 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
       ConsolNo: shipmentAparData?.ConsolNo,
       FK_OrderNo: shipmentAparData?.FK_OrderNo,
       payloadType: 'P2PNonConsol',
-      InsertedTimeStamp: momentTZ.tz('America/Chicago').format('YYYY:MM:DD HH:mm:ss').toString(),
+      InsertedTimeStamp: moment.tz('America/Chicago').format('YYYY:MM:DD HH:mm:ss').toString(),
       status: isError ? getStatus().FAILED : getStatus().IN_PROGRESS,
       errorMsg: isError ? JSON.stringify(errorMsg) : '',
       errorReason: isError ? 'validation error' : '',
@@ -336,10 +337,11 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
       TableName: IVIA_DDB,
       Item: iviaTableData,
     };
-    await Put(params);
+    await put(params);
   } else {
     console.info('Already sent to IVIA or validation error');
   }
+  return null;
 };
 
 /**
@@ -352,13 +354,14 @@ const loadP2PNonConsol = async (dynamoData, shipmentAparData) => {
  *  3> errorMsg: "" if isErroris true then this variable will contain the validation error msg
  */
 function validateAndCheckIfDataSentToIvia(payload, shipmentApar) {
-  return new Promise(async (resolve, reject) => {
-    //validate and get the errorMsg if any validation error happens
-    let errorMsg = validatePayload(payload);
+  // eslint-disable-next-line no-async-promise-executor
+  return new Promise(async (resolve) => {
+    // validate and get the errorMsg if any validation error happens
+    const errorMsg = validatePayload(payload);
     console.info('errorMsg', errorMsg);
 
     try {
-      //fetch from ivia table and check if data processed or not
+      // fetch from ivia table and check if data processed or not
       const params = {
         TableName: IVIA_DDB,
         IndexName: 'omni-ivia-ConsolNo-FK_OrderNo-index',
@@ -372,24 +375,24 @@ function validateAndCheckIfDataSentToIvia(payload, shipmentApar) {
       console.info('data:ivia', data);
 
       if (data.Items.length > 0) {
-        //check if payload is processed or or in progress
+        // check if payload is processed or or in progress
         const latestData = data.Items.filter(
           (e) => e.status === getStatus().SUCCESS || e.status === getStatus().IN_PROGRESS
         );
         if (latestData.length > 0) {
           resolve({ check: true, errorMsg: '', isError: false });
         } else {
-          //check if the latest failed payload is same with upcomming payload or not.
+          // check if the latest failed payload is same with upcomming payload or not.
           let errorObj = data.Items.filter((e) => e.status === getStatus().FAILED);
-          errorObj = errorObj.sort(function (x, y) {
+          errorObj = errorObj.sort((x, y) => {
             return x.InsertedTimeStamp < y.InsertedTimeStamp ? 1 : -1;
           })[0];
 
-          //checking if the latest table payload is same with prepared payload
-          if (errorObj.hasOwnProperty('data') && errorObj.data != JSON.stringify(payload)) {
-            //check for if we have validation error
-            if (errorMsg != '') {
-              resolve({ check: false, errorMsg: errorMsg, isError: true });
+          // checking if the latest table payload is same with prepared payload
+          if (get(errorObj, 'data', null) && errorObj.data !== JSON.stringify(payload)) {
+            // check for if we have validation error
+            if (errorMsg !== '') {
+              resolve({ check: false, errorMsg, isError: true });
             } else {
               resolve({ check: false, errorMsg: '', isError: false });
             }
@@ -397,12 +400,10 @@ function validateAndCheckIfDataSentToIvia(payload, shipmentApar) {
             resolve({ check: true, errorMsg: '', isError: false });
           }
         }
+      } else if (errorMsg !== '') {
+        resolve({ check: false, errorMsg, isError: true });
       } else {
-        if (errorMsg != '') {
-          resolve({ check: false, errorMsg: errorMsg, isError: true });
-        } else {
-          resolve({ check: false, errorMsg: '', isError: false });
-        }
+        resolve({ check: false, errorMsg: '', isError: false });
       }
     } catch (error) {
       console.error('dynamoError:', error);
@@ -443,7 +444,7 @@ function getTablesAndPrimaryKey(tableName, dynamoData) {
         SK: 'FK_OrderNo',
         sortName: 'confirmationCost',
         indexKeyColumnName: 'FK_OrderNo',
-        indexKeyName: CONFIRMATION_COST_INDEX_KEY_NAME, //omni-wt-confirmation-cost-orderNo-index-{stage}
+        indexKeyName: CONFIRMATION_COST_INDEX_KEY_NAME, // omni-wt-confirmation-cost-orderNo-index-{stage}
         type: 'INDEX',
       },
       [CONSIGNEE_TABLE]: {
@@ -491,34 +492,35 @@ async function fetchDataFromTables(tableList, primaryKeyValue) {
       Object.keys(tableList).map(async (e) => {
         const tableName = e;
         const ele = tableList[tableName];
-        let data = [];
+        let data1 = [];
 
         if (ele.type === 'INDEX') {
-          data = await queryWithIndex(tableName, ele.indexKeyName, {
+          data1 = await queryWithIndex(tableName, ele.indexKeyName, {
             [ele.indexKeyColumnName]: primaryKeyValue,
           });
         } else {
-          data = await queryWithPartitionKey(tableName, {
+          data1 = await queryWithPartitionKey(tableName, {
             [ele.PK]: primaryKeyValue,
           });
         }
 
-        return { [ele.sortName]: data.Items };
+        return { [ele.sortName]: data1.Items };
       })
     );
     const newObj = {};
     data.map((e) => {
       const objKey = Object.keys(e)[0];
       newObj[objKey] = e[objKey];
+      return null;
     });
 
     /**
      * shipmentInstructions
      */
     let shipmentInstructions = [];
-    const FK_OrderNoListForIns = [...new Set(newObj.shipmentApar.map((e) => e.FK_OrderNo))];
-    for (let index = 0; index < FK_OrderNoListForIns.length; index++) {
-      const element = FK_OrderNoListForIns[index];
+    const fkOrderNoListForIns = [...new Set(newObj.shipmentApar.map((e) => e.FK_OrderNo))];
+    for (let index = 0; index < fkOrderNoListForIns.length; index++) {
+      const element = fkOrderNoListForIns[index];
 
       const iparams = {
         TableName: INSTRUCTIONS_TABLE,
@@ -528,7 +530,7 @@ async function fetchDataFromTables(tableList, primaryKeyValue) {
           ':FK_OrderNo': element.toString(),
         },
       };
-      let ins = await ddb.query(iparams).promise();
+      const ins = await ddb.query(iparams).promise();
       shipmentInstructions = [...shipmentInstructions, ...ins.Items];
     }
     newObj.shipmentInstructions = shipmentInstructions;
@@ -536,20 +538,20 @@ async function fetchDataFromTables(tableList, primaryKeyValue) {
     /**
      * Fetch shipment apar for liftgate based on shipmentDesc.FK_OrderNo
      */
-    const FK_OrderNoList = [...new Set(newObj.shipmentDesc.map((e) => e.FK_OrderNo))];
+    const fkOrderNoList = [...new Set(newObj.shipmentDesc.map((e) => e.FK_OrderNo))];
 
     let shipmentAparCargo = [];
-    for (let index = 0; index < FK_OrderNoList.length; index++) {
-      const FK_OrderNo = FK_OrderNoList[index];
+    for (let index = 0; index < fkOrderNoList.length; index++) {
+      const fkOrderNo = fkOrderNoList[index];
       const sapcParams = {
         TableName: SHIPMENT_APAR_TABLE,
         KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
         ExpressionAttributeValues: {
-          ':FK_OrderNo': FK_OrderNo.toString(),
+          ':FK_OrderNo': fkOrderNo.toString(),
         },
       };
 
-      let sac = await ddb.query(sapcParams).promise();
+      const sac = await ddb.query(sapcParams).promise();
       shipmentAparCargo = [...shipmentAparCargo, ...sac.Items];
     }
     newObj.shipmentAparCargo = shipmentAparCargo;
@@ -558,7 +560,7 @@ async function fetchDataFromTables(tableList, primaryKeyValue) {
      * EQUIPMENT_TABLE
      */
     let equipment = [];
-    if (newObj.shipmentHeader.length > 0 && newObj.shipmentHeader[0].FK_EquipmentCode != '') {
+    if (newObj.shipmentHeader.length > 0 && newObj.shipmentHeader[0].FK_EquipmentCode !== '') {
       const equipmentParam = {
         TableName: EQUIPMENT_TABLE,
         KeyConditionExpression: 'PK_EquipmentCode = :PK_EquipmentCode',
@@ -576,7 +578,7 @@ async function fetchDataFromTables(tableList, primaryKeyValue) {
      * CUSTOMER_TABLE
      */
     let customer = [];
-    if (newObj.shipmentHeader.length > 0 && newObj.shipmentHeader[0].BillNo != '') {
+    if (newObj.shipmentHeader.length > 0 && newObj.shipmentHeader[0].BillNo !== '') {
       const customerParam = {
         TableName: CUSTOMER_TABLE,
         KeyConditionExpression: 'PK_CustNo = :PK_CustNo',
@@ -594,6 +596,7 @@ async function fetchDataFromTables(tableList, primaryKeyValue) {
   } catch (error) {
     console.error('error:fetchDataFromTables', error);
   }
+  return null;
 }
 
 module.exports = { loadP2PNonConsol };

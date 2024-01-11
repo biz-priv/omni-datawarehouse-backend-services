@@ -1,8 +1,7 @@
 .gitignore
 src/pod_doc_upload/*
 src/shipment_header_table_stream_processor/index.js
-src/shipment_detail_collector.index.js
-src/shared/amazonPODHelperFiles
+src/shared/amazonPODHelperFiles/*
 src/shared/dynamo.js
 src/shared/sns.js
 src/shared/s3.js

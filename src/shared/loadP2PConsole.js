@@ -1,3 +1,4 @@
+'use strict';
 const AWS = require('aws-sdk');
 const {
   getLiftGate,
@@ -14,13 +15,14 @@ const momentTZ = require('moment-timezone');
 const { v4: uuidv4 } = require('uuid');
 const { snsPublishMessage } = require('./sns');
 const { get } = require('lodash');
-const { Put } = require('./dynamo');
+const { Put: put } = require('./dynamo');
+
 const ddb = new AWS.DynamoDB.DocumentClient({
   region: process.env.REGION,
 });
 
 const {
-  SHIPMENT_APAR_TABLE, //"T19262"
+  SHIPMENT_APAR_TABLE, // "T19262"
   SHIPMENT_HEADER_TABLE,
   SHIPMENT_DESC_TABLE,
   CONSOL_STOP_HEADERS,
@@ -37,7 +39,7 @@ const {
   STAGE,
 } = process.env;
 // const IVIA_CARRIER_ID = "102"; //NOTE:- for stage IVIA need to change it later
-const globalConsolIndex = 'omni-ivia-ConsolNo-index-' + STAGE;
+const globalConsolIndex = `omni-ivia-ConsolNo-index-${STAGE}`;
 
 const loadP2PConsole = async (dynamoData, shipmentAparData) => {
   console.info('load-P2P-Console');
@@ -56,7 +58,7 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
   const confirmationCost = dataSet.confirmationCost.length > 0 ? dataSet.confirmationCost[0] : {};
   const shipmentHeader = dataSet.shipmentHeader;
   const shipmentDesc = dataSet.shipmentDesc;
-  const shipmentInstructions = dataSet.shipmentInstructions;
+  // const shipmentInstructions = dataSet.shipmentInstructions;
   const equipment = dataSet.equipment.length > 0 ? dataSet.equipment[0] : {};
   const customer = get(dataSet, 'customer[0]', {});
 
@@ -69,11 +71,11 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
     return {};
   }
 
-  //only used for liftgate
+  // only used for liftgate
   const shipmentAparCargo = dataSet.shipmentAparCargo;
 
-  //get all the housebill from shipmentHeader table
-  const housebill_delimited = shipmentHeader.map((e) => e.Housebill);
+  // get all the housebill from shipmentHeader table
+  const housebillDelimited = shipmentHeader.map((e) => e.Housebill);
 
   /**
    * preparing cargo obj form table shipmentDesc based on shipmentAPAR.FK_OrderNo
@@ -81,39 +83,38 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
   const cargo = shipmentDesc
     .map((e) => {
       const checkIfZero =
-        parseInt(e?.Length != '' ? e?.Length : 0) +
-          parseInt(e?.Width != '' ? e?.Width : 0) +
-          parseInt(e?.Height != '' ? e?.Height : 0) ===
-        0
-          ? true
-          : false;
+        parseInt(e?.Length !== '' ? e?.Length : 0, 10) +
+          parseInt(e?.Width !== '' ? e?.Width : 0, 10) +
+          parseInt(e?.Height !== '' ? e?.Height : 0, 10) ===
+        0;
+      let packageType;
+      if(e.FK_PieceTypeId === 'BOX') packageType = 'BOX'; else if(e.FK_PieceTypeId === 'PLT') packageType = 'PAL'; else packageType = 'PIE';
       return {
-        packageType:
-          e.FK_PieceTypeId === 'BOX' ? 'BOX' : e.FK_PieceTypeId === 'PLT' ? 'PAL' : 'PIE',
+        packageType,
         quantity: e?.Pieces ?? '',
-        length: checkIfZero ? 1 : parseInt(e?.Length),
-        width: checkIfZero ? 1 : parseInt(e?.Width),
-        height: checkIfZero ? 1 : parseInt(e?.Height),
-        weight: e?.Weight ? parseInt(e?.Weight) : '',
+        length: checkIfZero ? 1 : parseInt(e?.Length, 10),
+        width: checkIfZero ? 1 : parseInt(e?.Width, 10),
+        height: checkIfZero ? 1 : parseInt(e?.Height, 10),
+        weight: e?.Weight ? parseInt(e?.Weight, 10) : '',
         stackable: 'Y', // hardcode
         turnable: 'Y', // hardcode
       };
     })
-    .filter((e) => e.quantity != '' && e.quantity != 0 && e.quantity != '0');
-  const FK_OrderNoListForIns = [...new Set(shipmentApar.map((e) => e.FK_OrderNo))];
+    .filter((e) => e.quantity !== '' && e.quantity !== 0 && e.quantity !== '0');
+  // const fkOrderNoListForIns = [...new Set(shipmentApar.map((e) => e.FK_OrderNo))];
 
-  //fetch notes from Instructions table based on shipment_apar table FK_OrderNo data
+  // fetch notes from Instructions table based on shipment_apar table FK_OrderNo data
   // getting pickup type notes based on Type == "P"
-  const pInsNotes = shipmentInstructions
-    .filter((si) => si.Type.toUpperCase() === 'P' && FK_OrderNoListForIns.includes(si.FK_OrderNo))
-    .map((ei) => ei.Note)
-    .join(' ');
+  // const pInsNotes = shipmentInstructions
+  //   .filter((si) => si.Type.toUpperCase() === 'P' && fkOrderNoListForIns.includes(si.FK_OrderNo))
+  //   .map((ei) => ei.Note)
+  //   .join(' ');
 
   // getting delivery type notes based on Type == "D"
-  const dInsNotes = shipmentInstructions
-    .filter((si) => si.Type.toUpperCase() === 'D' && FK_OrderNoListForIns.includes(si.FK_OrderNo))
-    .map((ei) => ei.Note)
-    .join(' ');
+  // const dInsNotes = shipmentInstructions
+  //   .filter((si) => si.Type.toUpperCase() === 'D' && fkOrderNoListForIns.includes(si.FK_OrderNo))
+  //   .map((ei) => ei.Note)
+  //   .join(' ');
 
   /**
    * preparing pickup type stope obj from table ConfirmationCost
@@ -122,7 +123,7 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
   const pStopTypeData = {
     stopType: 'P',
     stopNum: 0,
-    housebills: housebill_delimited,
+    housebills: housebillDelimited,
     address: {
       address1: confirmationCost?.ShipAddress1 ?? '',
       address2: confirmationCost?.ShipAddress2 ?? '',
@@ -132,18 +133,18 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
       zip: confirmationCost?.ShipZip ?? '',
     },
     companyName: confirmationCost?.ShipName ?? '',
-    cargo: cargo,
+    cargo,
     scheduledDate: '',
     specialInstructions: (
-      getNotesP2Pconsols(
+      `${getNotesP2Pconsols(
         confirmationCost?.PickupTimeRange ?? '',
         confirmationCost?.PickupDateTime ?? '',
         'p'
-      ) +
-      '\r\n' +
-      (confirmationCost?.ShipContact.length > 0 || confirmationCost?.ShipPhone.length > 0
-        ? 'Contact ' + confirmationCost?.ShipContact + ' ' + confirmationCost?.ShipPhone + '\r\n'
-        : '')
+      ) 
+      }\r\n${ 
+      confirmationCost?.ShipContact.length > 0 || confirmationCost?.ShipPhone.length > 0
+        ? `Contact ${  confirmationCost?.ShipContact  } ${  confirmationCost?.ShipPhone  }\r\n`
+        : ''}`
     ).slice(0, 200),
     cutoffDate: '',
   };
@@ -157,7 +158,7 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
 
   const pickupcutoffTimeRange = get(confirmationCost, 'PickupTimeRange', '');
   if (pickupcutoffTimeRange) {
-    if (pickupcutoffTimeRange.slice(11) != '00:00:00.000') {
+    if (pickupcutoffTimeRange.slice(11) !== '00:00:00.000') {
       pStopTypeData.cutoffDate = await getGMTDiff(pickupcutoffTimeRange, ptypeAddressData);
     } else {
       pStopTypeData.cutoffDate = null;
@@ -172,7 +173,7 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
   const dStopTypeData = {
     stopType: 'D',
     stopNum: 1,
-    housebills: housebill_delimited,
+    housebills: housebillDelimited,
     address: {
       address1: confirmationCost?.ConAddress1 ?? '',
       address2: confirmationCost?.ConAddress2 ?? '',
@@ -184,16 +185,16 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
     companyName: confirmationCost?.ConName ?? '',
     scheduledDate: '',
     specialInstructions: (
-      getNotesP2Pconsols(
+      `${getNotesP2Pconsols(
         confirmationCost?.DeliveryTimeRange,
         confirmationCost?.DeliveryDateTime,
         'd'
-      ) +
-      '\r\n' +
-      (confirmationCost?.ConContact.length > 0 || confirmationCost?.ConPhone.length > 0
-        ? 'Contact ' + confirmationCost?.ConContact + ' ' + confirmationCost?.ConPhone + '\r\n'
-        : '') +
-      (confirmationCost?.DeliveryNote ?? '')
+      ) 
+      }\r\n${ 
+      confirmationCost?.ConContact.length > 0 || confirmationCost?.ConPhone.length > 0
+        ? `Contact ${  confirmationCost?.ConContact  } ${  confirmationCost?.ConPhone  }\r\n`
+        : '' 
+      }${confirmationCost?.DeliveryNote ?? ''}`
     ).slice(0, 200),
     cutoffDate: '',
   };
@@ -206,7 +207,7 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
 
   const deliverycutoffTimeRange = get(confirmationCost, 'DeliveryTimeRange', '');
   if (deliverycutoffTimeRange) {
-    if (deliverycutoffTimeRange.slice(11) != '00:00:00.000') {
+    if (deliverycutoffTimeRange.slice(11) !== '00:00:00.000') {
       dStopTypeData.cutoffDate = await getGMTDiff(deliverycutoffTimeRange, dtypeAddressData);
     } else {
       dStopTypeData.cutoffDate = null;
@@ -217,13 +218,13 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
 
   const total = shipmentApar[0].Total;
 
-  //IVIA payload
+  // IVIA payload
   const iviaPayload = {
-    carrierId: IVIA_CARRIER_ID, //IVIA_CARRIER_ID = dev 1000025 stage = 102
+    carrierId: IVIA_CARRIER_ID, // IVIA_CARRIER_ID = dev 1000025 stage = 102
     refNums: {
-      refNum1: CONSOL_NO, //shipmentApar.ConsolNo
+      refNum1: CONSOL_NO, // shipmentApar.ConsolNo
       refNum2: customer?.CustName?.slice(0, 19) ?? '', // ignore
-      refNum3: get(shipmentHeader[0], 'HandlingStation', ''), //HandlingStation
+      refNum3: get(shipmentHeader[0], 'HandlingStation', ''), // HandlingStation
     },
     shipmentDetails: {
       stops: [pStopTypeData, dStopTypeData],
@@ -245,15 +246,16 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
     CONSOL_NO
   );
   if (!check) {
-    //save to dynamo DB
+    // save to dynamo DB
     let houseBillList = [];
     iviaPayload.shipmentDetails.stops
       .filter((e) => e.stopType === 'P')
       .map((e) => {
         houseBillList = [...houseBillList, ...e.housebills];
+        return e
       });
 
-    //preparing obj for dynamoDB omni-ivia
+    // preparing obj for dynamoDB omni-ivia
     const iviaTableData = {
       id: uuidv4(),
       data: JSON.stringify(iviaPayload),
@@ -288,8 +290,9 @@ const loadP2PConsole = async (dynamoData, shipmentAparData) => {
       TableName: IVIA_DDB,
       Item: iviaTableData,
     };
-    await Put(params);
+    await put(params);
   }
+  return false;
 };
 
 /**
@@ -322,10 +325,10 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     shipmentApar = shipmentApar.Items;
 
     shipmentApar = shipmentApar.filter((e) => ['HS', 'TL'].includes(e.FK_ServiceId));
-    let confirmationCost = [],
-      shipmentDesc = [],
-      shipmentHeader = [],
-      shipmentInstructions = [];
+    let confirmationCost = [];
+      let shipmentDesc = [];
+      let shipmentHeader = [];
+      let shipmentInstructions = [];
     let consolStopHeaders = [];
     let consolStopItems = [];
     for (let index = 0; index < shipmentApar.length; index++) {
@@ -343,7 +346,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
           ':FK_SeqNo': element.SeqNo.toString(),
         },
       };
-      let cc = await ddb.query(ccparams).promise();
+      const cc = await ddb.query(ccparams).promise();
       confirmationCost = [...confirmationCost, ...cc.Items];
 
       /**
@@ -357,7 +360,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
             ':PK_OrderNo': element.FK_OrderNo.toString(),
           },
         };
-        let sh = await ddb.query(shparams).promise();
+        const sh = await ddb.query(shparams).promise();
         shipmentHeader = [...shipmentHeader, ...sh.Items];
       }
 
@@ -371,7 +374,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
           ':FK_OrderNo': element.FK_OrderNo.toString(),
         },
       };
-      let sd = await ddb.query(sdparams).promise();
+      const sd = await ddb.query(sdparams).promise();
       shipmentDesc = [...shipmentDesc, ...sd.Items];
 
       /**
@@ -385,7 +388,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
           ':FK_OrderNo': element.FK_OrderNo.toString(),
         },
       };
-      let ins = await ddb.query(iparams).promise();
+      const ins = await ddb.query(iparams).promise();
       shipmentInstructions = [...shipmentInstructions, ...ins.Items];
 
       /**
@@ -399,15 +402,15 @@ async function fetchDataFromTablesList(CONSOL_NO) {
           ':FK_OrderNo': element.FK_OrderNo.toString(),
         },
       };
-      let cst = await ddb.query(cstparams).promise();
+      const cst = await ddb.query(cstparams).promise();
       consolStopItems = [...consolStopItems, ...cst.Items];
 
       /**
        * consolStopHeader
        */
 
-      for (let index = 0; index < consolStopItems.length; index++) {
-        const csitem = consolStopItems[index];
+      for (let index1 = 0; index1 < consolStopItems.length; index1++) {
+        const csitem = consolStopItems[index1];
         const cshparams = {
           TableName: CONSOL_STOP_HEADERS,
           KeyConditionExpression: 'PK_ConsolStopId = :PK_ConsolStopId',
@@ -417,7 +420,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
             ':ConsolNo': CONSOL_NO.toString(),
           },
         };
-        let csh = await ddb.query(cshparams).promise();
+        const csh = await ddb.query(cshparams).promise();
         consolStopHeaders = [...consolStopHeaders, ...csh.Items];
       }
     }
@@ -425,20 +428,20 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     /**
      * Fetch shipment apar for liftgate based on shipmentDesc.FK_OrderNo
      */
-    const FK_OrderNoList = [...new Set(shipmentDesc.map((e) => e.FK_OrderNo))];
+    const fkOrderNoList = [...new Set(shipmentDesc.map((e) => e.FK_OrderNo))];
 
     let shipmentAparCargo = [];
-    for (let index = 0; index < FK_OrderNoList.length; index++) {
-      const FK_OrderNo = FK_OrderNoList[index];
+    for (let index = 0; index < fkOrderNoList.length; index++) {
+      const fkOrderNo = fkOrderNoList[index];
       const sapcParams = {
         TableName: SHIPMENT_APAR_TABLE,
         KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
         ExpressionAttributeValues: {
-          ':FK_OrderNo': FK_OrderNo.toString(),
+          ':FK_OrderNo': fkOrderNo.toString(),
         },
       };
 
-      let sac = await ddb.query(sapcParams).promise();
+      const sac = await ddb.query(sapcParams).promise();
       shipmentAparCargo = [...shipmentAparCargo, ...sac.Items];
     }
 
@@ -462,12 +465,12 @@ async function fetchDataFromTablesList(CONSOL_NO) {
 
     let equipment = [];
     if (shAparForEQData.length > 0 && shAparForEQData[0].FK_EquipmentCode) {
-      const FK_EquipmentCode = shAparForEQData[0].FK_EquipmentCode;
+      const fkEquipmentCode = shAparForEQData[0].FK_EquipmentCode;
       const equipmentParam = {
         TableName: EQUIPMENT_TABLE,
         KeyConditionExpression: 'PK_EquipmentCode = :PK_EquipmentCode',
         ExpressionAttributeValues: {
-          ':PK_EquipmentCode': FK_EquipmentCode.toString(),
+          ':PK_EquipmentCode': fkEquipmentCode.toString(),
         },
       };
 
@@ -479,7 +482,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
      * CUSTOMER_TABLE
      */
     let customer = [];
-    if (shipmentHeader.length > 0 && shipmentHeader[0].BillNo != '') {
+    if (shipmentHeader.length > 0 && shipmentHeader[0].BillNo !== '') {
       const customerParam = {
         TableName: CUSTOMER_TABLE,
         KeyConditionExpression: 'PK_CustNo = :PK_CustNo',
@@ -519,12 +522,13 @@ async function fetchDataFromTablesList(CONSOL_NO) {
  *  3> errorMsg: "" if isErroris true then this variable will contain the validation error msg
  */
 function validateAndCheckIfDataSentToIvia(payload, ConsolNo) {
-  return new Promise(async (resolve, reject) => {
-    let errorMsg = validatePayload(payload);
+  // eslint-disable-next-line no-async-promise-executor
+  return new Promise(async (resolve) => {
+    const errorMsg = validatePayload(payload);
     console.info('errorMsg', errorMsg);
 
     try {
-      //fetch from ivia table and check if data processed or not
+      // fetch from ivia table and check if data processed or not
       const params = {
         TableName: IVIA_DDB,
         IndexName: 'omni-ivia-ConsolNo-FK_OrderNo-index',
@@ -537,24 +541,24 @@ function validateAndCheckIfDataSentToIvia(payload, ConsolNo) {
       console.info('data:ivia', data);
 
       if (data.Items.length > 0) {
-        //check if payload is processed or or in progress
+        // check if payload is processed or or in progress
         const latestData = data.Items.filter(
           (e) => e.status === getStatus().SUCCESS || e.status === getStatus().IN_PROGRESS
         );
         if (latestData.length > 0) {
           resolve({ check: true, errorMsg: '', isError: false });
         } else {
-          //check if the latest failed payload is same with upcomming payload or not.
+          // check if the latest failed payload is same with upcomming payload or not.
           let errorObj = data.Items.filter((e) => e.status === getStatus().FAILED);
-          errorObj = errorObj.sort(function (x, y) {
+          errorObj = errorObj.sort((x, y) => {
             return x.InsertedTimeStamp < y.InsertedTimeStamp ? 1 : -1;
           })[0];
 
-          //checking if the latest table payload is same with prepared payload
-          if (errorObj.hasOwnProperty('data') && errorObj.data != JSON.stringify(payload)) {
-            //check for if we have validation error
-            if (errorMsg != '') {
-              resolve({ check: false, errorMsg: errorMsg, isError: true });
+          // checking if the latest table payload is same with prepared payload
+          if (get(errorObj, 'data', null) && errorObj.data !== JSON.stringify(payload)) {
+            // check for if we have validation error
+            if (errorMsg !== '') {
+              resolve({ check: false, errorMsg, isError: true });
             } else {
               resolve({ check: false, errorMsg: '', isError: false });
             }
@@ -562,13 +566,11 @@ function validateAndCheckIfDataSentToIvia(payload, ConsolNo) {
             resolve({ check: true, errorMsg: '', isError: false });
           }
         }
-      } else {
-        if (errorMsg != '') {
-          resolve({ check: false, errorMsg: errorMsg, isError: true });
+      } else if (errorMsg !== '') {
+          resolve({ check: false, errorMsg, isError: true });
         } else {
           resolve({ check: false, errorMsg: '', isError: false });
         }
-      }
     } catch (error) {
       console.error('dynamoError:', error);
       resolve({ check: false, errorMsg: '', isError: false });

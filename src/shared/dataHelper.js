@@ -1,3 +1,4 @@
+'use strict';
 const AWS = require('aws-sdk');
 
 /**
@@ -10,7 +11,7 @@ function prepareBatchFailureObj(data) {
   const batchItemFailures = data.map((e) => ({
     itemIdentifier: e.messageId,
   }));
-  console.log('batchItemFailures', batchItemFailures);
+  console.info('batchItemFailures', batchItemFailures);
   return { batchItemFailures };
 }
 
@@ -23,23 +24,22 @@ function getLatestObjByTimeStamp(data) {
   if (data.length > 1) {
     return data.sort((a, b) => {
       let atime = a.InsertedTimeStamp.split(' ');
-      atime = atime[0].split(':').join('-') + ' ' + atime[1];
+      atime = `${atime[0].split(':').join('-')} ${atime[1]}`;
 
       let btime = b.InsertedTimeStamp.split(' ');
-      btime = btime[0].split(':').join('-') + ' ' + btime[1];
+      btime = `${btime[0].split(':').join('-')} ${btime[1]}`;
 
       return new Date(btime) - new Date(atime);
     })[0];
   } else if (data.length === 1) {
     return data[0];
-  } else {
-    return {};
   }
+  return {};
 }
 
 /**
  * Fetch shipmentApar data for liftgate based on shipmentDesc.FK_OrderNo list
- * for shipmentDesc data, logic is same as function getHazardous() comments
+ * for shipmentDesc data, infoic is same as function getHazardous() comments
  *
  * if shipmentApar.chargecode have any of this codes ["LIFT", "LIFTD", "LIFTP", "TRLPJ"] then it returns Y else N
  * @param {*} param
@@ -110,7 +110,7 @@ function getHazardous(params) {
 }
 
 /**
- * for shipmentDesc data, logic is same as function getHazardous() comments
+ * for shipmentDesc data, infoic is same as function getHazardous() comments
  *
  * unNum is a number with length 4 and it value should be 0001 to 3600
  * we populate this field if we have "Hazmat" = "Y"
@@ -123,12 +123,12 @@ function getUnNum(param) {
     const data = param.filter((e) => e.Hazmat.toUpperCase() === 'Y');
     const obj = data.length > 0 ? data[0] : {};
     const unArr = obj.Description.split(' ');
-    console.log('unArr', unArr);
+    console.info('unArr', unArr);
 
     if (unArr[0].toUpperCase().includes('UN')) {
       let unNo = unArr[0];
       unNo = unNo.slice(2, 6);
-      if (unNo.length === 4 && parseInt(unNo) <= 4000) {
+      if (unNo.length === 4 && parseInt(unNo, 10) <= 4000) {
         return unNo;
       }
     }
@@ -176,22 +176,23 @@ function validatePayload(payload) {
                   quantity: Joi.number().integer().required(), // required
                   stackable: Joi.string().required(), // req [Y / N]
                   turnable: Joi.string().required(), // req [Y / N]
-                  weight: Joi.number().integer().required(), //req
+                  weight: Joi.number().integer().required(), // req
                   width: Joi.number().integer().required(),
                 }).required()
               ),
-              companyName: Joi.string().required(), //required
+              companyName: Joi.string().required(), // required
               scheduledDate: Joi.number().integer().positive().min(1).required().messages({
-                'number.base': `"scheduledDate" must be a valid DATE and greater than 2023-01-01`,
-                'number.positive': `"scheduledDate" must be a valid DATE and greater than 2023-01-01`,
-                'number.min': `"scheduledDate" must be a valid DATE and greater than 2023-01-01`,
-                'any.required': `"scheduledDate" must be a valid DATE and greater than 2023-01-01`,
+                'number.base': '"scheduledDate" must be a valid DATE and greater than 2023-01-01',
+                'number.positive':
+                  '"scheduledDate" must be a valid DATE and greater than 2023-01-01',
+                'number.min': '"scheduledDate" must be a valid DATE and greater than 2023-01-01',
+                'any.required': '"scheduledDate" must be a valid DATE and greater than 2023-01-01',
               }), // required
               specialInstructions: Joi.string().allow(''),
               cutoffDate: Joi.number().integer().min(0).allow(null).required().messages({
-                'number.base': `"cutoffDate" must be a valid DATE and greater than 2023-01-01`,
-                'number.min': `"cutoffDate" must be a valid DATE and greater than 2023-01-01`,
-                'any.required': `"cutoffDate" must be a valid DATE and greater than 2023-01-01`,
+                'number.base': '"cutoffDate" must be a valid DATE and greater than 2023-01-01',
+                'number.min': '"cutoffDate" must be a valid DATE and greater than 2023-01-01',
+                'any.required': '"cutoffDate" must be a valid DATE and greater than 2023-01-01',
               }),
             }).unknown()
           )
@@ -207,14 +208,13 @@ function validatePayload(payload) {
     }).required();
 
     const { error, value } = joySchema.validate(payload);
-    console.log('', error, value);
+    console.info('', error, value);
     if (error) {
-      return error.details.map((e, i) => ({ ['msg' + (i + 1)]: e.message }));
-    } else {
-      return '';
+      return error.details.map((e, i) => ({ [`msg${i + 1}`]: e.message }));
     }
+    return '';
   } catch (error) {
-    console.log('error:validatePayload', error);
+    console.info('error:validatePayload', error);
     return error;
   }
 }
@@ -247,7 +247,7 @@ function validatePayload(payload) {
 async function getGMTDiff(dateTime, address) {
   const { zip, country } = address;
   try {
-    const moment = require('moment');
+    const moment = require('moment-timezone');
     if (dateTime && dateTime.length > 1 && moment(dateTime).isValid() && dateTime > '2023-01-01') {
       const zipCode = country === 'US' && zip.includes('-') ? zip.split('-')[0] : zip;
 
@@ -255,24 +255,23 @@ async function getGMTDiff(dateTime, address) {
       let offset = await getTimeZoneOffsetData(dateArr[0], address);
       if (offset <= 0) {
         let number = (offset * -1).toString();
-        console.log('number', number);
-        number = '-' + (number.length > 1 ? number : '0' + number) + ':00';
+        console.info('number', number);
+        number = `-${number.length > 1 ? number : `0${number}`}:00`;
         offset = number;
       } else {
         let number = (offset * 1).toString();
-        number = '+' + (number.length > 1 ? number : '0' + number) + ':00';
+        number = `+${number.length > 1 ? number : `0${number}`}:00`;
         offset = number;
       }
-      const dateStr = dateArr[0] + 'T' + (dateArr[1].length > 0 ? dateArr[1] : '00:00:00') + offset;
+      const dateStr = `${dateArr[0]}T${dateArr[1].length > 0 ? dateArr[1] : '00:00:00'}${offset}`;
       // return momentTZ(dateStr).tz("Etc/GMT").diff("1970-01-01", "ms");
       const unixDateTime = moment(dateStr).diff('1970-01-01', 'ms');
-      console.log('dateTime, zipCode', dateTime, zipCode, dateStr, unixDateTime);
+      console.info('dateTime, zipCode', dateTime, zipCode, dateStr, unixDateTime);
       return unixDateTime;
-    } else {
-      return null;
     }
+    return null;
   } catch (error) {
-    console.log('error', error);
+    console.info('error', error);
     return null;
   }
 }
@@ -284,9 +283,9 @@ async function getGMTDiff(dateTime, address) {
  * @returns
  */
 async function getGOffsetUTC(address, datetime) {
-  console.log('***getGOffsetUTC***');
+  console.info('***getGOffsetUTC***');
   const axios = require('axios');
-  const moment = require('moment');
+  const moment = require('moment-timezone');
   const fullAddress = [
     address.address1,
     address.address2,
@@ -303,26 +302,26 @@ async function getGOffsetUTC(address, datetime) {
     )}&key=${apiKey}`;
     const gLatLongRes = await axios.get(gLatLong);
     if (gLatLongRes.data.status !== 'OK') {
-      throw new Error(`Unable to geocode`);
+      throw new Error('Unable to geocode');
     }
     const lat = gLatLongRes.data.results[0].geometry.location.lat;
     const lng = gLatLongRes.data.results[0].geometry.location.lng;
-    console.log('gLatLongRes', lat, lng);
+    console.info('gLatLongRes', lat, lng);
 
     // const timestamp = moment(datetime).diff("1970-01-01", "s");
     const timestamp = moment(datetime).unix();
-    console.log('timestamp', timestamp);
+    console.info('timestamp', timestamp);
 
     const gOffset = `https://maps.googleapis.com/maps/api/timezone/json?location=${lat}%2C${lng}&timestamp=${timestamp}&key=${apiKey}`;
-    console.log('gOffset', gOffset);
+    console.info('gOffset', gOffset);
     const gOffsetRes = await axios.get(gOffset);
     if (gOffsetRes.data.status !== 'OK') {
-      throw new Error(`Unable to get timezone`);
+      throw new Error('Unable to get timezone');
     }
-    console.log('gOffsetRes', gOffsetRes.data);
-    return parseInt((gOffsetRes.data.rawOffset + gOffsetRes.data.dstOffset) / 3600);
+    console.info('gOffsetRes', gOffsetRes.data);
+    return parseInt((gOffsetRes.data.rawOffset + gOffsetRes.data.dstOffset) / 3600, 10);
   } catch (error) {
-    console.log('getGOffsetUTC:error', error);
+    console.info('getGOffsetUTC:error', error);
     return '';
   }
 }
@@ -331,13 +330,13 @@ async function getGOffsetUTC(address, datetime) {
  * SELECT HoursAway - iif((select top 1 state from tbl_ZipCodes where zip='10012')='AZ',6,iif(datepart(week, '2023-11-05') between 11 and 44,5,6)) FROM tbl_TimeZoneMaster where PK_TimeZoneCode=(SELECT FK_TimeZoneCode FROM tbl_TimeZoneZipCR where zipcode='10012')
  * get the timezone offset for zipcode
  *
- * 1> fetch data from ZIP_CODES table based on zip_code and based on the logic if state is AZ then set offset value = 6
+ * 1> fetch data from ZIP_CODES table based on zip_code and based on the infoic if state is AZ then set offset value = 6
  * else get the week count of the date and check if the weekCount is between 11 - 44 then set offset value = 5 else 6
  *
  * 2>fetch data from TIMEZONE_ZIP_CR based on zip_code take the 1st record and search on
  * TIMEZONE_MASTER table based on TIMEZONE_ZIP_CR.FK_TimeZoneCode
  *
- * 3> based on query logic final value is  TIMEZONE_MASTER.HoursAway column value  - offset value
+ * 3> based on query infoic final value is  TIMEZONE_MASTER.HoursAway column value  - offset value
  * @param {*} params
  * @returns
  */
@@ -345,78 +344,77 @@ async function getTimeZoneOffsetData(dateTime, address) {
   const { zip, country } = address;
 
   try {
-    if (country != 'US') {
+    if (country !== 'US') {
       return await getGOffsetUTC(address, dateTime);
-    } else {
-      const ddb = new AWS.DynamoDB.DocumentClient({
-        region: process.env.REGION,
-      });
-
-      let offSet = 0;
-      /**
-       * ZIP_CODES
-       * PK:- PK_SeqNo SK:- FK_AirportId
-       * index Zip-index  Zip
-       */
-
-      const paramZipCode = {
-        TableName: process.env.ZIP_CODES,
-        IndexName: 'Zip-index',
-        KeyConditionExpression: 'Zip = :Zip',
-        ExpressionAttributeValues: {
-          ':Zip': zip.toString(),
-        },
-      };
-      let zipCodeData = await ddb.query(paramZipCode).promise();
-      zipCodeData = zipCodeData.Items.length > 0 ? zipCodeData.Items[0] : {};
-      console.log('zipCodeData', zipCodeData);
-      const state = zipCodeData.State;
-      if (state === 'AZ') {
-        offSet = 6;
-      } else {
-        const cuWeek = getWeekCount(dateTime);
-        if (cuWeek >= 11 && cuWeek <= 44) {
-          offSet = 5;
-        } else {
-          offSet = 6;
-        }
-      }
-
-      /**
-       * TIMEZONE_ZIP_CR
-       * PK:- ZipCode SK:- FK_TimeZoneCode
-       */
-      const paramtimezoneCr = {
-        TableName: process.env.TIMEZONE_ZIP_CR,
-        KeyConditionExpression: 'ZipCode = :ZipCode',
-        ExpressionAttributeValues: {
-          ':ZipCode': zip.toString(),
-        },
-      };
-      let timezoneCrData = await ddb.query(paramtimezoneCr).promise();
-      timezoneCrData = timezoneCrData.Items.length > 0 ? timezoneCrData.Items[0] : {};
-      console.log('timezoneCrData', timezoneCrData);
-
-      /**
-       * TIMEZONE_MASTER
-       * PK:- PK_TimeZoneCode
-       */
-      const paramTimezoneMaster = {
-        TableName: process.env.TIMEZONE_MASTER,
-        KeyConditionExpression: 'PK_TimeZoneCode = :PK_TimeZoneCode',
-        ExpressionAttributeValues: {
-          ':PK_TimeZoneCode': timezoneCrData.FK_TimeZoneCode,
-        },
-      };
-      let timezoneMaster = await ddb.query(paramTimezoneMaster).promise();
-      timezoneMaster = timezoneMaster.Items.length > 0 ? timezoneMaster.Items[0] : {};
-      console.log('timezoneMaster', timezoneMaster);
-      offSet = parseInt(timezoneMaster.HoursAway) - offSet;
-      console.log('offSet', offSet);
-      return offSet;
     }
+    const ddb = new AWS.DynamoDB.DocumentClient({
+      region: process.env.REGION,
+    });
+
+    let offSet = 0;
+    /**
+     * ZIP_CODES
+     * PK:- PK_SeqNo SK:- FK_AirportId
+     * index Zip-index  Zip
+     */
+
+    const paramZipCode = {
+      TableName: process.env.ZIP_CODES,
+      IndexName: 'Zip-index',
+      KeyConditionExpression: 'Zip = :Zip',
+      ExpressionAttributeValues: {
+        ':Zip': zip.toString(),
+      },
+    };
+    let zipCodeData = await ddb.query(paramZipCode).promise();
+    zipCodeData = zipCodeData.Items.length > 0 ? zipCodeData.Items[0] : {};
+    console.info('zipCodeData', zipCodeData);
+    const state = zipCodeData.State;
+    if (state === 'AZ') {
+      offSet = 6;
+    } else {
+      const cuWeek = getWeekCount(dateTime);
+      if (cuWeek >= 11 && cuWeek <= 44) {
+        offSet = 5;
+      } else {
+        offSet = 6;
+      }
+    }
+
+    /**
+     * TIMEZONE_ZIP_CR
+     * PK:- ZipCode SK:- FK_TimeZoneCode
+     */
+    const paramtimezoneCr = {
+      TableName: process.env.TIMEZONE_ZIP_CR,
+      KeyConditionExpression: 'ZipCode = :ZipCode',
+      ExpressionAttributeValues: {
+        ':ZipCode': zip.toString(),
+      },
+    };
+    let timezoneCrData = await ddb.query(paramtimezoneCr).promise();
+    timezoneCrData = timezoneCrData.Items.length > 0 ? timezoneCrData.Items[0] : {};
+    console.info('timezoneCrData', timezoneCrData);
+
+    /**
+     * TIMEZONE_MASTER
+     * PK:- PK_TimeZoneCode
+     */
+    const paramTimezoneMaster = {
+      TableName: process.env.TIMEZONE_MASTER,
+      KeyConditionExpression: 'PK_TimeZoneCode = :PK_TimeZoneCode',
+      ExpressionAttributeValues: {
+        ':PK_TimeZoneCode': timezoneCrData.FK_TimeZoneCode,
+      },
+    };
+    let timezoneMaster = await ddb.query(paramTimezoneMaster).promise();
+    timezoneMaster = timezoneMaster.Items.length > 0 ? timezoneMaster.Items[0] : {};
+    console.info('timezoneMaster', timezoneMaster);
+    offSet = parseInt(timezoneMaster.HoursAway, 10) - offSet;
+    console.info('offSet', offSet);
+    return offSet;
   } catch (error) {
-    console.log('error', error);
+    console.info('error', error);
     return await getGOffsetUTC(address, dateTime);
   }
 }
@@ -427,10 +425,10 @@ async function getTimeZoneOffsetData(dateTime, address) {
  * @returns
  */
 function setDelay(sec) {
-  console.log('delay started');
-  return new Promise(async (resolve, reject) => {
+  console.info('delay started');
+  return new Promise((resolve) => {
     setTimeout(() => {
-      console.log('delay end');
+      console.info('delay end');
       resolve(true);
     }, sec * 1000);
   });
@@ -456,26 +454,26 @@ function getStatus() {
  */
 function getWeekCount(date) {
   Date.prototype.getWeek = function (dowOffset) {
-    dowOffset = typeof dowOffset == 'number' ? dowOffset : 0; //default dowOffset to zero
-    var newYear = new Date(this.getFullYear(), 0, 1);
-    var day = newYear.getDay() - dowOffset; //the day of week the year begins on
+    dowOffset = typeof dowOffset === 'number' ? dowOffset : 0; // default dowOffset to zero
+    const newYear = new Date(this.getFullYear(), 0, 1);
+    let day = newYear.getDay() - dowOffset; // the day of week the year begins on
     day = day >= 0 ? day : day + 7;
-    var daynum =
+    const daynum =
       Math.floor(
         (this.getTime() -
           newYear.getTime() -
           (this.getTimezoneOffset() - newYear.getTimezoneOffset()) * 60000) /
           86400000
       ) + 1;
-    var weeknum;
-    //if the year starts before the middle of a week
+    let weeknum;
+    // if the year starts before the middle of a week
     if (day < 4) {
       weeknum = Math.floor((daynum + day - 1) / 7) + 1;
       if (weeknum > 52) {
-        let nYear = new Date(this.getFullYear() + 1, 0, 1);
+        const nYear = new Date(this.getFullYear() + 1, 0, 1);
         let nday = nYear.getDay() - dowOffset;
         nday = nday >= 0 ? nday : nday + 7;
-        /*if the next year starts before the middle of
+        /* if the next year starts before the middle of
                   the week, it is week #1 of that year*/
         weeknum = nday < 4 ? 1 : 53;
       }
@@ -506,36 +504,32 @@ function getWeekCount(date) {
  */
 function getNotesP2Pconsols(range, datetime, type) {
   try {
-    const moment = require('moment');
+    const moment = require('moment-timezone');
     const pickupOrDelRangeTime = range.split(' ')[1];
     const pickupOrDelDateTime = datetime.split(' ')[1];
     let msg = '';
-    //pickup type logic
+    // pickup type infoic
     if (type === 'p') {
       if (pickupOrDelRangeTime > pickupOrDelDateTime) {
-        msg =
-          'Pickup between ' +
-          moment(datetime).format('HH:mm') +
-          ' and ' +
-          moment(range).format('HH:mm');
+        msg = `Pickup between ${moment(datetime).format('HH:mm')} and ${moment(range).format(
+          'HH:mm'
+        )}`;
       } else {
-        msg = 'Pickup at ' + moment(datetime).format('HH:mm');
-      }
-    } else {
-      //delivery type logic
-      if (pickupOrDelRangeTime > pickupOrDelDateTime) {
-        msg =
-          'Deliver between ' +
-          moment(datetime).format('HH:mm') +
-          ' and ' +
-          moment(range).format('HH:mm');
-      } else {
-        msg = 'Deliver at ' + moment(datetime).format('HH:mm');
+        msg = `Pickup at ${moment(datetime).format('HH:mm')}`;
       }
     }
+    // delivery type infoic
+    else if (pickupOrDelRangeTime > pickupOrDelDateTime) {
+      msg = `Deliver between ${moment(datetime).format('HH:mm')} and ${moment(range).format(
+        'HH:mm'
+      )}`;
+    } else {
+      msg = `Deliver at ${moment(datetime).format('HH:mm')}`;
+    }
+
     return msg;
   } catch (error) {
-    console.log('getNotesP2Pconsols:error', error);
+    console.info('getNotesP2Pconsols:error', error);
     return '';
   }
 }
@@ -562,18 +556,18 @@ function sortObjByStopNo(data, key) {
  */
 async function checkAddressByGoogleApi(mainAddressData) {
   const axios = require('axios');
-  let city = '',
-    state = '',
-    country = '';
-  let addressData = mainAddressData;
+  let city = '';
+  let state = '';
+  let country = '';
+  const addressData = mainAddressData;
 
   try {
     if (
-      addressData.address1 != '' &&
-      addressData.zip != '' &&
-      (addressData.city == '' || addressData.state == '' || addressData.country == '')
+      addressData.address1 !== '' &&
+      addressData.zip !== '' &&
+      (addressData.city === '' || addressData.state === '' || addressData.country === '')
     ) {
-      console.log('**checkAddressByGoogleApi****');
+      console.info('**checkAddressByGoogleApi****');
       const address = [
         addressData.address1,
         addressData.address2,
@@ -590,12 +584,12 @@ async function checkAddressByGoogleApi(mainAddressData) {
           address
         )}&key=${apiKey}`
       );
-      console.log('geocode1.data', geocode1.data);
+      console.info('geocode1.data', geocode1.data);
       if (geocode1.data.status !== 'OK') {
         throw new Error(`Unable to geocode ${address}`);
       }
       const { results } = geocode1.data;
-      console.log('geocode1', JSON.stringify(results[0]));
+      console.info('geocode1', JSON.stringify(results[0]));
 
       for (let index = 0; index < results[0].address_components.length; index++) {
         const element = results[0].address_components[index];
@@ -609,7 +603,7 @@ async function checkAddressByGoogleApi(mainAddressData) {
           country = element.short_name;
         }
       }
-      console.log({ city, state, country });
+      console.info({ city, state, country });
 
       return {
         address1: addressData.address1,
@@ -619,11 +613,10 @@ async function checkAddressByGoogleApi(mainAddressData) {
         state: addressData.state.length > 0 ? addressData.state : state,
         zip: addressData.zip,
       };
-    } else {
-      return addressData;
     }
+    return addressData;
   } catch (error) {
-    console.log('checkAddressByGoogleApi:error', error);
+    console.info('checkAddressByGoogleApi:error', error);
     return addressData;
   }
 }
@@ -636,7 +629,7 @@ function checkIfShipmentHeaderOrderDatePass(data) {
   try {
     // if empty then ignor:-
     if (data.length === 0) {
-      console.log('shipment-header table have no data, so event Ignored');
+      console.info('shipment-header table have no data, so event Ignored');
       return false;
     }
     let check = true;
@@ -648,7 +641,7 @@ function checkIfShipmentHeaderOrderDatePass(data) {
     }
     return check;
   } catch (error) {
-    console.log('error:checkIfShipmentHeaderOrderDatePass', error);
+    console.info('error:checkIfShipmentHeaderOrderDatePass', error);
     return false;
   }
 }
