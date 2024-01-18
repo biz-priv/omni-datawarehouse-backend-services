@@ -1,5 +1,5 @@
 function:
-  name: omni-204-sqs-to-dynamo-db-${self:provider.stage}
+  name: omni-204-payload-status-${self:provider.stage}
   handler: src/204payload-status/index.handler
   runtime: nodejs18.x
   memorySize: 1024
