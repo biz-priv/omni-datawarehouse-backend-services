@@ -3,6 +3,7 @@ const AWS = require('aws-sdk');
 const { prepareBatchFailureObj } = require('../shared/dataHelper');
 const _ = require('lodash');
 const { nonConsolPayload } = require('./payloads');
+const { queryDynamoDB, getParamsByTableName } = require('./helper');
 
 module.exports.handler = async (event) => {
   console.info(
@@ -15,6 +16,28 @@ module.exports.handler = async (event) => {
     const promises = dynamoEventRecords.map(async (record) => {
       try {
         const shipmentAparData = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
+
+        const tables = [
+          'omni-wt-rt-confirmation-cost-dev',
+          'omni-wt-rt-shipment-header-dev',
+          'omni-wt-rt-references-dev',
+          'omni-wt-rt-shipper-dev',
+          'omni-wt-rt-consignee-dev',
+          'omni-wt-rt-shipment-apar-dev',
+          'omni-wt-rt-shipment-desc-dev',
+          'omni-wt-rt-timezone-master-dev',
+          'omni-wt-rt-customers-dev',
+        ];
+
+        const tablesResponse = await Promise.all(
+          tables.map(async (table) => {
+            const param = _.get(getParamsByTableName, table, false);
+            console.info('🙂 -> file: index.js:35 -> tables.map -> param:', param);
+            const response = await queryDynamoDB(param);
+            return _.get(response, 'Items', false);
+          })
+        );
+        console.info('🙂 -> file: index.js:40 -> promises -> tablesResponse:', tablesResponse);
 
         if (_.get(shipmentAparData, 'ConsolNo') === '0') {
           await nonConsolPayload(shipmentAparData);
