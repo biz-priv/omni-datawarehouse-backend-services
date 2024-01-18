@@ -1,40 +1,47 @@
 function:
-  handler: src/shipment_detail_collector/index.handler
-  name: ${self:service}-consignee-stream-${self:provider.stage}
-  description: consignee stream to dynamoDB - ${self:provider.stage}
+  name: omni-204-sqs-to-dynamo-db-${self:provider.stage}
+  handler: src/204payload-status/index.handler
   runtime: nodejs18.x
+  memorySize: 1024
   timeout: 300
   layers:
-    - !Ref DWBackendLambdaLayer
-  memorySize: 512
-
+    - { Ref: DWBackendLambdaLayer }
   package:
-    patterns:
-      - "!**/*"
-      - "src/shipment_detail_collector/index.js"
-      - "src/shared/**"
+    include:
+      - 'src/204payload-status/**'
+      - 'src/shared/**'
+    exclude:
+      - '**/*'
+  environment:
+    SHIPMENT_APAR_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.tableName~true}
+    SHIPMENT_HEADER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.tableName~true}
+    CONSIGNEE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consignee/ddb.tableName~true}
+    SHIPPER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipper/ddb.tableName~true}
+    SHIPMENT_DESC_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-desc/ddb.tableName~true}
+    INSTRUCTIONS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.tableName~true}
+    CONFIRMATION_COST: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/confirmation-cost/ddb.tableName~true}
+    CONSOL_STOP_HEADERS: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-headers/ddb.tableName~true}
+    CONSOL_STOP_ITEMS: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-items/ddb.tableName~true}
+    EQUIPMENT_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/equipment/ddb.tableName~true}
+    CUSTOMER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customer/ddb.tableName~true}
+    CONFIRMATION_COST_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/confirmation-cost/ddb.orderNoIndex}
+    INSTRUCTIONS_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.orderNoIndex}
+    IVIA_DDB: ${ssm:/omni-ivia/${self:provider.stage}/ddb.tableName}
+    IVIA_CARRIER_ID: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/carrierId}
+    IVIA_VENDOR_ID: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/ivia/shipmentApar/filterVendorId~true} #"T19262" Need to be verify from will
+    TIMEZONE_MASTER: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/timezone-master/ddb.tableName~true}
+    TIMEZONE_ZIP_CR: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/timezone-zip-cr/ddb.tableName~true}
+    ZIP_CODES: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/zip-codes/ddb.tableName~true}
+    ADDRESS_MAPPING_G_API_KEY: ${ssm:/omni-ivia/${self:provider.stage}/google/api.Key~true}
+    AUTH: 'Basic YXBpdXNlcjpsdmxwYXBpdXNlcg=='
+    GET_LOC_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/locations/search'
+    CREATE_LOC_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/locations/create'
 
   events:
-    - stream: 
-        arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consignee/ddb.streamArn~true}
+    - stream:
+        arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.streamArn~true}
         batchSize: 5
         maximumRetryAttempts: 3
-  environment:
-    SHIPMENT_DETAILS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/shipmentDetails/table}
-    SHIPMENT_DETAILS_HOUSEBILL_INDEX: ${ssm:/omni-dw/${self:provider.stage}/shipmentDetails/houseBillKey/index}
-    SHIPMENT_DETAILS_FILENUMBER_INDEX: ${ssm:/omni-dw/${self:provider.stage}/shipmentDetails/FileNumber/index}
-    REGION: ${self:provider.region}
-    SHIPMENT_HEADER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.tableName~true}
-    SHIPPER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipper/ddb.tableName~true}
-    CONSIGNEE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consignee/ddb.tableName~true}
-    SHIPMENT_DESC_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-desc/ddb.tableName~true}
-    REFERENCE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.tableName~true}
-    SHIPMENT_MILESTONE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-milestone/ddb.tableName~true}
-    TRACKING_NOTES_TABLE_INDEXVALUE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.orderNoIndex}
-    TIMEZONE_MASTER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/timezone-master/ddb.tableName~true}
-    SERVICE_LEVEL_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/servicelevels/ddb.tableName}
-    MILESTONE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/milestone/ddb.tableName}
-    SHIPMENT_MILESTONE_DETAIL_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-milestone-detail/ddb.tableName}
-    TRACKING_NOTES_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.tableName~true}
-    P44_LOCATION_UPDATE_TABLE: ${ssm:/omni-p44/location-updates/${self:provider.stage}/source/ddb.table_name}
-    SHIPMENT_DETAILS_Collector_TABLE: ${ssm:/omni-dw/${self:provider.stage}/shipmentDetailsCollector/ddb.tableName}
+        bisectBatchOnFunctionError: true
+        filterPatterns:
+          - { dynamodb: { NewImage: { FK_VendorId: { S: ['LIVELOGI'] } } } }
