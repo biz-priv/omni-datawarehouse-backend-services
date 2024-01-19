@@ -324,7 +324,7 @@ async function fetchLocationId({ confirmationCostData, shipperData, consigneeDat
 
   // const shipperLocationId = 'SAFEHOT1';
   // const consigneeLocationId = 'SAFEATG1';
-  
+
   // Get location ID for shipper
   let shipperLocationId = await getLocationId(
     finalShipperData.ShipName,

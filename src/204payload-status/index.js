@@ -2,7 +2,7 @@
 const AWS = require('aws-sdk');
 const { prepareBatchFailureObj } = require('../shared/dataHelper');
 const _ = require('lodash');
-const { nonConsolPayload } = require('./payloads');
+// const { nonConsolPayload } = require('./payloads');
 const { queryDynamoDB, getParamsByTableName, fetchLocationId } = require('./helper');
 
 module.exports.handler = async (event) => {
@@ -80,21 +80,25 @@ module.exports.handler = async (event) => {
         }
 
         const { shipperLocationId, consigneeLocationId } = await fetchLocationId();
-        console.info('🙂 -> file: index.js:83 -> promises ->  shipperLocationId, consigneeLocationId:',  shipperLocationId, consigneeLocationId);
-        if(!shipperLocationId || !consigneeLocationId) {
+        console.info(
+          '🙂 -> file: index.js:83 -> promises ->  shipperLocationId, consigneeLocationId:',
+          shipperLocationId,
+          consigneeLocationId
+        );
+        if (!shipperLocationId || !consigneeLocationId) {
           console.error('Could fetch location id.');
           throw new Error('Could fetch location id.');
         }
         return;
-        if (_.get(shipmentAparData, 'ConsolNo') === '0') {
-          const customerName = _.get(customersData, 'Items[0].CustName');
-          await nonConsolPayload({
-            shipmentHeaderData,
-            shipmentDescData,
-            referencesData,
-            customerName,
-          });
-        }
+        // if (_.get(shipmentAparData, 'ConsolNo') === '0') {
+        //   const customerName = _.get(customersData, 'Items[0].CustName');
+        //   await nonConsolPayload({
+        //     shipmentHeaderData,
+        //     shipmentDescData,
+        //     referencesData,
+        //     customerName,
+        //   });
+        // }
         // else if (
         //   _.parseInt(_.get(shipmentAparData, 'ConsolNo', 0)) > 0 &&
         //   _.parseInt(_.get(shipmentAparData, 'SeqNo', 0)) < 9999
