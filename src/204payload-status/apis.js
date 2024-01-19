@@ -54,7 +54,7 @@ async function createLocation(data) {
     const responseData = _.get(response, 'data', {});
     console.info('🙂 -> file: apis.js:54 -> createLocation -> responseData:', responseData);
     // Return the created location data or perform additional processing as needed
-    return responseData;
+    return _.get(responseData, 'id', false);
   } catch (error) {
     console.error('🙂 -> file: apis.js:58 -> createLocation -> error:', error);
     throw error;

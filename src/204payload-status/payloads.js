@@ -2,7 +2,7 @@
 const _ = require('lodash');
 const { generateStop, formatTimestamp } = require('./helper');
 
-async function nonConsolPayload(
+async function nonConsolPayload({
   shipmentHeader,
   shipmentDesc,
   referencesData,
@@ -10,8 +10,8 @@ async function nonConsolPayload(
   consigneeLocationId,
   finalShipperData,
   finalConsigneeData,
-  customerName
-) {
+  customerName,
+}) {
   let hazmat = _.get(shipmentDesc, 'Hazmat', false);
   // Check if Hazmat is equal to 'Y'
   if (hazmat === 'Y') {

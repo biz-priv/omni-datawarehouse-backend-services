@@ -3,7 +3,7 @@ const AWS = require('aws-sdk');
 const { prepareBatchFailureObj } = require('../shared/dataHelper');
 const _ = require('lodash');
 const { nonConsolPayload } = require('./payloads');
-const { queryDynamoDB, getParamsByTableName } = require('./helper');
+const { queryDynamoDB, getParamsByTableName, fetchLocationId } = require('./helper');
 
 module.exports.handler = async (event) => {
   console.info(
@@ -23,24 +23,77 @@ module.exports.handler = async (event) => {
           'omni-wt-rt-references-dev',
           'omni-wt-rt-shipper-dev',
           'omni-wt-rt-consignee-dev',
-          'omni-wt-rt-shipment-apar-dev',
           'omni-wt-rt-shipment-desc-dev',
-          'omni-wt-rt-timezone-master-dev',
-          'omni-wt-rt-customers-dev',
+          // 'omni-wt-rt-timezone-master-dev',
+          // 'omni-wt-rt-customers-dev',
         ];
 
-        const tablesResponse = await Promise.all(
+        const [
+          confirmationCostData,
+          shipmentHeaderData,
+          referencesData,
+          shipperData,
+          consigneeData,
+          shipmentDescData,
+        ] = await Promise.all(
           tables.map(async (table) => {
-            const param = _.get(getParamsByTableName, table, false);
+            const param = getParamsByTableName(_.get(shipmentAparData, 'FK_OrderNo'), table);
             console.info('🙂 -> file: index.js:35 -> tables.map -> param:', param);
             const response = await queryDynamoDB(param);
-            return _.get(response, 'Items', false);
+            return _.get(response, 'Items.[0]', false);
           })
         );
-        console.info('🙂 -> file: index.js:40 -> promises -> tablesResponse:', tablesResponse);
 
+        const customersParams = getParamsByTableName(
+          '',
+          'omni-wt-rt-customers-dev',
+          '',
+          _.get(shipmentHeaderData, 'Items[0].BillNo', '')
+        );
+        const customersData = _.get(await queryDynamoDB(customersParams), 'Items.[0]', false);
+
+        console.info('🙂 -> file: index.js:54 -> promises -> customersData:', customersData);
+        console.info('🙂 -> file: index.js:38 -> promises -> shipmentDescData:', shipmentDescData);
+        console.info('🙂 -> file: index.js:73 -> promises -> consigneeData:', consigneeData);
+        console.info('🙂 -> file: index.js:73 -> promises -> shipperData:', shipperData);
+        console.info('🙂 -> file: index.js:73 -> promises -> referencesData:', referencesData);
+        console.info(
+          '🙂 -> file: index.js:73 -> promises -> shipmentHeaderData:',
+          shipmentHeaderData
+        );
+        console.info(
+          '🙂 -> file: index.js:73 -> promises -> confirmationCostData:',
+          confirmationCostData
+        );
+
+        if (
+          !customersData ||
+          !shipmentDescData ||
+          !consigneeData ||
+          !shipperData ||
+          !referencesData ||
+          !shipmentHeaderData ||
+          !confirmationCostData
+        ) {
+          console.error('All tables are not populated.');
+          throw new Error('All tables are not populated.');
+        }
+
+        const { shipperLocationId, consigneeLocationId } = await fetchLocationId();
+        console.info('🙂 -> file: index.js:83 -> promises ->  shipperLocationId, consigneeLocationId:',  shipperLocationId, consigneeLocationId);
+        if(!shipperLocationId || !consigneeLocationId) {
+          console.error('Could fetch location id.');
+          throw new Error('Could fetch location id.');
+        }
+        return;
         if (_.get(shipmentAparData, 'ConsolNo') === '0') {
-          await nonConsolPayload(shipmentAparData);
+          const customerName = _.get(customersData, 'Items[0].CustName');
+          await nonConsolPayload({
+            shipmentHeaderData,
+            shipmentDescData,
+            referencesData,
+            customerName,
+          });
         }
         // else if (
         //   _.parseInt(_.get(shipmentAparData, 'ConsolNo', 0)) > 0 &&

@@ -2,6 +2,7 @@
 const _ = require('lodash');
 const AWS = require('aws-sdk');
 const moment = require('moment-timezone');
+const { getLocationId, createLocation } = require('./apis');
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
   region: 'us-east-1',
@@ -195,7 +196,7 @@ async function generateStop(
   };
 }
 
-async function getParamsByTableName(orderNo, tableName, timezone, billno) {
+function getParamsByTableName(orderNo, tableName, timezone, billno) {
   switch (tableName) {
     case 'omni-wt-rt-confirmation-cost-dev':
       return {
@@ -291,7 +292,7 @@ async function getParamsByTableName(orderNo, tableName, timezone, billno) {
     //         },
     //     };
     default:
-      throw new Error(`Table '${tableName}' not found.`);
+      return false;
   }
 }
 
@@ -304,6 +305,78 @@ async function queryDynamoDB(params) {
     throw error;
   }
 }
+
+async function fetchLocationId({ confirmationCostData, shipperData, consigneeData }) {
+  // Use confirmationCostData if available, otherwise use data from other tables
+  let finalShipperData;
+  if (_.isEmpty(confirmationCostData)) {
+    finalShipperData = shipperData;
+  } else {
+    finalShipperData = confirmationCostData;
+  }
+
+  let finalConsigneeData;
+  if (_.isEmpty(confirmationCostData)) {
+    finalConsigneeData = consigneeData;
+  } else {
+    finalConsigneeData = confirmationCostData;
+  }
+
+  // const shipperLocationId = 'SAFEHOT1';
+  // const consigneeLocationId = 'SAFEATG1';
+  
+  // Get location ID for shipper
+  let shipperLocationId = await getLocationId(
+    finalShipperData.ShipName,
+    finalShipperData.ShipAddress1,
+    finalShipperData.ShipAddress2,
+    finalShipperData.ShipCity,
+    finalShipperData.FK_ShipState,
+    finalShipperData.ShipZip
+  );
+
+  // Get location ID for consignee
+  let consigneeLocationId = await getLocationId(
+    finalConsigneeData.ConName,
+    finalConsigneeData.ConAddress1,
+    finalConsigneeData.ConAddress2,
+    finalConsigneeData.ConCity,
+    finalConsigneeData.FK_ConState,
+    finalConsigneeData.ConZip
+  );
+
+  // Use the obtained location IDs to create locations if needed
+  if (!shipperLocationId) {
+    shipperLocationId = await createLocation({
+      __type: 'location',
+      company_id: 'TMS',
+      address1: finalShipperData.ShipAddress1,
+      address2: finalShipperData.ShipAddress2,
+      city_name: finalShipperData.ShipCity,
+      is_active: true,
+      name: finalShipperData.ShipName,
+      state: finalShipperData.FK_ShipState,
+      zip_code: finalShipperData.ShipZip,
+    });
+  }
+
+  if (!consigneeLocationId) {
+    consigneeLocationId = await createLocation({
+      __type: 'location',
+      company_id: 'TMS',
+      address1: finalConsigneeData.ConAddress1,
+      address2: finalConsigneeData.ConAddress2,
+      city_name: finalConsigneeData.ConCity,
+      is_active: true,
+      name: finalConsigneeData.ConName,
+      state: finalConsigneeData.FK_ConState,
+      zip_code: finalConsigneeData.ConZip,
+    });
+  }
+
+  return { shipperLocationId, consigneeLocationId };
+}
+
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
@@ -312,4 +385,5 @@ module.exports = {
   generateStop,
   getParamsByTableName,
   queryDynamoDB,
+  fetchLocationId,
 };
