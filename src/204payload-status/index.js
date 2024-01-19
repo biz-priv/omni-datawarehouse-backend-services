@@ -3,7 +3,12 @@ const AWS = require('aws-sdk');
 const { prepareBatchFailureObj } = require('../shared/dataHelper');
 const _ = require('lodash');
 const { nonConsolPayload } = require('./payloads');
-const { queryDynamoDB, getParamsByTableName, fetchLocationId } = require('./helper');
+const {
+  queryDynamoDB,
+  getParamsByTableName,
+  fetchLocationId,
+  getFinalShipperAndConsigneeData,
+} = require('./helper');
 
 module.exports.handler = async (event) => {
   console.info(
@@ -71,20 +76,11 @@ module.exports.handler = async (event) => {
           throw new Error('All tables are not populated.');
         }
 
-        // Use confirmationCostData if available, otherwise use data from other tables
-        let finalShipperData;
-        if (_.isEmpty(confirmationCostData)) {
-          finalShipperData = shipperData;
-        } else {
-          finalShipperData = confirmationCostData;
-        }
-
-        let finalConsigneeData;
-        if (_.isEmpty(confirmationCostData)) {
-          finalConsigneeData = consigneeData;
-        } else {
-          finalConsigneeData = confirmationCostData;
-        }
+        const { finalConsigneeData, finalShipperData } = getFinalShipperAndConsigneeData({
+          confirmationCostData,
+          consigneeData,
+          shipperData,
+        });
 
         const { shipperLocationId, consigneeLocationId } = await fetchLocationId({
           finalConsigneeData,
@@ -100,10 +96,9 @@ module.exports.handler = async (event) => {
           throw new Error('Could fetch location id.');
         }
         if (_.get(shipmentAparData, 'ConsolNo') === '0') {
-          const customerName = _.get(customersData, 'Items[0].CustName');
           const nonConsolPayloadData = await nonConsolPayload({
             referencesData,
-            customerName,
+            customersData,
             consigneeLocationId,
             finalConsigneeData,
             finalShipperData,
@@ -111,7 +106,10 @@ module.exports.handler = async (event) => {
             shipmentHeader: shipmentHeaderData,
             shipperLocationId,
           });
-          console.info('🙂 -> file: index.js:114 -> nonConsolPayloadData:', nonConsolPayloadData);
+          console.info(
+            '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
+            JSON.stringify(nonConsolPayloadData)
+          );
         }
         // else if (
         //   _.parseInt(_.get(shipmentAparData, 'ConsolNo', 0)) > 0 &&

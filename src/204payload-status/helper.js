@@ -362,6 +362,24 @@ async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
   return { shipperLocationId, consigneeLocationId };
 }
 
+function getFinalShipperAndConsigneeData({ confirmationCostData, shipperData, consigneeData }) {
+  // Use confirmationCostData if available, otherwise use data from other tables
+  let finalShipperData;
+  if (_.isEmpty(confirmationCostData)) {
+    finalShipperData = shipperData;
+  } else {
+    finalShipperData = confirmationCostData;
+  }
+
+  let finalConsigneeData;
+  if (_.isEmpty(confirmationCostData)) {
+    finalConsigneeData = consigneeData;
+  } else {
+    finalConsigneeData = confirmationCostData;
+  }
+  return { finalShipperData, finalConsigneeData };
+}
+
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
@@ -371,4 +389,5 @@ module.exports = {
   getParamsByTableName,
   queryDynamoDB,
   fetchLocationId,
+  getFinalShipperAndConsigneeData,
 };

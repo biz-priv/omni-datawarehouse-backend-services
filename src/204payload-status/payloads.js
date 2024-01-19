@@ -10,7 +10,7 @@ async function nonConsolPayload({
   consigneeLocationId,
   finalShipperData,
   finalConsigneeData,
-  customerName,
+  customersData,
 }) {
   let hazmat = _.get(shipmentDesc, 'Hazmat', false);
   // Check if Hazmat is equal to 'Y'
@@ -58,7 +58,7 @@ async function nonConsolPayload({
     status: 'A',
     swap: true,
     teams_required: false,
-    vessel: customerName,
+    vessel: _.get(customersData, 'CustName', ''),
     weight: _.get(shipmentDesc, 'Weight', 0),
     weight_um: 'LB',
     order_mode: 'T',
