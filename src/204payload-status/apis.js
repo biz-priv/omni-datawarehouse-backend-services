@@ -5,7 +5,9 @@ const _ = require('lodash');
 const { AUTH, GET_LOC_URL, CREATE_LOC_URL } = process.env;
 
 async function getLocationId(name, address1, address2, cityName, state, zipCode) {
-  const apiUrl = GET_LOC_URL;
+  const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${
+    address2 ?? ''
+  }&city_name=${cityName}&state=${state}&zip_code=${zipCode}`;
   const queryParams = {
     name,
     address1,

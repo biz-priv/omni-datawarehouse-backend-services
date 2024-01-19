@@ -43,29 +43,21 @@ module.exports.handler = async (event) => {
             return _.get(response, 'Items.[0]', false);
           })
         );
-
+        console.info('🙂 -> file: index.js:46 -> confirmationCostData:', confirmationCostData);
+        console.info('🙂 -> file: index.js:47 -> shipmentDescData:', shipmentDescData);
+        console.info('🙂 -> file: index.js:48 -> consigneeData:', consigneeData);
+        console.info('🙂 -> file: index.js:49 -> shipperData:', shipperData);
+        console.info('🙂 -> file: index.js:50 -> referencesData:', referencesData);
+        console.info('🙂 -> file: index.js:52 -> shipmentHeaderData:', shipmentHeaderData);
         const customersParams = getParamsByTableName(
           '',
           'omni-wt-rt-customers-dev',
           '',
-          _.get(shipmentHeaderData, 'Items[0].BillNo', '')
+          _.get(shipmentHeaderData, 'BillNo', '')
         );
+        console.info('🙂 -> file: index.js:61 -> customersParams:', customersParams);
         const customersData = _.get(await queryDynamoDB(customersParams), 'Items.[0]', false);
-
-        console.info('🙂 -> file: index.js:54 -> promises -> customersData:', customersData);
-        console.info('🙂 -> file: index.js:38 -> promises -> shipmentDescData:', shipmentDescData);
-        console.info('🙂 -> file: index.js:73 -> promises -> consigneeData:', consigneeData);
-        console.info('🙂 -> file: index.js:73 -> promises -> shipperData:', shipperData);
-        console.info('🙂 -> file: index.js:73 -> promises -> referencesData:', referencesData);
-        console.info(
-          '🙂 -> file: index.js:73 -> promises -> shipmentHeaderData:',
-          shipmentHeaderData
-        );
-        console.info(
-          '🙂 -> file: index.js:73 -> promises -> confirmationCostData:',
-          confirmationCostData
-        );
-
+        console.info('🙂 -> file: index.js:63 -> customersData:', customersData);
         if (
           !customersData ||
           !shipmentDescData ||
@@ -79,7 +71,11 @@ module.exports.handler = async (event) => {
           throw new Error('All tables are not populated.');
         }
 
-        const { shipperLocationId, consigneeLocationId } = await fetchLocationId();
+        const { shipperLocationId, consigneeLocationId } = await fetchLocationId({
+          confirmationCostData,
+          consigneeData,
+          shipperData,
+        });
         console.info(
           '🙂 -> file: index.js:83 -> promises ->  shipperLocationId, consigneeLocationId:',
           shipperLocationId,
