@@ -8,14 +8,6 @@ async function getLocationId(name, address1, address2, cityName, state, zipCode)
   const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${
     address2 ?? ''
   }&city_name=${cityName}&state=${state}&zip_code=${zipCode}`;
-  const queryParams = {
-    name,
-    address1,
-    address2,
-    cityName,
-    state,
-    zipCode,
-  };
 
   const headers = {
     Accept: 'application/json',
@@ -24,7 +16,7 @@ async function getLocationId(name, address1, address2, cityName, state, zipCode)
 
   try {
     const response = await axios.get(apiUrl, {
-      params: queryParams,
+      // params: queryParams,
       headers,
     });
 
@@ -32,7 +24,7 @@ async function getLocationId(name, address1, address2, cityName, state, zipCode)
     const responseData = _.get(response, 'data', {});
     console.info('🙂 -> file: apis.js:30 -> getLocationId -> responseData:', responseData);
     // Return the location ID or perform additional processing as needed
-    return _.get(responseData, 'id', false);
+    return _.get(responseData, '[0].id', false);
   } catch (error) {
     console.error('🙂 -> file: apis.js:34 -> getLocationId -> error:', error);
     return false;
