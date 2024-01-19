@@ -2,7 +2,7 @@
 const AWS = require('aws-sdk');
 const { prepareBatchFailureObj } = require('../shared/dataHelper');
 const _ = require('lodash');
-// const { nonConsolPayload } = require('./payloads');
+const { nonConsolPayload } = require('./payloads');
 const { queryDynamoDB, getParamsByTableName, fetchLocationId } = require('./helper');
 
 module.exports.handler = async (event) => {
@@ -71,10 +71,24 @@ module.exports.handler = async (event) => {
           throw new Error('All tables are not populated.');
         }
 
+        // Use confirmationCostData if available, otherwise use data from other tables
+        let finalShipperData;
+        if (_.isEmpty(confirmationCostData)) {
+          finalShipperData = shipperData;
+        } else {
+          finalShipperData = confirmationCostData;
+        }
+
+        let finalConsigneeData;
+        if (_.isEmpty(confirmationCostData)) {
+          finalConsigneeData = consigneeData;
+        } else {
+          finalConsigneeData = confirmationCostData;
+        }
+
         const { shipperLocationId, consigneeLocationId } = await fetchLocationId({
-          confirmationCostData,
-          consigneeData,
-          shipperData,
+          finalConsigneeData,
+          finalShipperData,
         });
         console.info(
           '🙂 -> file: index.js:83 -> promises ->  shipperLocationId, consigneeLocationId:',
@@ -85,16 +99,20 @@ module.exports.handler = async (event) => {
           console.error('Could fetch location id.');
           throw new Error('Could fetch location id.');
         }
-        return;
-        // if (_.get(shipmentAparData, 'ConsolNo') === '0') {
-        //   const customerName = _.get(customersData, 'Items[0].CustName');
-        //   await nonConsolPayload({
-        //     shipmentHeaderData,
-        //     shipmentDescData,
-        //     referencesData,
-        //     customerName,
-        //   });
-        // }
+        if (_.get(shipmentAparData, 'ConsolNo') === '0') {
+          const customerName = _.get(customersData, 'Items[0].CustName');
+          const nonConsolPayloadData = await nonConsolPayload({
+            referencesData,
+            customerName,
+            consigneeLocationId,
+            finalConsigneeData,
+            finalShipperData,
+            shipmentDesc: shipmentDescData,
+            shipmentHeader: shipmentHeaderData,
+            shipperLocationId,
+          });
+          console.info('🙂 -> file: index.js:114 -> nonConsolPayloadData:', nonConsolPayloadData);
+        }
         // else if (
         //   _.parseInt(_.get(shipmentAparData, 'ConsolNo', 0)) > 0 &&
         //   _.parseInt(_.get(shipmentAparData, 'SeqNo', 0)) < 9999

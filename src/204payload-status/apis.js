@@ -40,7 +40,7 @@ async function createLocation(data) {
   };
 
   try {
-    const response = await axios.post(apiUrl, data, {
+    const response = await axios.put(apiUrl, data, {
       headers,
     });
 
