@@ -159,7 +159,7 @@ async function generateStop(
     timeZone = deliveryTimeZone;
     state = _.get(stateData, 'FK_ConState', '');
   }
-  const timezoneParams = await getParamsByTableName(
+  const timezoneParams = getParamsByTableName(
     '5344583',
     'omni-wt-rt-timezone-master-dev',
     timeZone
@@ -248,6 +248,17 @@ function getParamsByTableName(orderNo, tableName, timezone, billno) {
         KeyConditionExpression: 'FK_OrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
+        },
+      };
+    case 'omni-wt-rt-shipment-apar-console':
+      return {
+        TableName: 'omni-wt-rt-shipment-apar-dev',
+        KeyConditionExpression: 'FK_OrderNo = :orderNo',
+        FilterExpression: 'Consolidation = :consolidation',
+        ProjectionExpression: 'ConsolNo',
+        ExpressionAttributeValues: {
+          ':orderNo': orderNo,
+          ':consolidation': 'N',
         },
       };
     case 'omni-wt-rt-shipment-desc-dev':
@@ -380,6 +391,11 @@ function getFinalShipperAndConsigneeData({ confirmationCostData, shipperData, co
   return { finalShipperData, finalConsigneeData };
 }
 
+async function fetchAparTableForConsole({ orderNo }) {
+  const aparParamsForConsole = getParamsByTableName(orderNo, 'omni-wt-rt-shipment-apar-console');
+  return _.get(await queryDynamoDB(aparParamsForConsole), 'Items', false);
+}
+
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
@@ -390,4 +406,5 @@ module.exports = {
   queryDynamoDB,
   fetchLocationId,
   getFinalShipperAndConsigneeData,
+  fetchAparTableForConsole,
 };

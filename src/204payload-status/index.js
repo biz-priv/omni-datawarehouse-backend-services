@@ -8,6 +8,7 @@ const {
   getParamsByTableName,
   fetchLocationId,
   getFinalShipperAndConsigneeData,
+  fetchAparTableForConsole,
 } = require('./helper');
 
 module.exports.handler = async (event) => {
@@ -95,22 +96,55 @@ module.exports.handler = async (event) => {
           console.error('Could fetch location id.');
           throw new Error('Could fetch location id.');
         }
-        if (_.get(shipmentAparData, 'ConsolNo') === '0') {
-          const nonConsolPayloadData = await nonConsolPayload({
-            referencesData,
-            customersData,
-            consigneeLocationId,
-            finalConsigneeData,
-            finalShipperData,
-            shipmentDesc: shipmentDescData,
-            shipmentHeader: shipmentHeaderData,
-            shipperLocationId,
-          });
-          console.info(
-            '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
-            JSON.stringify(nonConsolPayloadData)
-          );
-        }
+
+        // Non-Console
+        // if (
+        //   _.get(shipmentAparData, 'ConsolNo') === '0' &&
+        //   _.get(shipmentHeaderData, 'ShipQuote', false) &&
+        //   _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
+        // ) {
+        //   const nonConsolPayloadData = await nonConsolPayload({
+        //     referencesData,
+        //     customersData,
+        //     consigneeLocationId,
+        //     finalConsigneeData,
+        //     finalShipperData,
+        //     shipmentDesc: shipmentDescData,
+        //     shipmentHeader: shipmentHeaderData,
+        //     shipperLocationId,
+        //   });
+        //   console.info(
+        //     '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
+        //     JSON.stringify(nonConsolPayloadData)
+        //   );
+        //   return nonConsolPayloadData;
+        // }
+
+        // Console
+        const shipmentAparDataForConsole = await fetchAparTableForConsole({orderNo: _.get(shipmentAparData, '')})
+        console.info('🙂 -> file: index.js:121 -> shipmentAparDataForConsole:', shipmentAparDataForConsole);
+
+        // if (
+        //   Number(_.get(shipmentAparData, 'ConsolNo', 0)) > 0 &&
+        //   _.get(shipmentAparData, 'Consolidation') === 'Y' &&
+        //   _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
+        // ) {
+        //   const nonConsolPayloadData = await nonConsolPayload({
+        //     referencesData,
+        //     customersData,
+        //     consigneeLocationId,
+        //     finalConsigneeData,
+        //     finalShipperData,
+        //     shipmentDesc: shipmentDescData,
+        //     shipmentHeader: shipmentHeaderData,
+        //     shipperLocationId,
+        //   });
+        //   console.info(
+        //     '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
+        //     JSON.stringify(nonConsolPayloadData)
+        //   );
+        //   return nonConsolPayloadData;
+        // }
         // else if (
         //   _.parseInt(_.get(shipmentAparData, 'ConsolNo', 0)) > 0 &&
         //   _.parseInt(_.get(shipmentAparData, 'SeqNo', 0)) < 9999
