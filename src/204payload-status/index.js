@@ -2,7 +2,7 @@
 const AWS = require('aws-sdk');
 const { prepareBatchFailureObj } = require('../shared/dataHelper');
 const _ = require('lodash');
-const { nonConsolPayload } = require('./payloads');
+// const { nonConsolPayload } = require('./payloads');
 const {
   queryDynamoDB,
   getParamsByTableName,
@@ -121,8 +121,13 @@ module.exports.handler = async (event) => {
         // }
 
         // Console
-        const shipmentAparDataForConsole = await fetchAparTableForConsole({orderNo: _.get(shipmentAparData, '')})
-        console.info('🙂 -> file: index.js:121 -> shipmentAparDataForConsole:', shipmentAparDataForConsole);
+        const shipmentAparDataForConsole = await fetchAparTableForConsole({
+          orderNo: _.get(shipmentAparData, ''),
+        });
+        console.info(
+          '🙂 -> file: index.js:121 -> shipmentAparDataForConsole:',
+          shipmentAparDataForConsole
+        );
 
         // if (
         //   Number(_.get(shipmentAparData, 'ConsolNo', 0)) > 0 &&
