@@ -207,7 +207,7 @@ function getParamsByTableName(orderNo, tableName, timezone, billno) {
           ':orderNo': orderNo,
         },
       };
-    case 'omni-wt-rt-shipment-header-dev':
+    case 'omni-wt-rt-shipment-header-non-console':
       return {
         TableName: 'omni-wt-rt-shipment-header-dev',
         KeyConditionExpression: 'PK_OrderNo = :orderNo',
@@ -396,6 +396,50 @@ async function fetchAparTableForConsole({ orderNo }) {
   return _.get(await queryDynamoDB(aparParamsForConsole), 'Items', false);
 }
 
+async function fetchCommonTableData({ shipmentAparData }) {
+  const tables = [
+    'omni-wt-rt-confirmation-cost',
+    'omni-wt-rt-shipper-dev',
+    'omni-wt-rt-consignee-dev',
+  ];
+
+  const [confirmationCostData, shipperData, consigneeData] = await Promise.all(
+    tables.map(async (table) => {
+      const param = getParamsByTableName(_.get(shipmentAparData, 'FK_OrderNo'), table);
+      console.info('🙂 -> file: index.js:35 -> tables.map -> param:', param);
+      const response = await queryDynamoDB(param);
+      return _.get(response, 'Items.[0]', false);
+    })
+  );
+  return { confirmationCostData, shipperData, consigneeData };
+}
+
+async function fetchNonConsoleTableData({ shipmentAparData }) {
+  const tables = [
+    'omni-wt-rt-shipment-header-non-console',
+    'omni-wt-rt-references-dev',
+    'omni-wt-rt-shipment-desc-dev',
+  ];
+
+  const [shipmentHeaderData, referencesData, shipmentDescData] = await Promise.all(
+    tables.map(async (table) => {
+      const param = getParamsByTableName(_.get(shipmentAparData, 'FK_OrderNo'), table);
+      console.info('🙂 -> file: index.js:35 -> tables.map -> param:', param);
+      const response = await queryDynamoDB(param);
+      return _.get(response, 'Items.[0]', false);
+    })
+  );
+  const customersParams = getParamsByTableName(
+    '',
+    'omni-wt-rt-customers-dev',
+    '',
+    _.get(shipmentHeaderData, 'BillNo', '')
+  );
+  console.info('🙂 -> file: index.js:61 -> customersParams:', customersParams);
+  const customersData = _.get(await queryDynamoDB(customersParams), 'Items.[0]', false);
+  return { shipmentHeaderData, referencesData, shipmentDescData, customersData };
+}
+
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
@@ -407,4 +451,6 @@ module.exports = {
   fetchLocationId,
   getFinalShipperAndConsigneeData,
   fetchAparTableForConsole,
+  fetchCommonTableData,
+  fetchNonConsoleTableData,
 };

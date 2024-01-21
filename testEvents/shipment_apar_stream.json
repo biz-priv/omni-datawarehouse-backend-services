@@ -15,10 +15,10 @@
         },
         "NewImage": {
           "FK_OrderNo": {
-            "S": "5344583"
+            "S": "335739"
           },
           "SeqNo": {
-            "S": "1"
+            "S": "12"
           },
           "APARCode": {
             "S": "V"
@@ -27,31 +27,31 @@
             "S": ""
           },
           "APARType": {
-            "S": "MILES"
+            "S": ""
           },
           "ChargeCode": {
             "S": ""
           },
           "Complete": {
-            "S": "N"
+            "S": "Y"
           },
           "Consolidation": {
             "S": "N"
           },
           "ConsolNo": {
-            "S": "0"
+            "S": "26784"
           },
           "ConsolShipDateTime": {
             "S": "1900-01-01 00:00:00.000"
           },
           "Cost": {
-            "S": "1018.00"
+            "S": "10.25"
           },
           "CreateDateTime": {
-            "S": "2023-12-08 14:18:59.950"
+            "S": "2016-09-13 17:52:58.000"
           },
           "Currency": {
-            "S": "USD"
+            "S": ""
           },
           "CustomerInvoiceNo": {
             "S": ""
@@ -60,19 +60,19 @@
             "S": ""
           },
           "DueDate": {
-            "S": "1900-01-01 00:00:00.000"
+            "S": "2020-04-02 10:49:21.000"
           },
           "Extra": {
             "S": "0.00"
           },
           "Finalize": {
-            "S": "N"
+            "S": "Y"
           },
           "FinalizedBy": {
-            "S": ""
+            "S": "bmarionn"
           },
           "FinalizedDate": {
-            "S": "1900-01-01 00:00:00.000"
+            "S": "2020-04-02 10:51:01.000"
           },
           "FinalizedTotal": {
             "S": "0.00"
@@ -87,16 +87,16 @@
             "S": "0"
           },
           "FK_ConsolStationId": {
-            "S": ""
+            "S": "DFW"
           },
           "FK_ConsolStatusId": {
-            "S": ""
+            "S": "VER"
           },
           "FK_ContainerCode": {
-            "S": ""
+            "S": "D"
           },
           "FK_CustNo": {
-            "S": "31426"
+            "S": "11251"
           },
           "FK_EquipmentCode": {
             "S": "NULL"
@@ -111,19 +111,19 @@
             "S": "NULL"
           },
           "FK_ServiceId": {
-            "S": "TL"
+            "S": "LP"
           },
           "FK_VendorId": {
-            "S": "LIVELOGI"
+            "S": "CHAIN"
           },
           "InsertedTimeStamp": {
-            "S": "2023:12:08 14:20:02"
+            "S": "2023:09:28 08:49:51"
           },
           "InvoiceDate": {
-            "S": "1900-01-01 00:00:00.000"
+            "S": "2020-04-02 10:49:21.000"
           },
           "InvoiceNo": {
-            "S": ""
+            "S": "PURGE"
           },
           "InvoiceSeqNo": {
             "S": "0"
@@ -138,13 +138,13 @@
             "S": "O"
           },
           "PKSeqNo": {
-            "S": "44682290"
+            "S": "2883367"
           },
           "PostedDateTime": {
             "S": "1900-01-01 00:00:00.000"
           },
           "Quantity": {
-            "S": "0.000"
+            "S": "224.000"
           },
           "Rate": {
             "S": "0.0000"
@@ -156,19 +156,19 @@
             "S": "1900-01-01 00:00:00.000"
           },
           "RefNo": {
-            "S": "5009761"
+            "S": "26784"
           },
           "Tax": {
             "S": "0.00"
           },
           "Total": {
-            "S": "1018.00"
+            "S": "10.25"
           },
           "UpdatedBy": {
-            "S": "asalaices2"
+            "S": "bmarionn"
           },
           "UpdatedOn": {
-            "S": "2023-12-08 14:18:59.950"
+            "S": "2020-04-02 10:51:01.000"
           },
           "VendorAmount": {
             "S": "0.00"

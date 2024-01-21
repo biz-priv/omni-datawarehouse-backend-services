@@ -2,13 +2,13 @@
 const AWS = require('aws-sdk');
 const { prepareBatchFailureObj } = require('../shared/dataHelper');
 const _ = require('lodash');
-// const { nonConsolPayload } = require('./payloads');
+const { nonConsolPayload } = require('./payloads');
 const {
-  queryDynamoDB,
-  getParamsByTableName,
   fetchLocationId,
   getFinalShipperAndConsigneeData,
   fetchAparTableForConsole,
+  fetchCommonTableData,
+  fetchNonConsoleTableData,
 } = require('./helper');
 
 module.exports.handler = async (event) => {
@@ -23,58 +23,13 @@ module.exports.handler = async (event) => {
       try {
         const shipmentAparData = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
 
-        const tables = [
-          'omni-wt-rt-confirmation-cost-dev',
-          'omni-wt-rt-shipment-header-dev',
-          'omni-wt-rt-references-dev',
-          'omni-wt-rt-shipper-dev',
-          'omni-wt-rt-consignee-dev',
-          'omni-wt-rt-shipment-desc-dev',
-          // 'omni-wt-rt-timezone-master-dev',
-          // 'omni-wt-rt-customers-dev',
-        ];
+        const { confirmationCostData, shipperData, consigneeData } = await fetchCommonTableData({
+          shipmentAparData,
+        });
 
-        const [
-          confirmationCostData,
-          shipmentHeaderData,
-          referencesData,
-          shipperData,
-          consigneeData,
-          shipmentDescData,
-        ] = await Promise.all(
-          tables.map(async (table) => {
-            const param = getParamsByTableName(_.get(shipmentAparData, 'FK_OrderNo'), table);
-            console.info('🙂 -> file: index.js:35 -> tables.map -> param:', param);
-            const response = await queryDynamoDB(param);
-            return _.get(response, 'Items.[0]', false);
-          })
-        );
-        console.info('🙂 -> file: index.js:46 -> confirmationCostData:', confirmationCostData);
-        console.info('🙂 -> file: index.js:47 -> shipmentDescData:', shipmentDescData);
-        console.info('🙂 -> file: index.js:48 -> consigneeData:', consigneeData);
-        console.info('🙂 -> file: index.js:49 -> shipperData:', shipperData);
-        console.info('🙂 -> file: index.js:50 -> referencesData:', referencesData);
-        console.info('🙂 -> file: index.js:52 -> shipmentHeaderData:', shipmentHeaderData);
-        const customersParams = getParamsByTableName(
-          '',
-          'omni-wt-rt-customers-dev',
-          '',
-          _.get(shipmentHeaderData, 'BillNo', '')
-        );
-        console.info('🙂 -> file: index.js:61 -> customersParams:', customersParams);
-        const customersData = _.get(await queryDynamoDB(customersParams), 'Items.[0]', false);
-        console.info('🙂 -> file: index.js:63 -> customersData:', customersData);
-        if (
-          !customersData ||
-          !shipmentDescData ||
-          !consigneeData ||
-          !shipperData ||
-          !referencesData ||
-          !shipmentHeaderData ||
-          !confirmationCostData
-        ) {
-          console.error('All tables are not populated.');
-          throw new Error('All tables are not populated.');
+        if (!consigneeData || !shipperData) {
+          console.error('Shipper or Consignee tables are not populated.');
+          throw new Error('Shipper or Consignee tables are not populated.');
         }
 
         const { finalConsigneeData, finalShipperData } = getFinalShipperAndConsigneeData({
@@ -93,63 +48,67 @@ module.exports.handler = async (event) => {
           consigneeLocationId
         );
         if (!shipperLocationId || !consigneeLocationId) {
-          console.error('Could fetch location id.');
-          throw new Error('Could fetch location id.');
+          console.error('Could not fetch location id.');
+          throw new Error('Could not fetch location id.');
         }
 
         // Non-Console
-        // if (
-        //   _.get(shipmentAparData, 'ConsolNo') === '0' &&
-        //   _.get(shipmentHeaderData, 'ShipQuote', false) &&
-        //   _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
-        // ) {
-        //   const nonConsolPayloadData = await nonConsolPayload({
-        //     referencesData,
-        //     customersData,
-        //     consigneeLocationId,
-        //     finalConsigneeData,
-        //     finalShipperData,
-        //     shipmentDesc: shipmentDescData,
-        //     shipmentHeader: shipmentHeaderData,
-        //     shipperLocationId,
-        //   });
-        //   console.info(
-        //     '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
-        //     JSON.stringify(nonConsolPayloadData)
-        //   );
-        //   return nonConsolPayloadData;
-        // }
+        if (
+          parseInt(_.get(shipmentAparData, 'ConsolNo', 0), 10) === 0 &&
+          _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
+        ) {
+          const { shipmentHeaderData, referencesData, shipmentDescData, customersData } =
+            await fetchNonConsoleTableData({ shipmentAparData });
+          if (!shipmentHeaderData) {
+            return 'Shipment header data is missing.';
+          }
+          const nonConsolPayloadData = await nonConsolPayload({
+            referencesData,
+            customersData,
+            consigneeLocationId,
+            finalConsigneeData,
+            finalShipperData,
+            shipmentDesc: shipmentDescData,
+            shipmentHeader: shipmentHeaderData,
+            shipperLocationId,
+          });
+          console.info(
+            '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
+            JSON.stringify(nonConsolPayloadData)
+          );
+          return nonConsolPayloadData;
+        }
 
         // Console
         const shipmentAparDataForConsole = await fetchAparTableForConsole({
-          orderNo: _.get(shipmentAparData, ''),
+          orderNo: _.get(shipmentAparData, 'FK_OrderNo'),
         });
         console.info(
           '🙂 -> file: index.js:121 -> shipmentAparDataForConsole:',
           shipmentAparDataForConsole
         );
 
-        // if (
-        //   Number(_.get(shipmentAparData, 'ConsolNo', 0)) > 0 &&
-        //   _.get(shipmentAparData, 'Consolidation') === 'Y' &&
-        //   _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
-        // ) {
-        //   const nonConsolPayloadData = await nonConsolPayload({
-        //     referencesData,
-        //     customersData,
-        //     consigneeLocationId,
-        //     finalConsigneeData,
-        //     finalShipperData,
-        //     shipmentDesc: shipmentDescData,
-        //     shipmentHeader: shipmentHeaderData,
-        //     shipperLocationId,
-        //   });
-        //   console.info(
-        //     '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
-        //     JSON.stringify(nonConsolPayloadData)
-        //   );
-        //   return nonConsolPayloadData;
-        // }
+        if (
+          parseInt(_.get(shipmentAparData, 'ConsolNo', 0), 10) > 0 &&
+          _.get(shipmentAparData, 'Consolidation') === 'Y' &&
+          _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
+        ) {
+          // const nonConsolPayloadData = await nonConsolPayload({
+          //   referencesData,
+          //   customersData,
+          //   consigneeLocationId,
+          //   finalConsigneeData,
+          //   finalShipperData,
+          //   shipmentDesc: shipmentDescData,
+          //   shipmentHeader: shipmentHeaderData,
+          //   shipperLocationId,
+          // });
+          // console.info(
+          //   '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
+          //   JSON.stringify(nonConsolPayloadData)
+          // );
+          return 'Console payload';
+        }
         // else if (
         //   _.parseInt(_.get(shipmentAparData, 'ConsolNo', 0)) > 0 &&
         //   _.parseInt(_.get(shipmentAparData, 'SeqNo', 0)) < 9999
@@ -173,6 +132,7 @@ module.exports.handler = async (event) => {
       } catch (error) {
         console.info('Error', error);
       }
+      return false;
     });
 
     await Promise.all(promises);
