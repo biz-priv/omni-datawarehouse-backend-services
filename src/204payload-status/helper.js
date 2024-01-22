@@ -166,7 +166,6 @@ async function generateStop(
     stop_type: stopType,
     requested_service: false,
     prior_uncleared_stops: false,
-    referenceNumbers: generateReferenceNumbers({ references }),
     stopNotes: [
       {
         __type: 'stop_note',
@@ -186,6 +185,7 @@ async function generateStop(
       comment_type: 'OC',
       comments: _.get(userData, 'UserEmail'),
     });
+    _.set(stopData, 'referenceNumbers', generateReferenceNumbers({ references }));
   }
   return stopData;
 }
@@ -509,8 +509,8 @@ async function fetchConsoleTableData({ shipmentAparData }) {
           _.get(shipmentAparData, 'FK_OrderNo'),
           table,
           '',
-          _.get(shipmentHeaderData, 'BillNo', ''),
-          _.get(trackingNotesData, 'FK_UserId')
+          _.get(shipmentHeaderData, '[0].BillNo', ''),
+          _.get(trackingNotesData, '[0].FK_UserId')
         );
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
