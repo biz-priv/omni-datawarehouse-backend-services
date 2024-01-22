@@ -115,12 +115,12 @@ module.exports.handler = async (event) => {
             customersData: [customersData],
             userData: [userData],
           } = await fetchConsoleTableData({ shipmentAparData });
-            console.info('🙂 -> file: index.js:118 -> userData:', userData);
-            console.info('🙂 -> file: index.js:119 -> customersData:', customersData);
-            console.info('🙂 -> file: index.js:120 -> trackingNotesData:', trackingNotesData);
-            console.info('🙂 -> file: index.js:121 -> shipmentDescData:', shipmentDescData);
-            console.info('🙂 -> file: index.js:122 -> referencesData:', referencesData);
-            console.info('🙂 -> file: index.js:123 -> shipmentHeaderData:', shipmentHeaderData);
+          console.info('🙂 -> file: index.js:118 -> userData:', userData);
+          console.info('🙂 -> file: index.js:119 -> customersData:', customersData);
+          console.info('🙂 -> file: index.js:120 -> trackingNotesData:', trackingNotesData);
+          console.info('🙂 -> file: index.js:121 -> shipmentDescData:', shipmentDescData);
+          console.info('🙂 -> file: index.js:122 -> referencesData:', referencesData);
+          console.info('🙂 -> file: index.js:123 -> shipmentHeaderData:', shipmentHeaderData);
 
           const nonConsolPayloadData = await consolPayload({
             referencesData,

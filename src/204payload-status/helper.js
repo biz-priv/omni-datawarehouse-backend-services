@@ -257,7 +257,6 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
         TableName: 'omni-wt-rt-shipment-apar-dev',
         KeyConditionExpression: 'FK_OrderNo = :orderNo',
         FilterExpression: 'Consolidation = :consolidation',
-        ProjectionExpression: 'ConsolNo',
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
           ':consolidation': 'N',
@@ -538,6 +537,25 @@ async function fetchConsoleTableData({ shipmentAparData }) {
   }
 }
 
+async function getVesselForConsole({ shipmentAparData }) {
+  const shipmentAparParams = {
+    TableName: 'omni-wt-rt-shipment-apar-dev',
+    KeyConditionExpression: 'FK_OrderNo = :orderNo',
+    FilterExpression: 'Consolidation = :consolidation and ConsolNo = :ConsolNo',
+    ExpressionAttributeValues: {
+      ':orderNo': _.get(shipmentAparData, 'FK_OrderNo'),
+      ':ConsolNo': _.get(shipmentAparData, 'ConsolNo'),
+      ':consolidation': 'N',
+    },
+  };
+
+  const orderNo = _.get(await queryDynamoDB(shipmentAparParams), 'Items[0].FK_OrderNo');
+  const shipmentHeaderParam = getParamsByTableName(orderNo, 'omni-wt-rt-shipment-header-console');
+  const billno = _.get(await queryDynamoDB(shipmentHeaderParam), 'Items.[0].BillNo');
+  const customersParams = getParamsByTableName('', 'omni-wt-rt-customers-dev', '', billno);
+  return _.get(await queryDynamoDB(customersParams), 'Items.[0]', '');
+}
+
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
@@ -552,4 +570,5 @@ module.exports = {
   fetchCommonTableData,
   fetchNonConsoleTableData,
   fetchConsoleTableData,
+  getVesselForConsole,
 };
