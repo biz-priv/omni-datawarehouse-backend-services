@@ -537,7 +537,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
   }
 }
 
-async function getVesselForConsole({ shipmentAparData }) {
+async function getAparDataByConsole({ shipmentAparData }) {
   const shipmentAparParams = {
     TableName: 'omni-wt-rt-shipment-apar-dev',
     KeyConditionExpression: 'FK_OrderNo = :orderNo',
@@ -549,8 +549,11 @@ async function getVesselForConsole({ shipmentAparData }) {
     },
   };
   console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentAparParams);
+  return _.get(await queryDynamoDB(shipmentAparParams), 'Items', []);
+}
 
-  const orderNo = _.get(await queryDynamoDB(shipmentAparParams), 'Items[0].FK_OrderNo');
+async function getVesselForConsole({ shipmentAparConsoleData }) {
+  const orderNo = _.get(shipmentAparConsoleData, '[0].FK_OrderNo');
   const shipmentHeaderParam = getParamsByTableName(orderNo, 'omni-wt-rt-shipment-header-console');
   console.info('🙂 -> file: helper.js:555 -> shipmentHeaderParam:', shipmentHeaderParam);
   const billno = _.get(await queryDynamoDB(shipmentHeaderParam), 'Items.[0].BillNo');
@@ -559,20 +562,7 @@ async function getVesselForConsole({ shipmentAparData }) {
   return _.get(await queryDynamoDB(customersParams), 'Items.[0].CustName', '');
 }
 
-async function getWeightForConsole({ shipmentAparData }) {
-  const shipmentAparParams = {
-    TableName: 'omni-wt-rt-shipment-apar-dev',
-    KeyConditionExpression: 'ConsolNo = :ConsolNo',
-    IndexName: 'omni-ivia-ConsolNo-index-dev',
-    FilterExpression: 'Consolidation = :consolidation',
-    ExpressionAttributeValues: {
-      ':ConsolNo': _.get(shipmentAparData, 'ConsolNo'),
-      ':consolidation': 'N',
-    },
-  };
-  console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentAparParams);
-
-  const aparData = _.get(await queryDynamoDB(shipmentAparParams), 'Items');
+async function getWeightForConsole({ shipmentAparConsoleData: aparData }) {
   const descData = await Promise.all(
     aparData.map(async (data) => {
       const shipmentDescParams = {
@@ -593,6 +583,57 @@ async function getWeightForConsole({ shipmentAparData }) {
   console.info('🙂 -> file: test.js:38 -> totalWeight:', totalWeight);
 }
 
+async function getHazmat({ shipmentAparConsoleData: aparData }) {
+  const descData = await Promise.all(
+    aparData.map(async (data) => {
+      const shipmentDescParams = {
+        TableName: 'omni-wt-rt-shipment-desc-dev',
+        KeyConditionExpression: 'FK_OrderNo = :orderNo',
+        ExpressionAttributeValues: {
+          ':orderNo': _.get(data, 'FK_OrderNo'),
+        },
+      };
+      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentDescParams);
+
+      return _.get(await queryDynamoDB(shipmentDescParams), 'Items');
+    })
+  );
+  console.info('🙂 -> file: test.js:36 -> descData:', descData);
+  const descDataFlatten = _.flatten(descData);
+  console.info('🙂 -> file: test.js:38 -> descDataFlatten:', descDataFlatten);
+  const filteredDescData = descDataFlatten
+    .filter((data) => _.get(data, 'Hazmat'))
+    .map((data) => _.get(data, 'Hazmat'))
+    .includes('Y');
+  console.info('🙂 -> file: test.js:40 -> filteredDescData:', filteredDescData);
+  return filteredDescData;
+}
+
+async function getHighValue({ shipmentAparConsoleData: aparData }) {
+  const descData = await Promise.all(
+    aparData.map(async (data) => {
+      const shipmentHeaderParams = {
+        TableName: 'omni-wt-rt-shipment-header-dev',
+        KeyConditionExpression: 'PK_OrderNo = :orderNo',
+        ExpressionAttributeValues: {
+          ':orderNo': _.get(data, 'FK_OrderNo'),
+        },
+      };
+      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentHeaderParams);
+
+      return _.get(await queryDynamoDB(shipmentHeaderParams), 'Items');
+    })
+  );
+  console.info('🙂 -> file: test.js:36 -> descData:', descData);
+  const descDataFlatten = _.flatten(descData);
+  console.info('🙂 -> file: test.js:38 -> descDataFlatten:', descDataFlatten);
+  const sumByInsurance = _.sumBy(descDataFlatten, (data) =>
+    parseFloat(_.get(data, 'Insurance', 0))
+  );
+  console.info('🙂 -> file: test.js:40 -> sumByInsurance:', sumByInsurance > 100000);
+  return sumByInsurance > 100000;
+}
+
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
@@ -609,4 +650,7 @@ module.exports = {
   fetchConsoleTableData,
   getVesselForConsole,
   getWeightForConsole,
+  getHazmat,
+  getHighValue,
+  getAparDataByConsole,
 };

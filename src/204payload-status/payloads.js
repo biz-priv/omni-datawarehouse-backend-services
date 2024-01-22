@@ -5,6 +5,9 @@ const {
   formatTimestamp,
   getVesselForConsole,
   getWeightForConsole,
+  getHazmat,
+  getHighValue,
+  getAparDataByConsole,
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -108,16 +111,7 @@ async function consolPayload({
   confirmationCostData,
   userData,
 }) {
-  let hazmat = _.get(shipmentDesc, 'Hazmat', false);
-  // Check if Hazmat is equal to 'Y'
-  if (hazmat === 'Y') {
-    // Set hazmat to true if it is 'Y'
-    hazmat = true;
-  } else {
-    // Set hazmat to false for null or other values
-    hazmat = false;
-  }
-
+  const shipmentAparConsoleData = getAparDataByConsole({ shipmentAparData });
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
@@ -134,8 +128,8 @@ async function consolPayload({
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
-    hazmat,
-    high_value: _.get(shipmentHeader, 'Insurance', 0) > 100000,
+    hazmat: await getHazmat({ shipmentAparConsoleData }),
+    high_value: await getHighValue({ shipmentAparConsoleData }),
     include_split_point: false,
     is_autorate_dist: false,
     is_container: false,
@@ -154,8 +148,8 @@ async function consolPayload({
     status: 'A',
     swap: true,
     teams_required: false,
-    vessel: await getVesselForConsole({ shipmentAparData }),
-    weight: await getWeightForConsole({ shipmentAparData }),
+    vessel: await getVesselForConsole({ shipmentAparConsoleData }),
+    weight: await getWeightForConsole({ shipmentAparConsoleData }),
     weight_um: 'LB',
     order_mode: 'T',
     operational_status: 'CLIN',
