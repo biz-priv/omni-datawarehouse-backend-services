@@ -2,13 +2,14 @@
 const AWS = require('aws-sdk');
 const { prepareBatchFailureObj } = require('../shared/dataHelper');
 const _ = require('lodash');
-const { nonConsolPayload } = require('./payloads');
+const { nonConsolPayload, consolPayload } = require('./payloads');
 const {
   fetchLocationId,
   getFinalShipperAndConsigneeData,
   fetchAparTableForConsole,
   fetchCommonTableData,
   fetchNonConsoleTableData,
+  fetchConsoleTableData,
 } = require('./helper');
 
 module.exports.handler = async (event) => {
@@ -42,11 +43,13 @@ module.exports.handler = async (event) => {
           finalConsigneeData,
           finalShipperData,
         });
+
         console.info(
           '🙂 -> file: index.js:83 -> promises ->  shipperLocationId, consigneeLocationId:',
           shipperLocationId,
           consigneeLocationId
         );
+
         if (!shipperLocationId || !consigneeLocationId) {
           console.error('Could not fetch location id.');
           throw new Error('Could not fetch location id.');
@@ -80,33 +83,43 @@ module.exports.handler = async (event) => {
         }
 
         // Console
-        const shipmentAparDataForConsole = await fetchAparTableForConsole({
-          orderNo: _.get(shipmentAparData, 'FK_OrderNo'),
-        });
-        console.info(
-          '🙂 -> file: index.js:121 -> shipmentAparDataForConsole:',
-          shipmentAparDataForConsole
-        );
-
         if (
           parseInt(_.get(shipmentAparData, 'ConsolNo', 0), 10) > 0 &&
           _.get(shipmentAparData, 'Consolidation') === 'Y' &&
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
-          // const nonConsolPayloadData = await nonConsolPayload({
-          //   referencesData,
-          //   customersData,
-          //   consigneeLocationId,
-          //   finalConsigneeData,
-          //   finalShipperData,
-          //   shipmentDesc: shipmentDescData,
-          //   shipmentHeader: shipmentHeaderData,
-          //   shipperLocationId,
-          // });
-          // console.info(
-          //   '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
-          //   JSON.stringify(nonConsolPayloadData)
-          // );
+          const shipmentAparDataForConsole = await fetchAparTableForConsole({
+            orderNo: _.get(shipmentAparData, 'FK_OrderNo'),
+          });
+          console.info(
+            '🙂 -> file: index.js:121 -> shipmentAparDataForConsole:',
+            shipmentAparDataForConsole
+          );
+          const {
+            shipmentHeaderData,
+            referencesData,
+            shipmentDescData,
+            trackingNotesData,
+            customersData,
+            userData,
+          } = await fetchConsoleTableData();
+          const nonConsolPayloadData = await consolPayload({
+            referencesData,
+            customersData,
+            consigneeLocationId,
+            finalConsigneeData,
+            finalShipperData,
+            shipmentDesc: shipmentDescData,
+            shipmentHeader: shipmentHeaderData,
+            shipperLocationId,
+            shipmentAparData,
+            trackingNotesData,
+            userData,
+          });
+          console.info(
+            '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
+            JSON.stringify(nonConsolPayloadData)
+          );
           return 'Console payload';
         }
         // else if (

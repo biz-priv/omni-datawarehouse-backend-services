@@ -64,7 +64,7 @@ function getPowerBrokerCode(reftypeId) {
   return _.get(refTypeMap, reftypeId, 'Code Not Found');
 }
 
-function generateReferenceNumbers(references) {
+function generateReferenceNumbers({ references }) {
   return _.map(references, (ref) => ({
     __type: 'reference_number',
     __name: 'referenceNumbers',
@@ -78,7 +78,7 @@ function generateReferenceNumbers(references) {
   }));
 }
 
-async function formatTimestamp(eventdatetime) {
+function formatTimestamp(eventdatetime) {
   const date = moment(eventdatetime);
   const week = date.week();
   const offset = week >= 11 && week <= 44 ? '-0500' : '-0600';
@@ -98,11 +98,6 @@ async function getFormattedDateTime(dateTime, state, tblTimeZoneMaster) {
   } else {
     offset = '-0600';
   }
-  //   state = 'AZ'
-  //     ? '-0600'
-  //     : moment(dateTime).isoWeek() >= 11 && moment(dateTime).isoWeek() <= 44
-  //       ? '-0500'
-  //       : '-0600';
   console.info('🙂 -> file: helper.js:112 -> getFormattedDateTime -> offset:', offset);
   const hoursAway = _.get(tblTimeZoneMaster, 'Items[0].HoursAway', 0) || 0;
   console.info('🙂 -> file: helper.js:106 -> getFormattedDateTime -> hoursAway:', hoursAway);
@@ -121,23 +116,11 @@ async function generateStop(
   orderSequence,
   stopType,
   locationId,
-  stateData
+  stateData,
+  confirmationCostData,
+  type,
+  userData
 ) {
-  console.info(
-    `🙂 -> file: helper.js:122 ->   shipmentHeader,
-  references,
-  orderSequence,
-  stopType,
-  locationId,
-  stateData:`,
-    shipmentHeader,
-    references,
-    orderSequence,
-    stopType,
-    locationId,
-    stateData
-  );
-
   const pickupTimeZone = _.get(shipmentHeader, 'ReadyDateTimeZone', '');
   const deliveryTimeZone = _.get(shipmentHeader, 'ScheduledDateTimeZone', '');
   let schedArriveEarly = '';
@@ -167,7 +150,7 @@ async function generateStop(
   console.info('🙂 -> file: helper.js:161 -> timezoneParams:', timezoneParams);
   const timeZoneMaster = await queryDynamoDB(timezoneParams);
 
-  return {
+  const stopData = {
     __type: 'stop',
     __name: 'stops',
     company_id: 'TMS',
@@ -183,20 +166,31 @@ async function generateStop(
     stop_type: stopType,
     requested_service: false,
     prior_uncleared_stops: false,
-    referenceNumbers: generateReferenceNumbers(references),
+    referenceNumbers: generateReferenceNumbers({ references }),
     stopNotes: [
       {
         __type: 'stop_note',
         __name: 'stopNotes',
         company_id: 'TMS',
         comment_type: 'DC',
-        comments: 'test',
+        comments: _.get(confirmationCostData, type === 'shipper' ? 'PickupNote' : 'DeliveryNote'),
       },
     ],
   };
+
+  if (type === 'shipper') {
+    _.set(stopData, 'stopNotes[1]', {
+      __type: 'stop_note',
+      __name: 'stopNotes',
+      company_id: 'TMS',
+      comment_type: 'OC',
+      comments: _.get(userData, 'UserEmail'),
+    });
+  }
+  return stopData;
 }
 
-function getParamsByTableName(orderNo, tableName, timezone, billno) {
+function getParamsByTableName(orderNo, tableName, timezone, billno, userId, consoleNo) {
   switch (tableName) {
     case 'omni-wt-rt-confirmation-cost-dev':
       return {
@@ -215,6 +209,14 @@ function getParamsByTableName(orderNo, tableName, timezone, billno) {
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
           ':shipquote': 'S',
+        },
+      };
+    case 'omni-wt-rt-shipment-header-console':
+      return {
+        TableName: 'omni-wt-rt-shipment-header-dev',
+        KeyConditionExpression: 'PK_OrderNo = :orderNo',
+        ExpressionAttributeValues: {
+          ':orderNo': orderNo,
         },
       };
     case 'omni-wt-rt-references-dev':
@@ -285,6 +287,23 @@ function getParamsByTableName(orderNo, tableName, timezone, billno) {
           ':PK_CustNo': billno,
         },
       };
+    case 'omni-wt-rt-users':
+      return {
+        TableName: 'omni-wt-rt-users-dev',
+        KeyConditionExpression: 'PK_UserId = :PK_UserId',
+        ExpressionAttributeValues: {
+          ':PK_UserId': userId,
+        },
+      };
+    case 'omni-wt-rt-tracking-notes':
+      return {
+        TableName: 'omni-wt-rt-tracking-notes-dev',
+        IndexName: 'omni-tracking-notes-console-index-dev',
+        KeyConditionExpression: 'ConsolNo = :ConsolNo',
+        ExpressionAttributeValues: {
+          ':ConsolNo': consoleNo,
+        },
+      };
     // case INSTRUCTIONS_TABLE:
     //     return {
     //         TableName: INSTRUCTIONS_TABLE,
@@ -318,9 +337,6 @@ async function queryDynamoDB(params) {
 }
 
 async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
-  // const shipperLocationId = 'SAFEHOT1';
-  // const consigneeLocationId = 'SAFEATG1';
-
   // Get location ID for shipper
   let shipperLocationId = await getLocationId(
     finalShipperData.ShipName,
@@ -398,7 +414,7 @@ async function fetchAparTableForConsole({ orderNo }) {
 
 async function fetchCommonTableData({ shipmentAparData }) {
   const tables = [
-    'omni-wt-rt-confirmation-cost',
+    'omni-wt-rt-confirmation-cost-dev',
     'omni-wt-rt-shipper-dev',
     'omni-wt-rt-consignee-dev',
   ];
@@ -440,6 +456,55 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
   return { shipmentHeaderData, referencesData, shipmentDescData, customersData };
 }
 
+async function fetchConsoleTableData({ shipmentAparData }) {
+  const tables = [
+    'omni-wt-rt-shipment-header-console',
+    'omni-wt-rt-references-dev',
+    'omni-wt-rt-shipment-desc-dev',
+    'omni-wt-rt-tracking-notes',
+  ];
+
+  const [shipmentHeaderData, referencesData, shipmentDescData, trackingNotesData] =
+    await Promise.all(
+      tables.map(async (table) => {
+        const param = getParamsByTableName(
+          _.get(shipmentAparData, 'FK_OrderNo'),
+          table,
+          '',
+          '',
+          '',
+          _.get(shipmentAparData, 'ConsolNo')
+        );
+        console.info('🙂 -> file: index.js:35 -> tables.map -> param:', param);
+        const response = await queryDynamoDB(param);
+        return _.get(response, 'Items.[0]', false);
+      })
+    );
+  const tables2 = ['omni-wt-rt-customers-dev', 'omni-wt-rt-users'];
+  const [customersData, userData] = await Promise.all(
+    tables2.map(async (table) => {
+      const param = getParamsByTableName(
+        _.get(shipmentAparData, 'FK_OrderNo'),
+        table,
+        '',
+        _.get(shipmentHeaderData, 'BillNo', ''),
+        _.get(trackingNotesData, 'FK_UserId')
+      );
+      console.info('🙂 -> file: index.js:35 -> tables.map -> param:', param);
+      const response = await queryDynamoDB(param);
+      return _.get(response, 'Items.[0]', false);
+    })
+  );
+  return {
+    shipmentHeaderData,
+    referencesData,
+    shipmentDescData,
+    trackingNotesData,
+    customersData,
+    userData,
+  };
+}
+
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
@@ -453,4 +518,5 @@ module.exports = {
   fetchAparTableForConsole,
   fetchCommonTableData,
   fetchNonConsoleTableData,
+  fetchConsoleTableData,
 };

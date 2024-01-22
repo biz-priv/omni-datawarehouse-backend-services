@@ -38,7 +38,7 @@ async function nonConsolPayload({
     excise_taxable: false,
     force_assign: true,
     hazmat,
-    high_value: _.get(shipmentHeader, 'Insurance', 0) > 100000,
+    high_value: _.get(shipmentHeader, 'Insurance', 0) > 100000, // TODO: validate this filed
     include_split_point: false,
     is_autorate_dist: false,
     is_container: false,
@@ -99,6 +99,9 @@ async function consolPayload({
   finalShipperData,
   finalConsigneeData,
   customersData,
+  shipmentAparData,
+  confirmationCostData,
+  userData,
 }) {
   let hazmat = _.get(shipmentDesc, 'Hazmat', false);
   // Check if Hazmat is equal to 'Y'
@@ -109,6 +112,7 @@ async function consolPayload({
     // Set hazmat to false for null or other values
     hazmat = false;
   }
+
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
@@ -119,9 +123,9 @@ async function consolPayload({
     collection_method: 'P',
     commodity_id: 'TVS',
     customer_id: 'OMNICOT8',
-    blnum: _.get(shipmentHeader, 'Housebill', ''),
+    blnum: _.get(shipmentAparData, 'ConsolNo', ''),
     entered_user_id: 'apiuser',
-    equipment_type_id: _.get(shipmentHeader, 'FK_EquipmentCode', ''),
+    equipment_type_id: '',
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -133,14 +137,14 @@ async function consolPayload({
     is_dedicated: false,
     ltl: _.includes(['FT', 'HS'], _.get(shipmentHeader, 'FK_ServiceLevelId')),
     on_hold: false,
-    ordered_date: await formatTimestamp(_.get(shipmentHeader, 'OrderDate', '')),
+    ordered_date: formatTimestamp(_.get(shipmentHeader, 'OrderDate', '')),
     ordered_method: 'M',
     pallets_required: false,
     pieces: _.get(shipmentDesc, 'Pieces', 0),
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
-    revenue_code_id: 'PRI',
+    // revenue_code_id: 'PRI',
     round_trip: false,
     ship_status_to_edi: false,
     status: 'A',
@@ -163,7 +167,10 @@ async function consolPayload({
       1,
       'PU',
       shipperLocationId,
-      finalConsigneeData
+      finalConsigneeData,
+      confirmationCostData,
+      'shipper',
+      userData
     ),
     await generateStop(
       shipmentHeader,
@@ -171,7 +178,9 @@ async function consolPayload({
       2,
       'SO',
       consigneeLocationId,
-      finalShipperData
+      finalShipperData,
+      confirmationCostData,
+      'consignee'
     )
   );
 
