@@ -24,9 +24,17 @@ module.exports.handler = async (event) => {
       try {
         const shipmentAparData = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
 
-        const { confirmationCostData, shipperData, consigneeData } = await fetchCommonTableData({
+        const {
+          confirmationCostData: [confirmationCostData],
+          shipperData: [shipperData],
+          consigneeData: [consigneeData],
+        } = await fetchCommonTableData({
           shipmentAparData,
         });
+
+        console.info('🙂 -> file: index.js:34 -> consigneeData:', consigneeData);
+        console.info('🙂 -> file: index.js:34 -> shipperData:', shipperData);
+        console.info('🙂 -> file: index.js:34 -> confirmationCostData:', confirmationCostData);
 
         if (!consigneeData || !shipperData) {
           console.error('Shipper or Consignee tables are not populated.');
@@ -60,8 +68,12 @@ module.exports.handler = async (event) => {
           parseInt(_.get(shipmentAparData, 'ConsolNo', 0), 10) === 0 &&
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
-          const { shipmentHeaderData, referencesData, shipmentDescData, customersData } =
-            await fetchNonConsoleTableData({ shipmentAparData });
+          const {
+            shipmentHeaderData: [shipmentHeaderData],
+            referencesData,
+            shipmentDescData: [shipmentDescData],
+            customersData: [customersData],
+          } = await fetchNonConsoleTableData({ shipmentAparData });
           if (!shipmentHeaderData) {
             return 'Shipment header data is missing.';
           }
@@ -96,13 +108,13 @@ module.exports.handler = async (event) => {
             shipmentAparDataForConsole
           );
           const {
-            shipmentHeaderData,
-            referencesData,
-            shipmentDescData,
-            trackingNotesData,
-            customersData,
-            userData,
-          } = await fetchConsoleTableData();
+            shipmentHeaderData: [shipmentHeaderData],
+            referencesData: [referencesData],
+            shipmentDescData: [shipmentDescData],
+            trackingNotesData: [trackingNotesData],
+            customersData: [customersData],
+            userData: [userData],
+          } = await fetchConsoleTableData({ shipmentAparData });
           const nonConsolPayloadData = await consolPayload({
             referencesData,
             customersData,

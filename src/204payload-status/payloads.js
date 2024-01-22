@@ -52,7 +52,7 @@ async function nonConsolPayload({
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
-    revenue_code_id: 'PRI',
+    // revenue_code_id: 'PRI',
     round_trip: false,
     ship_status_to_edi: false,
     status: 'A',
