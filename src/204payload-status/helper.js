@@ -548,12 +548,49 @@ async function getVesselForConsole({ shipmentAparData }) {
       ':consolidation': 'N',
     },
   };
+  console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentAparParams);
 
   const orderNo = _.get(await queryDynamoDB(shipmentAparParams), 'Items[0].FK_OrderNo');
   const shipmentHeaderParam = getParamsByTableName(orderNo, 'omni-wt-rt-shipment-header-console');
+  console.info('🙂 -> file: helper.js:555 -> shipmentHeaderParam:', shipmentHeaderParam);
   const billno = _.get(await queryDynamoDB(shipmentHeaderParam), 'Items.[0].BillNo');
   const customersParams = getParamsByTableName('', 'omni-wt-rt-customers-dev', '', billno);
-  return _.get(await queryDynamoDB(customersParams), 'Items.[0]', '');
+  console.info('🙂 -> file: helper.js:558 -> customersParams:', customersParams);
+  return _.get(await queryDynamoDB(customersParams), 'Items.[0].CustName', '');
+}
+
+async function getWeightForConsole({ shipmentAparData }) {
+  const shipmentAparParams = {
+    TableName: 'omni-wt-rt-shipment-apar-dev',
+    KeyConditionExpression: 'ConsolNo = :ConsolNo',
+    IndexName: 'omni-ivia-ConsolNo-index-dev',
+    FilterExpression: 'Consolidation = :consolidation',
+    ExpressionAttributeValues: {
+      ':ConsolNo': _.get(shipmentAparData, 'ConsolNo'),
+      ':consolidation': 'N',
+    },
+  };
+  console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentAparParams);
+
+  const aparData = _.get(await queryDynamoDB(shipmentAparParams), 'Items');
+  const descData = await Promise.all(
+    aparData.map(async (data) => {
+      const shipmentDescParams = {
+        TableName: 'omni-wt-rt-shipment-desc-dev',
+        KeyConditionExpression: 'FK_OrderNo = :orderNo',
+        ExpressionAttributeValues: {
+          ':orderNo': _.get(data, 'FK_OrderNo'),
+        },
+      };
+      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentDescParams);
+
+      return _.get(await queryDynamoDB(shipmentDescParams), 'Items', []);
+    })
+  );
+  console.info('🙂 -> file: test.js:36 -> descData:', descData);
+  const descDataFlatten = _.flatten(descData);
+  const totalWeight = _.sumBy(descDataFlatten, (item) => parseFloat(_.get(item, 'Weight', 0)));
+  console.info('🙂 -> file: test.js:38 -> totalWeight:', totalWeight);
 }
 
 module.exports = {
@@ -571,4 +608,5 @@ module.exports = {
   fetchNonConsoleTableData,
   fetchConsoleTableData,
   getVesselForConsole,
+  getWeightForConsole,
 };

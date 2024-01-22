@@ -1,6 +1,11 @@
 'use strict';
 const _ = require('lodash');
-const { generateStop, formatTimestamp, getVesselForConsole } = require('./helper');
+const {
+  generateStop,
+  formatTimestamp,
+  getVesselForConsole,
+  getWeightForConsole,
+} = require('./helper');
 
 async function nonConsolPayload({
   shipmentHeader,
@@ -144,14 +149,13 @@ async function consolPayload({
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
-    // revenue_code_id: 'PRI',
     round_trip: false,
     ship_status_to_edi: false,
     status: 'A',
     swap: true,
     teams_required: false,
-    vessel: await getVesselForConsole(),
-    weight: _.get(shipmentDesc, 'Weight', 0),
+    vessel: await getVesselForConsole({ shipmentAparData }),
+    weight: await getWeightForConsole({ shipmentAparData }),
     weight_um: 'LB',
     order_mode: 'T',
     operational_status: 'CLIN',
