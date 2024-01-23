@@ -111,7 +111,7 @@ async function consolPayload({
   confirmationCostData,
   userData,
 }) {
-  const shipmentAparConsoleData = getAparDataByConsole({ shipmentAparData });
+  const shipmentAparConsoleData = await getAparDataByConsole({ shipmentAparData });
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
