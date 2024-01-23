@@ -2,7 +2,7 @@
   "Records": [
     {
       "eventID": "07f2cccdba2cb17b5be8c93283ca7c3e",
-      "eventName": "INSERT",
+      "eventName": "MODIFY",
       "eventVersion": "1.1",
       "eventSource": "aws:dynamodb",
       "awsRegion": "us-east-1",
@@ -26,6 +26,7 @@
           "Housebill": {
             "S": "3703699"
           },
+
           "ShipmentType": {
             "S": "D"
           },
