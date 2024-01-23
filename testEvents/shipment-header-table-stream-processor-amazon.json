@@ -2,7 +2,7 @@
   "Records": [
     {
       "eventID": "cde2dfb3dd2e177db58cdf7157b5c807",
-      "eventName": "INSERT",
+      "eventName": "MODIFY",
       "eventVersion": "1.1",
       "eventSource": "aws:dynamodb",
       "awsRegion": "us-east-1",
@@ -22,6 +22,9 @@
           },
           "FK_ProductCode": {
             "S": ""
+          },
+          "AcctManager": {
+            "S": "Hello"
           },
           "Housebill": {
             "S": "6986204"

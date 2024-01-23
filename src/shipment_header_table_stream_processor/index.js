@@ -14,6 +14,12 @@ module.exports.handler = async (event, context) => {
         for (const record of get(event, "Records", [])) {
             console.info("🚀 ~ file: shipment_header_table_stream_processor.js:11 ~ event.Records.forEach ~ record:", JSON.stringify(record));
             if (get(record, "eventName") === "MODIFY") {
+                console.info('dynamodb.NewImage.AcctManager', get(record, 'dynamodb.NewImage.AcctManager.S'))
+                console.info('dynamodb.OldImage.AcctManager', get(record, 'dynamodb.OldImage.AcctManager.S', null))
+                if(get(record, 'dynamodb.NewImage.AcctManager.S') && get(record, 'dynamodb.OldImage.AcctManager.S', null)===null){
+                    console.log("AcctManager. Ignoring the event.")
+                    continue;
+                }
                 const billNumber = Number(get(record, "dynamodb.NewImage.BillNo.S", null));
                 const orderNo = Number(get(record, "dynamodb.NewImage.PK_OrderNo.S", null));
                 const houseBill = Number(get(record, "dynamodb.NewImage.Housebill.S", null));
