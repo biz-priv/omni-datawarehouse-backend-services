@@ -22,7 +22,6 @@ module.exports.handler = async (event) => {
         console.log("AcctManager. Ignoring the event.")
         continue;
     }
-    return 'Process the record';
     const tableArn = record["eventSourceARN"];
     const tableName = get(tableArn.split(":table/")[1].split("/"), '[0]', '');
     console.log("tableName", tableName);
