@@ -16,12 +16,6 @@ const {
 module.exports.handler = async (event) => {
   console.info("event: ", JSON.stringify(event));
   for (let record of event.Records) {
-    console.info('dynamodb.NewImage.AcctManager', get(record, 'dynamodb.NewImage.AcctManager.S'))
-    console.info('dynamodb.OldImage.AcctManager', get(record, 'dynamodb.OldImage.AcctManager.S', null))
-    if(get(record, "eventName") === "MODIFY" && get(record, 'dynamodb.NewImage.AcctManager.S') && get(record, 'dynamodb.OldImage.AcctManager.S', null)===null){
-        console.log("AcctManager. Ignoring the event.")
-        continue;
-    }
     const tableArn = record["eventSourceARN"];
     const tableName = get(tableArn.split(":table/")[1].split("/"), '[0]', '');
     console.log("tableName", tableName);
