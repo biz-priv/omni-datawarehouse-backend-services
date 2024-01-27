@@ -1,6 +1,6 @@
 function:
   handler: src/204-create-shipment-stream-processor/index.handler
-  name: ${self:service}-204-create-shipment-stream-processor-${self:provider.stage}
+  name: 204-create-shipment-stream-processor-${self:provider.stage}
   description: process and filters shipment apar table stream for 204 create shipment - ${self:provider.stage}
   runtime: nodejs18.x
   timeout: 500
