@@ -1,6 +1,6 @@
 function:
-  handler: src/shipment-apar-stream-processor-for-204-create-shipment/index.handler
-  name: ${self:service}-shipment-apar-stream-processor-for-204-create-shipment-${self:provider.stage}
+  handler: src/204-create-shipment-stream-processor/index.handler
+  name: ${self:service}-204-create-shipment-stream-processor-${self:provider.stage}
   description: process and filters shipment apar table stream for 204 create shipment - ${self:provider.stage}
   runtime: nodejs18.x
   timeout: 500
@@ -17,7 +17,7 @@ function:
   package:
     patterns:
       - '!**/*'
-      - 'src/shipment-apar-stream-processor-for-204-create-shipment/*'
+      - 'src/204-create-shipment-stream-processor/*'
   environment:
     SNS_TOPIC_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
     STAGE: ${self:provider.stage}

@@ -83,7 +83,7 @@ functions:
   shipment-header-table-stream-processor: ${file(config/functions/shipment-header-table-stream-processor.yml):function}
 
   204-payload-status: ${file(config/functions/204PayloadStatus.yml):function}
-  shipment-apar-stream-processor-for-204-create-shipment: ${file(config/functions/shipment-apar-stream-processor-for-204-create-shipment.yml):function}
+  204-create-shipment-stream-processor: ${file(config/functions/204-create-shipment-stream-processor.yml):function}
 
 resources:
   Resources:

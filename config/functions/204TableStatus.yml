@@ -1,16 +1,14 @@
----
 function:
-  name: omni-204-sqs-to-dynamo-db-${self:provider.stage}
-  handler: src/204SqsToDynamoDB/index.handler
+  name: omni-204-table-status-${self:provider.stage}
+  handler: src/204payload-status/index.handler
+  runtime: nodejs18.x
   memorySize: 1024
   timeout: 300
-  # provisionedConcurrency: 5
-  # concurrencyAutoscaling: true
   layers:
     - { Ref: DWBackendLambdaLayer }
   package:
     include:
-      - 'src/204SqsToDynamoDB/**'
+      - 'src/204payload-status/**'
       - 'src/shared/**'
     exclude:
       - '**/*'
@@ -28,19 +26,13 @@ function:
     CUSTOMER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customer/ddb.tableName~true}
     CONFIRMATION_COST_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/confirmation-cost/ddb.orderNoIndex}
     INSTRUCTIONS_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.orderNoIndex}
-    IVIA_DDB: ${ssm:/omni-ivia/${self:provider.stage}/ddb.tableName}
-    IVIA_CARRIER_ID: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/carrierId}
-    IVIA_VENDOR_ID: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/ivia/shipmentApar/filterVendorId~true} #"T19262" Need to be verify from will
     TIMEZONE_MASTER: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/timezone-master/ddb.tableName~true}
     TIMEZONE_ZIP_CR: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/timezone-zip-cr/ddb.tableName~true}
     ZIP_CODES: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/zip-codes/ddb.tableName~true}
     ADDRESS_MAPPING_G_API_KEY: ${ssm:/omni-ivia/${self:provider.stage}/google/api.Key~true}
-    ERROR_NOTIFICATION_SNS_ARN: !Ref ErrorNotification #need to be created
+    AUTH: 'Basic YXBpdXNlcjpsdmxwYXBpdXNlcg=='
+    GET_LOC_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/locations/search'
+    CREATE_LOC_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/locations/create'
 
   events:
-    - sqs:
-        arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/ivia/sqs.arn~true}
-        batchSize: 2
-        # maximumBatchingWindow: 60
-        maximumConcurrency: 1
-        functionResponseType: ReportBatchItemFailures
+    - schedule: cron(*/5 * * * ? *) #cron for every 5 min
