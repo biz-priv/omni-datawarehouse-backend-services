@@ -36,7 +36,7 @@
             "S": "Y"
           },
           "Consolidation": {
-            "S": "N"
+            "S": "Y"
           },
           "ConsolNo": {
             "S": "26784"
@@ -111,10 +111,10 @@
             "S": "NULL"
           },
           "FK_ServiceId": {
-            "S": "LP"
+            "S": "TL"
           },
           "FK_VendorId": {
-            "S": "CHAIN"
+            "S": "LIVELOGI"
           },
           "InsertedTimeStamp": {
             "S": "2023:09:28 08:49:51"

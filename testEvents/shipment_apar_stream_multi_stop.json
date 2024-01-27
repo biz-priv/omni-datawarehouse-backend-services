@@ -10,12 +10,12 @@
             "S": "1"
           },
           "FK_OrderNo": {
-            "S": "5344583"
+            "S": "5344590"
           }
         },
         "NewImage": {
           "FK_OrderNo": {
-            "S": "335739"
+            "S": "5344590"
           },
           "SeqNo": {
             "S": "12"
@@ -36,10 +36,10 @@
             "S": "Y"
           },
           "Consolidation": {
-            "S": "Y"
+            "S": "N"
           },
           "ConsolNo": {
-            "S": "26787"
+            "S": "0"
           },
           "ConsolShipDateTime": {
             "S": "1900-01-01 00:00:00.000"
@@ -111,10 +111,10 @@
             "S": "NULL"
           },
           "FK_ServiceId": {
-            "S": "HS"
+            "S": "MT"
           },
           "FK_VendorId": {
-            "S": "CHAIN"
+            "S": "LIVELOGI"
           },
           "InsertedTimeStamp": {
             "S": "2023:09:28 08:49:51"

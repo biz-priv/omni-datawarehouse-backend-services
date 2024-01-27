@@ -4,7 +4,7 @@ const moment = require("moment-timezone");
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 const sqs = new AWS.SQS();
 const sns = new AWS.SNS();
-const { SHIPMENT_HEADER_TABLE, SHIPMENT_HEADER_TABLE_STREAM_QUEUE, SHIPMENT_FILE_TABLE, TRANSACTION_TABLE, STAGE } = process.env;
+const { SHIPMENT_HEADER_TABLE, SHIPMENT_HEADER_TABLE_STREAM_QUEUE, SHIPMENT_FILE_TABLE, TRANSACTION_TABLE, STAGE, SNS_TOPIC_ARN } = process.env;
 let functionName;
 module.exports.handler = async (event, context) => {
     try {
