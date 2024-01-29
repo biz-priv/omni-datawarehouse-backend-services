@@ -2,7 +2,7 @@
 const AWS = require('aws-sdk');
 const { prepareBatchFailureObj } = require('../shared/dataHelper');
 const _ = require('lodash');
-const { nonConsolPayload, consolPayload } = require('./payloads');
+const { nonConsolPayload, consolPayload, mtPayload } = require('./payloads');
 const {
   fetchLocationId,
   getFinalShipperAndConsigneeData,
@@ -10,6 +10,7 @@ const {
   fetchCommonTableData,
   fetchNonConsoleTableData,
   fetchConsoleTableData,
+  fetchDataFromTablesList
 } = require('./helper');
 
 module.exports.handler = async (event) => {
@@ -141,26 +142,33 @@ module.exports.handler = async (event) => {
           );
           return 'Console payload';
         }
-        // else if (
-        //   _.parseInt(_.get(shipmentAparData, 'ConsolNo', 0)) > 0 &&
-        //   _.parseInt(_.get(shipmentAparData, 'SeqNo', 0)) < 9999
-        // ) {
-        //   if (
-        //     _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId')) &&
-        //     _.get(shipmentAparData, 'Consolidation') === 'Y'
-        //   ) {
-        //     await loadP2PConsole(dynamoData, shipmentAparData);
-        //   } else if (_.get(shipmentAparData, 'FK_ServiceId') === 'MT') {
-        //     return
-        //     // await loadMultistopConsole(dynamoData, shipmentAparData);
-        //   } else {
-        //     console.info('Exception consol> 0 and shipmentApar.FK_ServiceId is not in HS/TL/MT');
-        //     throw new Error('Exception');
-        //   }
-        // } else {
-        //   console.info('Exception global');
-        //   throw new Error('Exception');
-        // }
+        if (
+          parseInt(_.get(shipmentAparData, 'ConsolNo', null), 10) !== null &&
+          _.get(shipmentAparData, 'Consolidation') === 'N' &&
+          _.includes(['MT'], _.get(shipmentAparData, 'FK_ServiceId'))
+        ) {
+
+          const {
+            shipmentHeader,
+            shipmentDesc,
+            consolStopHeaders,
+            customer,
+            references
+          } = await fetchDataFromTablesList(_.get(shipmentAparData, 'ConsolNo', null))
+
+          const mtPayloadData = await mtPayload(
+            shipmentHeader,
+            shipmentDesc,
+            consolStopHeaders,
+            customer,
+            references
+          );
+          console.info(
+            '🙂 -> file: index.js:114 -> mtPayloadData:',
+            JSON.stringify(mtPayloadData)
+          );
+          return mtPayloadData;
+        }
       } catch (error) {
         console.info('Error', error);
       }

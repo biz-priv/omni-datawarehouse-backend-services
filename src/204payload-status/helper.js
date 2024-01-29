@@ -634,6 +634,330 @@ async function getHighValue({ shipmentAparConsoleData: aparData }) {
   return sumByInsurance > 100000;
 }
 
+// Reusable function to convert string values to numbers and sum them
+function sumNumericValues(items, propertyName) {
+  return _.sum(items.map(item => {
+    const numericValue = parseFloat(_.get(item, propertyName));
+    return !isNaN(numericValue) ? numericValue : 0;
+  }));
+}
+
+async function fetchDataFromTablesList(CONSOL_NO) {
+  try {
+    const sapparams = {
+      TableName: "omni-wt-rt-shipment-apar-dev",
+      IndexName: "omni-ivia-ConsolNo-index-dev",
+      KeyConditionExpression: 'ConsolNo = :ConsolNo',
+      FilterExpression: 'FK_VendorId = :FK_VendorId and Consolidation = :Consolidation and FK_ServiceId = :FK_ServiceId and SeqNo <> :SeqNo and FK_OrderNo <> :FK_OrderNo',
+      ExpressionAttributeValues: {
+        ':ConsolNo': CONSOL_NO.toString(),
+        ':FK_VendorId': "LIVELOGI",
+        ':Consolidation': 'N',
+        ':FK_ServiceId': 'MT',
+        ':SeqNo': '9999',
+        ':FK_OrderNo': CONSOL_NO.toString()
+      },
+    };
+
+    let shipmentApar = await dynamoDB.query(sapparams).promise();
+    shipmentApar = shipmentApar.Items;
+    const uniqueShipmentApar = getUniqueObjects(shipmentApar);
+
+    let shipmentHeader = [];
+    let shipmentDesc = [];
+    let consolStopHeaders = [];
+    let consolStopItems = [];
+    let element;
+
+    for (const uniqueElement of uniqueShipmentApar) {
+      element = uniqueElement;
+
+      const shparams = {
+        TableName: "omni-wt-rt-shipment-header-dev",
+        KeyConditionExpression: 'PK_OrderNo = :PK_OrderNo',
+        ExpressionAttributeValues: {
+          ':PK_OrderNo': element.FK_OrderNo.toString(),
+        },
+      };
+      const sh = await dynamoDB.query(shparams).promise();
+      shipmentHeader.push(...sh.Items);
+
+      const sdparams = {
+        TableName: "omni-wt-rt-shipment-desc-dev",
+        KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
+        ExpressionAttributeValues: {
+          ':FK_OrderNo': element.FK_OrderNo.toString(),
+        },
+      };
+      const sd = await dynamoDB.query(sdparams).promise();
+      shipmentDesc.push(...sd.Items);
+
+      const cstparams = {
+        TableName: "omni-wt-rt-consol-stop-items-dev",
+        KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
+        ExpressionAttributeValues: {
+          ':FK_OrderNo': element.FK_OrderNo.toString(),
+        },
+      };
+      const cst = await dynamoDB.query(cstparams).promise();
+      consolStopItems.push(...cst.Items);
+      const uniqueConsolStopItems = getUniqueObjects(consolStopItems);
+
+      for (const csitem of uniqueConsolStopItems) {
+        const cshparams = {
+          TableName: "omni-wt-rt-consol-stop-headers-dev",
+          KeyConditionExpression: 'PK_ConsolStopId = :PK_ConsolStopId',
+          FilterExpression: 'FK_ConsolNo = :ConsolNo',
+          ExpressionAttributeValues: {
+            ':PK_ConsolStopId': csitem.FK_ConsolStopId.toString(),
+            ':ConsolNo': CONSOL_NO.toString(),
+          },
+        };
+
+        const csh = await dynamoDB.query(cshparams).promise();
+        consolStopHeaders.push(...csh.Items);
+      }
+    }
+
+    const uniqueConsolStopHeaders = getUniqueObjects(consolStopHeaders);
+
+    let customer = [];
+    if (shipmentHeader.length > 0 && shipmentHeader[0].BillNo !== '') {
+      const customerParam = {
+        TableName: "omni-wt-rt-customers-dev",
+        KeyConditionExpression: 'PK_CustNo = :PK_CustNo',
+        ExpressionAttributeValues: {
+          ':PK_CustNo': shipmentHeader[0].BillNo,
+        },
+      };
+      const customerResult = await dynamoDB.query(customerParam).promise();
+      customer = customerResult.Items;
+    }
+
+    let references = []
+    const refparams = {
+      TableName: "omni-wt-rt-references-dev",
+      IndexName: "omni-wt-rt-ref-orderNo-index-dev",
+      KeyConditionExpression: "FK_OrderNo = :FK_OrderNo",
+      ExpressionAttributeValues: {
+        ":FK_OrderNo": element.FK_OrderNo.toString(),
+      },
+    };
+    const refResult = await dynamoDB.query(refparams).promise();
+    references.push(...refResult.Items);
+
+    return {
+      shipmentApar: uniqueShipmentApar,
+      shipmentHeader,
+      shipmentDesc,
+      consolStopHeaders: uniqueConsolStopHeaders,
+      consolStopItems,
+      customer,
+      references
+    };
+  } catch (error) {
+    console.error('error', error);
+    return {};
+  }
+}
+
+async function populateStops(consolStopHeaders, references) {
+  const stops = [];
+
+  // Fetch location IDs for stops
+  const locationIds = await fetchLocationIds(consolStopHeaders);
+
+  for (let i = 0; i < consolStopHeaders.length; i++) {
+    const stopHeader = consolStopHeaders[i];
+    const locationId = locationIds[i];
+
+    console.log("ConsolStopPickupOrDelivery", stopHeader.ConsolStopPickupOrDelivery);
+
+    let stoptype;
+
+    const isPickup = stopHeader.ConsolStopPickupOrDelivery;
+
+    if (isPickup === 'false') {
+      stoptype = 'PU';
+    } else {
+      stoptype = 'SO';
+    }
+    const timeZoneCode = await getTimeZoneCode(stopHeader.ConsolStopZip);
+    console.info('🚀 ~ file: helper.js:786 ~ stoptype:', stoptype)
+
+    const stop = {
+      "__type": "stop",
+      "__name": "stops",
+      "company_id": "TMS",
+      "appt_required": false,
+      "confirmed": false,
+      "driver_load_unload": "N",
+      "late_eta_colorcode": false,
+      "location_id": locationId,
+      "sched_arrive_early": await calculateSchedArriveEarly(stopHeader, timeZoneCode),
+      "sched_arrive_late": await calculateSchedArriveLate(stopHeader, timeZoneCode),
+      "status": "A",
+      "order_sequence": parseInt(_.get(stopHeader, 'ConsolStopNumber', 0)) + 1,
+      "stop_type": stoptype,
+      "requested_service": false,
+      "prior_uncleared_stops": false,
+      "referenceNumbers": generateReferenceNumbers(references),
+      "stopNotes":
+        [
+          {
+            "__type": "stop_note",
+            "__name": "stopNotes",
+            "company_id": "TMS",
+            "comment_type": "DC",
+            "comments": _.get(stopHeader, 'ConsolStopNotes', "")
+          },
+          {
+            "__type": "stop_note",
+            "__name": "stopNotes",
+            "company_id": "TMS",
+            "comment_type": "DC",
+            "comments": ""
+          }
+        ]
+    };
+
+    stops.push(stop);
+  }
+
+  return stops;
+}
+
+async function fetchLocationIds(stopsData) {
+  const locationPromises = stopsData.map(async (stopData) => {
+    const locationId = await getLocationId(
+      stopData.ConsolStopName,
+      stopData.ConsolStopAddress1,
+      stopData.ConsolStopAddress2,
+      stopData.ConsolStopCity,
+      stopData.FK_ConsolStopState,
+      stopData.ConsolStopZip
+    );
+
+    if (!locationId) {
+      return createLocation({
+        __type: 'location',
+        company_id: 'TMS',
+        address1: stopData.ConsolStopAddress1,
+        address2: stopData.ConsolStopAddress2,
+        city_name: stopData.ConsolStopCity,
+        is_active: true,
+        name: stopData.ConsolStopName,
+        state: stopData.FK_ConsolStopState,
+        zip_code: stopData.ConsolStopZip,
+      });
+    }
+
+    return locationId;
+  });
+
+  const locationIds = await Promise.all(locationPromises);
+
+  return locationIds;
+}
+
+async function getTimeZoneCode(zipcode) {
+  try {
+
+    const params = {
+      TableName: 'omni-wt-rt-timezone-zip-cr-dev',
+      KeyConditionExpression: 'ZipCode = :code',
+      ExpressionAttributeValues: {
+        ':code': zipcode
+      }
+    };
+
+    const result = await dynamoDB.query(params).promise();
+    const timezoncode = _.get(result, 'Items[0].FK_TimeZoneCode');
+    console.info('🚀 ~ file: test.js:603 ~ timezoncode:', timezoncode)
+    if (timezoncode) {
+      return timezoncode;
+    } else {
+      console.error(`Timezone code not found for zipcode: ${zipcode}`);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error querying timezone code:', error);
+    throw error;
+  }
+}
+
+async function getHoursAwayFromTimeZone(timeZoneCode) {
+  try {
+    const params = {
+      TableName: 'omni-wt-rt-timezone-master-dev',
+      KeyConditionExpression: 'PK_TimeZoneCode = :code',
+      ExpressionAttributeValues: {
+        ':code': timeZoneCode
+      }
+    };
+
+    const result = await dynamoDB.query(params).promise();
+
+    // Use lodash _.get to safely access nested properties
+    const hoursAway = _.get(result, 'Items[0].HoursAway.S');
+
+    // Check if hoursAway is defined and convert to integer
+    return hoursAway ? null : parseInt(hoursAway, 10);
+  } catch (error) {
+    console.error('Error querying hours away:', error);
+    throw error;
+  }
+}
+
+async function calculateSchedArriveEarly(stopHeader, timeZoneCode) {
+  const consolStopDate = stopHeader.ConsolStopDate;
+  const consolStopTimeBegin = stopHeader.ConsolStopTimeBegin;
+  const { timeZoneOffset, hoursAway } = await getConsolTimeZoneOffset(stopHeader.FK_ConsolStopState, consolStopDate, timeZoneCode);
+
+  if (consolStopTimeBegin.startsWith('1900-01-01')) {
+    // Invalid date, return consolStopDate with added offset
+    return moment(consolStopDate).add(hoursAway, 'hours').format('YYYYMMDDHHmmss') + timeZoneOffset;
+  }
+
+  const formattedDateTime = moment(`${consolStopDate} ${consolStopTimeBegin}`, 'YYYY-MM-DD HH:mm:ss.SSS')
+    .add(hoursAway, 'hours').format('YYYYMMDDHHmmss');
+  console.info('🚀 ~ file: test.js:652 ~ formattedDateTime:', formattedDateTime);
+
+  return formattedDateTime + timeZoneOffset;
+}
+
+async function calculateSchedArriveLate(stopHeader, timeZoneCode) {
+  const consolStopDate = stopHeader.ConsolStopDate;
+  const consolStopTimeEnd = stopHeader.ConsolStopTimeEnd;
+  const { timeZoneOffset, hoursAway } = await getConsolTimeZoneOffset(stopHeader.FK_ConsolStopState, consolStopDate, timeZoneCode);
+
+  if (consolStopTimeEnd.startsWith('1900-01-01')) {
+    // Invalid date, return consolStopDate with added offset
+    return moment(consolStopDate).add(hoursAway, 'hours').format('YYYYMMDDHHmmss') + timeZoneOffset;
+  }
+
+  const formattedDateTime = moment(`${consolStopDate} ${consolStopTimeEnd}`, 'YYYY-MM-DD HH:mm:ss.SSS')
+    .add(hoursAway, 'hours').format('YYYYMMDDHHmmss');
+  console.info('🚀 ~ file: helper.js:941 ~ formattedDateTime:', formattedDateTime)
+
+  return formattedDateTime + timeZoneOffset;
+}
+
+async function getConsolTimeZoneOffset(FK_ConsolStopState, consolStopDate, timeZoneCode) {
+  let timeZoneOffset = 0;
+  let hoursAway = 0;
+  if (FK_ConsolStopState === 'AZ') {
+    timeZoneOffset = '-0600';
+  } else {
+    const weekOfYear = moment(consolStopDate).isoWeek();
+    timeZoneOffset = (weekOfYear >= 11 && weekOfYear <= 44) ? '-0500' : '-0600';
+    hoursAway = await getHoursAwayFromTimeZone(timeZoneCode);
+  }
+
+  return { timeZoneOffset, hoursAway };
+}
+
+
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
@@ -653,4 +977,7 @@ module.exports = {
   getHazmat,
   getHighValue,
   getAparDataByConsole,
+  sumNumericValues,
+  fetchDataFromTablesList,
+  populateStops
 };
