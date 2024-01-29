@@ -10,7 +10,7 @@ const {
   fetchCommonTableData,
   fetchNonConsoleTableData,
   fetchConsoleTableData,
-  fetchDataFromTablesList
+  fetchDataFromTablesList,
 } = require('./helper');
 
 module.exports.handler = async (event) => {
@@ -147,14 +147,8 @@ module.exports.handler = async (event) => {
           _.get(shipmentAparData, 'Consolidation') === 'N' &&
           _.includes(['MT'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
-
-          const {
-            shipmentHeader,
-            shipmentDesc,
-            consolStopHeaders,
-            customer,
-            references
-          } = await fetchDataFromTablesList(_.get(shipmentAparData, 'ConsolNo', null))
+          const { shipmentHeader, shipmentDesc, consolStopHeaders, customer, references } =
+            await fetchDataFromTablesList(_.get(shipmentAparData, 'ConsolNo', null));
 
           const mtPayloadData = await mtPayload(
             shipmentHeader,
@@ -163,10 +157,7 @@ module.exports.handler = async (event) => {
             customer,
             references
           );
-          console.info(
-            '🙂 -> file: index.js:114 -> mtPayloadData:',
-            JSON.stringify(mtPayloadData)
-          );
+          console.info('🙂 -> file: index.js:114 -> mtPayloadData:', JSON.stringify(mtPayloadData));
           return mtPayloadData;
         }
       } catch (error) {
