@@ -18,45 +18,34 @@ const CONSOLE_WISE_TABLES = {
     tbl_ConfirmationCost: STATUSES.PENDING,
     tbl_Shipper: STATUSES.PENDING,
     tbl_Consignee: STATUSES.PENDING,
-    tbl_ShipmentDesc: STATUSES.READY,
     tbl_ShipmentHeader: STATUSES.PENDING,
-    tbl_Customers: STATUSES.READY,
-    tbl_TimeZoneMaster: STATUSES.READY,
     tbl_TrackingNotes: STATUSES.PENDING,
   },
   [TYPES.NON_CONSOLE]: {
     tbl_ConfirmationCost: STATUSES.PENDING,
     tbl_Shipper: STATUSES.PENDING,
     tbl_Consignee: STATUSES.PENDING,
-    tbl_ShipmentDesc: STATUSES.PENDING,
     tbl_ShipmentHeader: STATUSES.PENDING,
-    tbl_Customers: STATUSES.PENDING,
-    tbl_TimeZoneMaster: STATUSES.READY,
-    tbl_TrackingNotes: STATUSES.PENDING,
   },
   [TYPES.MULTI_STOP]: {
     tbl_ShipmentHeader: STATUSES.PENDING,
     tbl_ConsolStopItems: STATUSES.PENDING,
-    tbl_ConsolStopHeaders: STATUSES.PENDING,
-    tbl_Users: STATUSES.PENDING,
-    tbl_TimeZoneMaster: STATUSES.READY,
-    tbl_Customers: STATUSES.PENDING,
     tbl_ShipmentDesc: STATUSES.PENDING,
+    tbl_TrackingNotes: STATUSES.PENDING,
+    tbl_References: STATUSES.PENDING,
   },
 };
 
 const TABLE_PARAMS = {
   [TYPES.CONSOLE]: {
-    tbl_ConfirmationCost: ({ orderNo }) => {
-      return {
-        TableName: 'omni-wt-rt-confirmation-cost-dev',
-        IndexName: 'omni-wt-confirmation-cost-orderNo-index-dev',
-        KeyConditionExpression: 'FK_OrderNo = :orderNo',
-        ExpressionAttributeValues: {
-          ':orderNo': orderNo,
-        },
-      };
-    },
+    tbl_ConfirmationCost: ({ orderNo }) => ({
+      TableName: 'omni-wt-rt-confirmation-cost-dev',
+      IndexName: 'omni-wt-confirmation-cost-orderNo-index-dev',
+      KeyConditionExpression: 'FK_OrderNo = :orderNo',
+      ExpressionAttributeValues: {
+        ':orderNo': orderNo,
+      },
+    }),
     tbl_Shipper: ({ orderNo }) => ({
       TableName: 'omni-wt-rt-shipper-dev',
       KeyConditionExpression: 'FK_ShipOrderNo = :orderNo',
@@ -71,7 +60,6 @@ const TABLE_PARAMS = {
         ':orderNo': orderNo,
       },
     }),
-    // tbl_ShipmentDesc: ({ orderNo }) => STATUSES.PENDING,
     tbl_ShipmentHeader: ({ orderNo }) => ({
       TableName: 'omni-wt-rt-shipment-header-dev',
       KeyConditionExpression: 'PK_OrderNo = :orderNo',
@@ -79,7 +67,6 @@ const TABLE_PARAMS = {
         ':orderNo': orderNo,
       },
     }),
-    // tbl_Customers: ({ orderNo }) => STATUSES.PENDING,
     tbl_TrackingNotes: ({ consoleNo }) => ({
       TableName: 'omni-wt-rt-tracking-notes-dev',
       IndexName: 'omni-tracking-notes-console-index-dev',
@@ -112,7 +99,6 @@ const TABLE_PARAMS = {
         ':orderNo': orderNo,
       },
     }),
-    // tbl_ShipmentDesc: ({ orderNo }) => STATUSES.PENDING,
     tbl_ShipmentHeader: ({ orderNo }) => ({
       TableName: 'omni-wt-rt-shipment-header-dev',
       KeyConditionExpression: 'PK_OrderNo = :orderNo',
@@ -120,19 +106,46 @@ const TABLE_PARAMS = {
         ':orderNo': orderNo,
       },
     }),
-    // tbl_Customers: ({ orderNo }) => STATUSES.PENDING,
-    // tbl_TimeZoneMaster: ({ orderNo }) => STATUSES.READY,
-    // tbl_TrackingNotes: ({ orderNo }) => STATUSES.PENDING,
   },
-  // [TYPES.MULTI_STOP]: {
-  //   tbl_ShipmentHeader: ({ orderNo }) => STATUSES.PENDING,
-  //   tbl_ConsolStopItems: ({ orderNo }) => STATUSES.PENDING,
-  //   tbl_ConsolStopHeaders: ({ orderNo }) => STATUSES.PENDING,
-  //   tbl_Users: ({ orderNo }) => STATUSES.PENDING,
-  //   tbl_TimeZoneMaster: ({ orderNo }) => STATUSES.READY,
-  //   tbl_Customers: ({ orderNo }) => STATUSES.PENDING,
-  //   tbl_ShipmentDesc: ({ orderNo }) => STATUSES.PENDING,
-  // },
+  [TYPES.MULTI_STOP]: {
+    tbl_ShipmentHeader: ({ orderNo }) => ({
+      TableName: 'omni-wt-rt-shipment-header-dev',
+      KeyConditionExpression: 'PK_OrderNo = :PK_OrderNo',
+      ExpressionAttributeValues: {
+        ':PK_OrderNo': orderNo,
+      },
+    }),
+    tbl_ConsolStopItems: ({ orderNo }) => ({
+      TableName: 'omni-wt-rt-consol-stop-items-dev',
+      KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
+      ExpressionAttributeValues: {
+        ':FK_OrderNo': orderNo,
+      },
+    }),
+    tbl_References: ({ orderNo }) => ({
+      TableName: 'omni-wt-rt-references-dev',
+      IndexName: 'omni-wt-rt-ref-orderNo-index-dev',
+      KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
+      ExpressionAttributeValues: {
+        ':FK_OrderNo': orderNo,
+      },
+    }),
+    tbl_ShipmentDesc: ({ orderNo }) => ({
+      TableName: 'omni-wt-rt-shipment-desc-dev',
+      KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
+      ExpressionAttributeValues: {
+        ':FK_OrderNo': orderNo,
+      },
+    }),
+    tbl_TrackingNotes: ({ consoleNo }) => ({
+      TableName: 'omni-wt-rt-tracking-notes-dev',
+      IndexName: 'omni-tracking-notes-console-index-dev',
+      KeyConditionExpression: 'ConsolNo = :ConsolNo',
+      ExpressionAttributeValues: {
+        ':ConsolNo': consoleNo,
+      },
+    }),
+  },
 };
 
 const VENDOR = 'LIVELOGI';
