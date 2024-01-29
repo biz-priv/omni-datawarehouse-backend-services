@@ -45,10 +45,11 @@ module.exports.handler = async (event, context) => {
       if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
         console.info('Non Console');
         return await insertShipmentStatus({
-          orderId,
+          orderNo: orderId,
           status: STATUSES.PENDING,
           type: TYPES.NON_CONSOLE,
           tableStatuses: CONSOLE_WISE_TABLES[TYPES.NON_CONSOLE],
+          ShipmentAparData: shipmentAparData,
         });
       }
 
@@ -60,10 +61,11 @@ module.exports.handler = async (event, context) => {
       ) {
         console.info('Console');
         return await insertShipmentStatus({
-          orderId,
+          orderNo: orderId,
           status: STATUSES.PENDING,
           type: TYPES.CONSOLE,
           tableStatuses: CONSOLE_WISE_TABLES[TYPES.CONSOLE],
+          ShipmentAparData: shipmentAparData,
         });
       }
 
@@ -80,6 +82,7 @@ module.exports.handler = async (event, context) => {
           status: STATUSES.PENDING,
           type: TYPES.MULTI_STOP,
           tableStatuses: CONSOLE_WISE_TABLES[TYPES.MULTI_STOP],
+          ShipmentAparData: shipmentAparData,
         });
       }
     }
@@ -96,7 +99,7 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function insertShipmentStatus({ orderNo, status, type, tableStatuses }) {
+async function insertShipmentStatus({ orderNo, status, type, tableStatuses, ShipmentAparData }) {
   try {
     const params = {
       TableName: STATUS_TABLE,
@@ -105,6 +108,7 @@ async function insertShipmentStatus({ orderNo, status, type, tableStatuses }) {
         Status: status,
         Type: type,
         TableStatuses: tableStatuses,
+        ShipmentAparData,
         CreatedAt: moment.tz('America/Chicago').format(),
         LastUpdateBy: functionName,
         LastUpdatedAt: moment.tz('America/Chicago').format(),

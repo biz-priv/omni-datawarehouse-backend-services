@@ -49,6 +49,7 @@ provider:
   environment:
     REGION: ${self:custom.region}
     STAGE: ${opt:stage, 'dev'}
+    SNS_TOPIC_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
 
   deploymentBucket:
     name: ${ssm:/omni-dw/${self:provider.stage}/sls/deployment/bucket}
@@ -84,6 +85,7 @@ functions:
 
   204-payload-status: ${file(config/functions/204PayloadStatus.yml):function}
   204-create-shipment-stream-processor: ${file(config/functions/204-create-shipment-stream-processor.yml):function}
+  204-table-status: ${file(config/functions/204-table-status.yml):function}
 
 resources:
   Resources:

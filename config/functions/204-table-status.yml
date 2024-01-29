@@ -1,6 +1,6 @@
 function:
   name: omni-204-table-status-${self:provider.stage}
-  handler: src/204payload-status/index.handler
+  handler: src/204-table-status/index.handler
   runtime: nodejs18.x
   memorySize: 1024
   timeout: 300
@@ -8,7 +8,7 @@ function:
     - { Ref: DWBackendLambdaLayer }
   package:
     include:
-      - 'src/204payload-status/**'
+      - 'src/204-table-status/**'
       - 'src/shared/**'
     exclude:
       - '**/*'
@@ -33,6 +33,8 @@ function:
     AUTH: 'Basic YXBpdXNlcjpsdmxwYXBpdXNlcg=='
     GET_LOC_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/locations/search'
     CREATE_LOC_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/locations/create'
+    STATUS_TABLE: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.name}
+    STATUS_TABLE_STATUS_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.status-index}
 
   events:
     - schedule: cron(*/5 * * * ? *) #cron for every 5 min
