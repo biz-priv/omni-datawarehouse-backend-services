@@ -76,14 +76,23 @@ module.exports.handler = async (event, context) => {
         includes(['MT'], serviceLevelId) &&
         vendorId === VENDOR
       ) {
-        console.info('Console');
-        return await insertShipmentStatus({
+        console.info('Multi Stops');
+        const result = await fetchConsoleForOrderId({ consolNo });
+        console.info('🙂 -> file: index.js:81 -> result:', result);
+        const tableStatuses = {};
+        get(result, 'Items', []).map(
+          async (item) =>
+            (tableStatuses[get(item, 'FK_OrderNo')] = CONSOLE_WISE_TABLES[TYPES.MULTI_STOP])
+        );
+
+        await insertShipmentStatus({
           orderNo: orderId,
           status: STATUSES.PENDING,
           type: TYPES.MULTI_STOP,
-          tableStatuses: CONSOLE_WISE_TABLES[TYPES.MULTI_STOP],
+          tableStatuses,
           ShipmentAparData: shipmentAparData,
         });
+        return true;
       }
     }
 
@@ -126,10 +135,28 @@ async function insertShipmentStatus({ orderNo, status, type, tableStatuses, Ship
 async function publishSNSTopic({ message }) {
   await sns
     .publish({
-      // TopicArn: 'arn:aws:sns:us-east-1:332281781429:omni-error-notification-topic-dev',
       TopicArn: SNS_TOPIC_ARN,
       Subject: `Error on ${functionName} lambda.`,
       Message: `An error occurred: ${message}`,
     })
     .promise();
+}
+
+async function fetchConsoleForOrderId({ consolNo }) {
+  const params = {
+    TableName: 'omni-wt-rt-shipment-apar-dev',
+    IndexName: 'omni-ivia-ConsolNo-index-dev',
+    KeyConditionExpression: 'ConsolNo = :ConsolNo',
+    FilterExpression:
+      'FK_VendorId = :FK_VendorId and Consolidation = :Consolidation and FK_ServiceId = :FK_ServiceId and SeqNo <> :SeqNo and FK_OrderNo <> :FK_OrderNo',
+    ExpressionAttributeValues: {
+      ':ConsolNo': consolNo.toString(),
+      ':FK_VendorId': 'LIVELOGI',
+      ':Consolidation': 'N',
+      ':FK_ServiceId': 'MT',
+      ':SeqNo': '9999',
+      ':FK_OrderNo': consolNo.toString(),
+    },
+  };
+  return await dynamoDb.query(params).promise();
 }
