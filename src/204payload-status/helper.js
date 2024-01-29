@@ -720,7 +720,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       customer = customerResult.Items;
     }
 
-    const references = [];
+    let references = [];
     const refparams = {
       TableName: 'omni-wt-rt-references-dev',
       IndexName: 'omni-wt-rt-ref-orderNo-index-dev',
@@ -731,6 +731,28 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     };
     const refResult = await dynamoDB.query(refparams).promise();
     references.push(...refResult.Items);
+    const trackingNotes = []
+    const tnparams = {
+      TableName: 'omni-wt-rt-tracking-notes-dev',
+      IndexName: 'omni-tracking-notes-console-index-dev',
+      KeyConditionExpression: 'ConsolNo = :ConsolNo',
+      ExpressionAttributeValues: {
+        ':ConsolNo': CONSOL_NO.toString(),
+      },
+    };
+
+    const trackingNotesResult = await dynamoDB.query(tnparams).promise();
+
+    let users = []
+    const userparams = {
+      TableName: 'omni-wt-rt-users-dev',
+      KeyConditionExpression: 'PK_UserId = :PK_UserId',
+      ExpressionAttributeValues: {
+        ':PK_UserId': _.get(trackingNotesResult, "Items[0].FK_UserId", ""),
+      },
+    };
+    const usersResult = await dynamoDB.query(userparams).promise();
+    users = usersResult.Items;
 
     return {
       shipmentApar: uniqueShipmentApar,
@@ -740,6 +762,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       consolStopItems,
       customer,
       references,
+      users
     };
   } catch (error) {
     console.error('error', error);
@@ -747,7 +770,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
   }
 }
 
-async function populateStops(consolStopHeaders, references) {
+async function populateStops(consolStopHeaders, references, users) {
   const stops = [];
 
   // Fetch location IDs for stops
@@ -801,7 +824,7 @@ async function populateStops(consolStopHeaders, references) {
           __name: 'stopNotes',
           company_id: 'TMS',
           comment_type: 'DC',
-          comments: '',
+          comments: _.get(users, "[0].UserEmail"),
         },
       ],
     };

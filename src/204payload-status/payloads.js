@@ -187,7 +187,7 @@ async function consolPayload({
   return payload;
 }
 
-async function mtPayload(shipmentHeader, shipmentDesc, consolStopHeaders, customer, references) {
+async function mtPayload(shipmentHeader, shipmentDesc, consolStopHeaders, customer, references, users) {
   console.info('entered payload function');
   let hazmat = _.get(shipmentDesc, '[0]Hazmat', false);
 
@@ -243,7 +243,7 @@ async function mtPayload(shipmentHeader, shipmentDesc, consolStopHeaders, custom
     operational_status: 'CLIN',
     lock_miles: false,
     def_move_type: 'A',
-    stops: await populateStops(consolStopHeaders, references),
+    stops: await populateStops(consolStopHeaders, references, users),
   };
 
   return payload;

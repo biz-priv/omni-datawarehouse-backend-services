@@ -147,7 +147,7 @@ module.exports.handler = async (event) => {
           _.get(shipmentAparData, 'Consolidation') === 'N' &&
           _.includes(['MT'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
-          const { shipmentHeader, shipmentDesc, consolStopHeaders, customer, references } =
+          const { shipmentHeader, shipmentDesc, consolStopHeaders, customer, references,users } =
             await fetchDataFromTablesList(_.get(shipmentAparData, 'ConsolNo', null));
 
           const mtPayloadData = await mtPayload(
@@ -155,7 +155,8 @@ module.exports.handler = async (event) => {
             shipmentDesc,
             consolStopHeaders,
             customer,
-            references
+            references,
+            users
           );
           console.info('🙂 -> file: index.js:114 -> mtPayloadData:', JSON.stringify(mtPayloadData));
           return mtPayloadData;
