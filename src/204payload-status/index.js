@@ -1,6 +1,5 @@
 'use strict';
 const AWS = require('aws-sdk');
-const { prepareBatchFailureObj } = require('../shared/dataHelper');
 const _ = require('lodash');
 const { nonConsolPayload, consolPayload, mtPayload } = require('./payloads');
 const {
@@ -12,6 +11,11 @@ const {
   fetchConsoleTableData,
   fetchDataFromTablesList,
 } = require('./helper');
+const { sendPayload } = require('./apis');
+const { STATUSES } = require('../shared/constants/204_create_shipment');
+
+const { STATUS_TABLE } = process.env;
+const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
 module.exports.handler = async (event) => {
   console.info(
@@ -22,8 +26,16 @@ module.exports.handler = async (event) => {
 
   try {
     const promises = dynamoEventRecords.map(async (record) => {
+      let payload;
+      let orderId;
+
       try {
-        const shipmentAparData = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
+        const shipmentAparData = _.get(
+          AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage),
+          'ShipmentAparData'
+        );
+        orderId = _.get(shipmentAparData, 'FK_OrderNo', 0);
+        console.info('🙂 -> file: index.js:30 -> shipmentAparData:', shipmentAparData);
 
         // Non-Console
         if (
@@ -57,6 +69,7 @@ module.exports.handler = async (event) => {
             '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
             JSON.stringify(nonConsolPayloadData)
           );
+          payload = nonConsolPayloadData;
           return nonConsolPayloadData;
         }
 
@@ -107,8 +120,11 @@ module.exports.handler = async (event) => {
             '🙂 -> file: index.js:114 -> ConsolPayloadData:',
             JSON.stringify(ConsolPayloadData)
           );
-          return 'Console payload';
+          payload = ConsolPayloadData;
+          return ConsolPayloadData;
         }
+
+        // MT Payload
         if (
           parseInt(_.get(shipmentAparData, 'ConsolNo', null), 10) !== null &&
           _.get(shipmentAparData, 'Consolidation') === 'N' &&
@@ -126,20 +142,35 @@ module.exports.handler = async (event) => {
             users
           );
           console.info('🙂 -> file: index.js:114 -> mtPayloadData:', JSON.stringify(mtPayloadData));
+          payload = mtPayloadData;
           return mtPayloadData;
         }
+
+        const createPayloadResponse = await sendPayload({ payload });
+        console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
+        await updateStatusTable({
+          message: 'SUCCESS',
+          payload,
+          orderNo: orderId,
+          status: STATUSES.SENT,
+        });
       } catch (error) {
         console.info('Error', error);
+        await updateStatusTable({
+          orderNo: orderId,
+          message: error.message,
+          payload,
+          status: STATUSES.FAILED,
+        });
+        throw error;
       }
       return false;
     });
-
     await Promise.all(promises);
-
-    return prepareBatchFailureObj([]); // Modify if needed
+    return true; // Modify if needed
   } catch (error) {
     console.error('Error', error);
-    return prepareBatchFailureObj(dynamoEventRecords); // Modify if needed
+    return false;
   }
 };
 
@@ -192,5 +223,26 @@ async function consolNonConsolCommonData({ shipmentAparData }) {
   } catch (error) {
     console.error('Error', error);
     throw new Error(`Error in consolNonConsolCommonData: ${error}`);
+  }
+}
+
+async function updateStatusTable({ orderNo, status, message, payload }) {
+  try {
+    const updateParam = {
+      TableName: STATUS_TABLE,
+      Key: { FK_OrderNo: orderNo },
+      UpdateExpression: 'set #Status = :status, Message = :message, Payload = :payload',
+      ExpressionAttributeNames: { '#Status': 'Status' },
+      ExpressionAttributeValues: {
+        ':status': status,
+        ':message': message,
+        ':payload': payload,
+      },
+    };
+    console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
+    return await dynamoDb.update(updateParam).promise();
+  } catch (err) {
+    console.info('🙂 -> file: index.js:224 -> err:', err);
+    return false;
   }
 }

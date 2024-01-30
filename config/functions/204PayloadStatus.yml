@@ -33,12 +33,14 @@ function:
     AUTH: 'Basic YXBpdXNlcjpsdmxwYXBpdXNlcg=='
     GET_LOC_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/locations/search'
     CREATE_LOC_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/locations/create'
+    STATUS_TABLE: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.name}
+    SEND_PAYLOAD_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/orders/create'
 
   events:
     - stream:
-        arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.streamArn~true}
+        arn: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.streamArn}
         batchSize: 5
         maximumRetryAttempts: 3
         bisectBatchOnFunctionError: true
         filterPatterns:
-          - { dynamodb: { NewImage: { FK_VendorId: { S: ['LIVELOGI'] } } } }
+          - { dynamodb: { NewImage: { Status: { S: ['READY'] } } } }
