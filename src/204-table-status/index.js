@@ -87,9 +87,14 @@ async function checkTable(tableData) {
 
   await Promise.all(
     tableNames.map(async (tableName) => {
-      console.info('🙂 -> file: index.js:86 -> tableName:', tableName);
-      const param = TABLE_PARAMS[type][tableName]({ orderNo, consoleNo });
-      originalTableStatuses[tableName] = await fetchItemFromTable({ params: param });
+      try {
+        console.info('🙂 -> file: index.js:86 -> tableName:', tableName);
+        const param = TABLE_PARAMS[type][tableName]({ orderNo, consoleNo });
+        originalTableStatuses[tableName] = await fetchItemFromTable({ params: param });
+      } catch (error) {
+        console.info('🙂 -> file: index.js:95 -> error:', error);
+        throw error;
+      }
     })
   );
   console.info('🙂 -> file: index.js:79 -> originalTableStatuses:', originalTableStatuses);
@@ -167,11 +172,16 @@ async function checkMultiStop(tableData) {
       console.info('🙂 -> file: index.js:81 -> tableName:', tableNames);
       await Promise.all(
         tableNames.map(async (tableName) => {
-          console.info('🙂 -> file: index.js:86 -> tableName:', tableName);
-          const param = TABLE_PARAMS[type][tableName]({ orderNo, consoleNo });
-          originalTableStatuses[`${orderNoForConsol}`][tableName] = await fetchItemFromTable({
-            params: param,
-          });
+          try {
+            console.info('🙂 -> file: index.js:86 -> tableName:', tableName);
+            const param = TABLE_PARAMS[type][tableName]({ orderNo, consoleNo });
+            originalTableStatuses[`${orderNoForConsol}`][tableName] = await fetchItemFromTable({
+              params: param,
+            });
+          } catch (error) {
+            console.info('🙂 -> file: index.js:182 -> error:', error);
+            throw error;
+          }
         })
       );
     })
