@@ -382,20 +382,21 @@ async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
 }
 
 function getFinalShipperAndConsigneeData({ confirmationCostData, shipperData, consigneeData }) {
-  // Use confirmationCostData if available, otherwise use data from other tables
+  // Check if required fields are present and non-empty in confirmationCostData
   let finalShipperData;
-  if (_.isEmpty(confirmationCostData)) {
+  if (_.get(confirmationCostData, 'ShipName', '') === '') {
     finalShipperData = shipperData;
   } else {
     finalShipperData = confirmationCostData;
   }
 
   let finalConsigneeData;
-  if (_.isEmpty(confirmationCostData)) {
+  if (_.get(confirmationCostData, 'ConName', '') === '') {
     finalConsigneeData = consigneeData;
   } else {
     finalConsigneeData = confirmationCostData;
   }
+
   return { finalShipperData, finalConsigneeData };
 }
 
@@ -511,15 +512,14 @@ async function fetchConsoleTableData({ shipmentAparData }) {
     if (shipmentHeaderData === 0 || trackingNotesData === 0) {
       throw new Error('Missing data in customers or users');
     }
-    const tables2 = ['omni-wt-rt-customers-dev', 'omni-wt-rt-users'];
-    const [customersData, userData] = await Promise.all(
+    const tables2 = ['omni-wt-rt-customers-dev'];
+    const [customersData] = await Promise.all(
       tables2.map(async (table) => {
         const param = getParamsByTableName(
           _.get(shipmentAparData, 'FK_OrderNo'),
           table,
           '',
-          _.get(shipmentHeaderData, '[0].BillNo', ''),
-          _.get(trackingNotesData, '[0].FK_UserId')
+          _.get(shipmentHeaderData, '[0].BillNo', '')
         );
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
@@ -527,6 +527,27 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         return _.get(response, 'Items', false);
       })
     );
+    let userData = await Promise.all(
+      trackingNotesData.map(async (trackingNote) => {
+        const param = getParamsByTableName(
+          '',
+          'omni-wt-rt-users',
+          '',
+          '',
+          _.get(trackingNote, 'FK_UserId')
+        );
+        console.info(
+          '🙂 -> file: index.js:35 -> tables.map -> param:',
+          trackingNote,
+          'omni-wt-rt-users',
+          param
+        );
+        const response = await queryDynamoDB(param);
+        console.info('🚀 ~ file: helper.js:529 ~ response:', response);
+        return _.get(response, 'Items[0]', false);
+      })
+    );
+    userData = userData.filter((item) => item && _.has(item, 'UserEmail'))[0];
     return {
       shipmentHeaderData,
       referencesData,
