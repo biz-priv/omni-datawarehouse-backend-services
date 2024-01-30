@@ -31,7 +31,7 @@ module.exports.handler = async (event) => {
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
           const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
-            await consolNonConsolCommomData({ shipmentAparData });
+            await consolNonConsolCommonData({ shipmentAparData });
           const {
             shipmentHeaderData: [shipmentHeaderData],
             referencesData,
@@ -67,7 +67,7 @@ module.exports.handler = async (event) => {
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
           const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
-            await consolNonConsolCommomData({ shipmentAparData });
+            await consolNonConsolCommonData({ shipmentAparData });
           const shipmentAparDataForConsole = await fetchAparTableForConsole({
             orderNo: _.get(shipmentAparData, 'FK_OrderNo'),
           });
@@ -78,7 +78,7 @@ module.exports.handler = async (event) => {
           const {
             shipmentHeaderData: [shipmentHeaderData],
             referencesData,
-            shipmentDescData: [shipmentDescData],
+            shipmentDescData,
             trackingNotesData: [trackingNotesData],
             customersData: [customersData],
             userData: [userData],
@@ -143,7 +143,7 @@ module.exports.handler = async (event) => {
   }
 };
 
-async function consolNonConsolCommomData({ shipmentAparData }) {
+async function consolNonConsolCommonData({ shipmentAparData }) {
   try {
     const {
       confirmationCostData: [confirmationCostData],
@@ -191,6 +191,6 @@ async function consolNonConsolCommomData({ shipmentAparData }) {
     };
   } catch (error) {
     console.error('Error', error);
-    throw new Error(`Error in consolNonConsolCommomData: ${error}`);
+    throw new Error(`Error in consolNonConsolCommonData: ${error}`);
   }
 }

@@ -348,9 +348,8 @@ async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
   );
 
   // return { shipperLocationId, consigneeLocationId };
-  // // Get location ID for consignee
 
-  // // Use the obtained location IDs to create locations if needed
+  // Use the obtained location IDs to create locations if needed
   if (!shipperLocationId) {
     shipperLocationId = await createLocation({
       __type: 'location',
@@ -553,21 +552,23 @@ async function getAparDataByConsole({ shipmentAparData }) {
   try {
     const shipmentAparParams = {
       TableName: 'omni-wt-rt-shipment-apar-dev',
-      KeyConditionExpression: 'FK_OrderNo = :orderNo',
-      FilterExpression: 'Consolidation = :consolidation and ConsolNo = :ConsolNo',
+      IndexName: 'omni-ivia-ConsolNo-index-dev',
+      KeyConditionExpression: 'ConsolNo = :ConsolNo',
+      FilterExpression: 'Consolidation = :consolidation',
       ExpressionAttributeValues: {
-        ':orderNo': _.get(shipmentAparData, 'FK_OrderNo'),
         ':ConsolNo': _.get(shipmentAparData, 'ConsolNo'),
         ':consolidation': 'N',
       },
     };
     console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentAparParams);
     const result = _.get(await queryDynamoDB(shipmentAparParams), 'Items', []);
+    console.info('🙂 -> file: helper.js:573 -> result:', result);
     if (result.length <= 0) {
       throw new Error(
-        `Shipment apar data with console number ${_.get(shipmentAparData, 'ConsolNo')} not found.`
+        `Shipment apar data with console number ${_.get(shipmentAparData, 'ConsolNo')} not found where consolidation = 'N'.`
       );
     }
+    return result;
   } catch (err) {
     console.error('🙂 -> file: helper.js:546 -> err:', err);
     throw err;
@@ -603,6 +604,7 @@ async function getWeightForConsole({ shipmentAparConsoleData: aparData }) {
   const descDataFlatten = _.flatten(descData);
   const totalWeight = _.sumBy(descDataFlatten, (item) => parseFloat(_.get(item, 'Weight', 0)));
   console.info('🙂 -> file: test.js:38 -> totalWeight:', totalWeight);
+  return totalWeight;
 }
 
 async function getHazmat({ shipmentAparConsoleData: aparData }) {
@@ -631,7 +633,7 @@ async function getHazmat({ shipmentAparConsoleData: aparData }) {
   return filteredDescData;
 }
 
-async function getHighValue({ shipmentAparConsoleData: aparData }) {
+async function getHighValue({ shipmentAparConsoleData: aparData, type = 'high_value' }) {
   const descData = await Promise.all(
     aparData.map(async (data) => {
       const shipmentHeaderParams = {
@@ -652,8 +654,12 @@ async function getHighValue({ shipmentAparConsoleData: aparData }) {
   const sumByInsurance = _.sumBy(descDataFlatten, (data) =>
     parseFloat(_.get(data, 'Insurance', 0))
   );
-  console.info('🙂 -> file: test.js:40 -> sumByInsurance:', sumByInsurance > 100000);
-  return sumByInsurance > 100000;
+  if (type === 'high_value') return sumByInsurance > 100000;
+  return sumByInsurance;
+}
+
+function getPieces({ shipmentDesc }) {
+  return _.sumBy(shipmentDesc, (data) => parseInt(_.get(data, 'Piece', 0), 10));
 }
 
 // Reusable function to convert string values to numbers and sum them
@@ -687,6 +693,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
         ':FK_OrderNo': CONSOL_NO.toString(),
       },
     };
+    console.info('🚀 ~ file: helper.js:678 ~ sapparams:', sapparams);
 
     let shipmentApar = await dynamoDB.query(sapparams).promise();
     shipmentApar = shipmentApar.Items;
@@ -1140,4 +1147,5 @@ module.exports = {
   fetchDataFromTablesList,
   populateStops,
   mapEquipmentCodeToFkPowerbrokerCode,
+  getPieces,
 };

@@ -11,6 +11,7 @@ const {
   sumNumericValues,
   populateStops,
   mapEquipmentCodeToFkPowerbrokerCode,
+  getPieces,
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -149,8 +150,9 @@ async function consolPayload({
     on_hold: true,
     ordered_date: formatTimestamp(_.get(shipmentHeader, 'OrderDate', '')),
     ordered_method: 'M',
+    order_value: await getHighValue({ shipmentAparConsoleData, type: 'order_value' }),
     pallets_required: false,
-    pieces: _.get(shipmentDesc, 'Pieces', 0),
+    pieces: getPieces({ shipmentDesc }),
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
@@ -176,7 +178,7 @@ async function consolPayload({
       1,
       'PU',
       shipperLocationId,
-      finalConsigneeData,
+      finalShipperData,
       confirmationCostData,
       'shipper',
       userData
@@ -187,7 +189,7 @@ async function consolPayload({
       2,
       'SO',
       consigneeLocationId,
-      finalShipperData,
+      finalConsigneeData,
       confirmationCostData,
       'consignee'
     )

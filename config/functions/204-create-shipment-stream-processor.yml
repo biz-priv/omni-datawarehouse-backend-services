@@ -18,7 +18,7 @@ function:
     patterns:
       - '!**/*'
       - 'src/204-create-shipment-stream-processor/*'
-      - 'src/shared/*'
+      - 'src/shared/**'
   environment:
     SNS_TOPIC_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
     STAGE: ${self:provider.stage}
