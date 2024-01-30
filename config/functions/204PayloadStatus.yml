@@ -35,6 +35,7 @@ function:
     CREATE_LOC_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/locations/create'
     STATUS_TABLE: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.name}
     SEND_PAYLOAD_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/orders/create'
+    UPDATE_PAYLOAD_URL: 'https://tms-lvlp.loadtracking.com:6790/ws/api/orders/update'
 
   events:
     - stream:

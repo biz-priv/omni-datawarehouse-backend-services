@@ -2,7 +2,7 @@
 const axios = require('axios');
 const _ = require('lodash');
 
-const { AUTH, GET_LOC_URL, CREATE_LOC_URL, SEND_PAYLOAD_URL } = process.env;
+const { AUTH, GET_LOC_URL, CREATE_LOC_URL, SEND_PAYLOAD_URL, UPDATE_PAYLOAD_URL } = process.env;
 
 async function getLocationId(name, address1, address2, cityName, state, zipCode) {
   const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${
@@ -81,4 +81,28 @@ async function sendPayload({ payload: data }) {
   }
 }
 
-module.exports = { getLocationId, createLocation, sendPayload };
+async function updateOrders({ payload: data }) {
+  const apiUrl = UPDATE_PAYLOAD_URL;
+
+  const headers = {
+    Accept: 'application/json',
+    Authorization: AUTH,
+  };
+
+  try {
+    const response = await axios.put(apiUrl, data, {
+      headers,
+    });
+
+    // Handle the response using lodash or other methods as needed
+    const responseData = _.get(response, 'data', {});
+    console.info('🙂 -> file: apis.js:54 -> updateOrders -> responseData:', responseData);
+    // Return the created location data or perform additional processing as needed
+    return _.get(responseData, 'id', false);
+  } catch (error) {
+    console.error('🙂 -> file: apis.js:58 -> updateOrders -> error:', error);
+    throw error;
+  }
+}
+
+module.exports = { getLocationId, createLocation, sendPayload, updateOrders };

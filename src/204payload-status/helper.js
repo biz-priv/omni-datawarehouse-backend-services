@@ -918,7 +918,10 @@ async function populateStops(consolStopHeaders, references, users) {
           __name: 'stopNotes',
           company_id: 'TMS',
           comment_type: 'DC',
-          comments: _.get(stopHeader, 'ConsolStopNotes', ''),
+          comments:
+            _.get(stopHeader, 'ConsolStopNotes', '') === ''
+              ? 'Empty'
+              : _.get(stopHeader, 'ConsolStopNotes'),
         },
         {
           __type: 'stop_note',
@@ -935,7 +938,7 @@ async function populateStops(consolStopHeaders, references, users) {
     stops.push(stop);
   }
 
-  return stops;
+  return stops.sort((a, b) => _.get(a, 'order_sequence') - _.get(b, 'order_sequence'));
 }
 
 async function fetchLocationIds(stopsData) {
