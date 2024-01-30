@@ -10,7 +10,7 @@ const {
   getAparDataByConsole,
   sumNumericValues,
   populateStops,
-  mapEquipmentCodeToFkPowerbrokerCode
+  mapEquipmentCodeToFkPowerbrokerCode,
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -22,7 +22,7 @@ async function nonConsolPayload({
   finalShipperData,
   finalConsigneeData,
   customersData,
-  userData
+  userData,
 }) {
   let hazmat = _.get(shipmentDesc, 'Hazmat', false);
   // Check if Hazmat is equal to 'Y'
@@ -45,13 +45,15 @@ async function nonConsolPayload({
     customer_id: 'OMNICOT8',
     blnum: _.get(shipmentHeader, 'Housebill', ''),
     entered_user_id: 'apiuser',
-    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(_.get(shipmentHeader, 'FK_EquipmentCode', '')),
+    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
+      _.get(shipmentHeader, 'FK_EquipmentCode', '')
+    ),
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
     hazmat,
     high_value: _.get(shipmentHeader, 'Insurance', 0) > 100000, // TODO: validate this filed
-    hold_reason: "NEW API",
+    hold_reason: 'NEW API',
     include_split_point: false,
     is_autorate_dist: false,
     is_container: false,
@@ -88,9 +90,9 @@ async function nonConsolPayload({
       1,
       'PU',
       shipperLocationId,
-      finalConsigneeData,
-      "",
-      "shipper",
+      finalShipperData,
+      '',
+      'shipper',
       userData
     ),
     await generateStop(
@@ -99,7 +101,7 @@ async function nonConsolPayload({
       2,
       'SO',
       consigneeLocationId,
-      finalShipperData
+      finalConsigneeData
     )
   );
 
@@ -193,7 +195,14 @@ async function consolPayload({
   return payload;
 }
 
-async function mtPayload(shipmentHeader, shipmentDesc, consolStopHeaders, customer, references, users) {
+async function mtPayload(
+  shipmentHeader,
+  shipmentDesc,
+  consolStopHeaders,
+  customer,
+  references,
+  users
+) {
   console.info('entered payload function');
   let hazmat = _.get(shipmentDesc, '[0]Hazmat', false);
 
@@ -217,13 +226,15 @@ async function mtPayload(shipmentHeader, shipmentDesc, consolStopHeaders, custom
     customer_id: 'OMNICOT8',
     blnum: _.get(consolStopHeaders, '[0]FK_ConsolNo', ''),
     entered_user_id: 'apiuser',
-    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(_.get(shipmentHeader, '[0]FK_EquipmentCode', '')),
+    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
+      _.get(shipmentHeader, '[0]FK_EquipmentCode', '')
+    ),
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
     hazmat,
     high_value: _.get(shipmentHeader, '[0]Insurance', 0) > 100000,
-    hold_reason: "NEW API",
+    hold_reason: 'NEW API',
     include_split_point: false,
     is_autorate_dist: false,
     is_container: false,

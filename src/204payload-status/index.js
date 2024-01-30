@@ -30,7 +30,8 @@ module.exports.handler = async (event) => {
           parseInt(_.get(shipmentAparData, 'ConsolNo', 0), 10) === 0 &&
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
-          const { shipperLocationId, consigneeLocationId } = await consolNonConsolCommomData(shipmentAparData)
+          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
+            await consolNonConsolCommomData({ shipmentAparData });
           const {
             shipmentHeaderData: [shipmentHeaderData],
             referencesData,
@@ -50,7 +51,7 @@ module.exports.handler = async (event) => {
             shipmentDesc: shipmentDescData,
             shipmentHeader: shipmentHeaderData,
             shipperLocationId,
-            userData
+            userData,
           });
           console.info(
             '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
@@ -65,7 +66,8 @@ module.exports.handler = async (event) => {
           _.get(shipmentAparData, 'Consolidation') === 'Y' &&
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
-          const { shipperLocationId, consigneeLocationId } = await consolNonConsolCommomData(shipmentAparData)
+          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
+            await consolNonConsolCommomData({ shipmentAparData });
           const shipmentAparDataForConsole = await fetchAparTableForConsole({
             orderNo: _.get(shipmentAparData, 'FK_OrderNo'),
           });
@@ -112,7 +114,8 @@ module.exports.handler = async (event) => {
           _.get(shipmentAparData, 'Consolidation') === 'N' &&
           _.includes(['MT'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
-          const { shipmentHeader, shipmentDesc, consolStopHeaders, customer, references, users } = await fetchDataFromTablesList(_.get(shipmentAparData, 'ConsolNo', null));
+          const { shipmentHeader, shipmentDesc, consolStopHeaders, customer, references, users } =
+            await fetchDataFromTablesList(_.get(shipmentAparData, 'ConsolNo', null));
 
           const mtPayloadData = await mtPayload(
             shipmentHeader,
@@ -140,8 +143,7 @@ module.exports.handler = async (event) => {
   }
 };
 
-
-async function consolNonConsolCommomData() {
+async function consolNonConsolCommomData({ shipmentAparData }) {
   try {
     const {
       confirmationCostData: [confirmationCostData],
@@ -181,9 +183,14 @@ async function consolNonConsolCommomData() {
       console.error('Could not fetch location id.');
       throw new Error('Could not fetch location id.');
     }
-    return { shipperLocationId, consigneeLocationId }
+    return {
+      shipperLocationId,
+      consigneeLocationId,
+      finalConsigneeData,
+      finalShipperData,
+    };
   } catch (error) {
     console.error('Error', error);
-    throw new Error(`Error in consolNonConsolCommomData: ${error}`)
+    throw new Error(`Error in consolNonConsolCommomData: ${error}`);
   }
 }

@@ -121,25 +121,27 @@ async function generateStop(
   type,
   userData
 ) {
-  const pickupTimeZone = _.get(shipmentHeader, 'ReadyDateTimeZone', '');
-  const deliveryTimeZone = _.get(shipmentHeader, 'ScheduledDateTimeZone', '');
   let schedArriveEarly = '';
   let schedArriveLate = '';
   let timeZone = '';
   let state = '';
   if (stopType === 'PU') {
     // For Pickup (PU)
+    const pickupZip = _.get(stateData, 'ShipZip', '');
+    console.info('🚀 ~ file: helper.js:131 ~ pickupZip:', pickupZip);
     schedArriveEarly = _.get(shipmentHeader, 'ReadyDateTime', '');
     schedArriveLate = _.get(shipmentHeader, 'ReadyDateTimeRange', '');
-    timeZone = pickupTimeZone;
+    timeZone = await getTimeZoneCode(pickupZip);
     state = _.get(stateData, 'FK_ShipState', '');
   } else if (stopType === 'SO') {
     // For Delivery (SO)
+    const deliveryZip = _.get(stateData, 'ConZip', '');
+    console.info('🚀 ~ file: helper.js:139 ~ deliveryZip:', deliveryZip);
     schedArriveEarly = _.get(shipmentHeader, 'ScheduledDateTime', '');
     console.info('🙂 -> file: helper.js:150 -> schedArriveEarly:', schedArriveEarly);
     schedArriveLate = _.get(shipmentHeader, 'ScheduledDateTimeRange', '');
     console.info('🙂 -> file: helper.js:152 -> schedArriveLate:', schedArriveLate);
-    timeZone = deliveryTimeZone;
+    timeZone = await getTimeZoneCode(deliveryZip);
     state = _.get(stateData, 'FK_ConState', '');
   }
   const timezoneParams = getParamsByTableName(
@@ -172,7 +174,11 @@ async function generateStop(
         __name: 'stopNotes',
         company_id: 'TMS',
         comment_type: 'DC',
-        comments: _.get(confirmationCostData, type === 'shipper' ? 'PickupNote' : 'DeliveryNote', ''),
+        comments: _.get(
+          confirmationCostData,
+          type === 'shipper' ? 'PickupNote' : 'DeliveryNote',
+          ''
+        ),
       },
     ],
   };
@@ -319,67 +325,59 @@ async function queryDynamoDB(params) {
 }
 
 async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
-  let shipperLocationId = "BSDJAVB"
+  // const shipperLocationId = 'BSDJAVB';
   // Get location ID for shipper
-  // let shipperLocationId = await getLocationId(
-  //   finalShipperData.ShipName,
-  //   finalShipperData.ShipAddress1,
-  //   finalShipperData.ShipAddress2,
-  //   finalShipperData.ShipCity,
-  //   finalShipperData.FK_ShipState,
-  //   finalShipperData.ShipZip
-  // );
+  let shipperLocationId = await getLocationId(
+    finalShipperData.ShipName,
+    finalShipperData.ShipAddress1,
+    finalShipperData.ShipAddress2,
+    finalShipperData.ShipCity,
+    finalShipperData.FK_ShipState,
+    finalShipperData.ShipZip
+  );
 
-  let consigneeLocationId = "NFAKJND"
+  // const consigneeLocationId = 'NFAKJND';
   // Get location ID for consignee
-  // let consigneeLocationId = await getLocationId(
-  //   finalConsigneeData.ConName,
-  //   finalConsigneeData.ConAddress1,
-  //   finalConsigneeData.ConAddress2,
-  //   finalConsigneeData.ConCity,
-  //   finalConsigneeData.FK_ConState,
-  //   finalConsigneeData.ConZip
-  // );
+  let consigneeLocationId = await getLocationId(
+    finalConsigneeData.ConName,
+    finalConsigneeData.ConAddress1,
+    finalConsigneeData.ConAddress2,
+    finalConsigneeData.ConCity,
+    finalConsigneeData.FK_ConState,
+    finalConsigneeData.ConZip
+  );
 
-  return { shipperLocationId, consigneeLocationId }
+  // return { shipperLocationId, consigneeLocationId };
   // // Get location ID for consignee
-  // let consigneeLocationId = await getLocationId(
-  //   finalConsigneeData.ConName,
-  //   finalConsigneeData.ConAddress1,
-  //   finalConsigneeData.ConAddress2,
-  //   finalConsigneeData.ConCity,
-  //   finalConsigneeData.FK_ConState,
-  //   finalConsigneeData.ConZip
-  // );
 
   // // Use the obtained location IDs to create locations if needed
-  // if (!shipperLocationId) {
-  //   shipperLocationId = await createLocation({
-  //     __type: 'location',
-  //     company_id: 'TMS',
-  //     address1: finalShipperData.ShipAddress1,
-  //     address2: finalShipperData.ShipAddress2,
-  //     city_name: finalShipperData.ShipCity,
-  //     is_active: true,
-  //     name: finalShipperData.ShipName,
-  //     state: finalShipperData.FK_ShipState,
-  //     zip_code: finalShipperData.ShipZip,
-  //   });
-  // }
+  if (!shipperLocationId) {
+    shipperLocationId = await createLocation({
+      __type: 'location',
+      company_id: 'TMS',
+      address1: finalShipperData.ShipAddress1,
+      address2: finalShipperData.ShipAddress2,
+      city_name: finalShipperData.ShipCity,
+      is_active: true,
+      name: finalShipperData.ShipName,
+      state: finalShipperData.FK_ShipState,
+      zip_code: finalShipperData.ShipZip,
+    });
+  }
 
-  // if (!consigneeLocationId) {
-  //   consigneeLocationId = await createLocation({
-  //     __type: 'location',
-  //     company_id: 'TMS',
-  //     address1: finalConsigneeData.ConAddress1,
-  //     address2: finalConsigneeData.ConAddress2,
-  //     city_name: finalConsigneeData.ConCity,
-  //     is_active: true,
-  //     name: finalConsigneeData.ConName,
-  //     state: finalConsigneeData.FK_ConState,
-  //     zip_code: finalConsigneeData.ConZip,
-  //   });
-  // }
+  if (!consigneeLocationId) {
+    consigneeLocationId = await createLocation({
+      __type: 'location',
+      company_id: 'TMS',
+      address1: finalConsigneeData.ConAddress1,
+      address2: finalConsigneeData.ConAddress2,
+      city_name: finalConsigneeData.ConCity,
+      is_active: true,
+      name: finalConsigneeData.ConName,
+      state: finalConsigneeData.FK_ConState,
+      zip_code: finalConsigneeData.ConZip,
+    });
+  }
 
   return { shipperLocationId, consigneeLocationId };
 }
@@ -460,7 +458,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
       '',
       _.get(shipmentHeaderData, '[0].BillNo', '')
     );
-    console.info('🚀 ~ file: helper.js:471 ~ BillNo:', _.get(shipmentHeaderData, '[0].BillNo', ''))
+    console.info('🚀 ~ file: helper.js:471 ~ BillNo:', _.get(shipmentHeaderData, '[0].BillNo', ''));
     console.info('🙂 -> file: index.js:61 -> customersParams:', customersParams);
     const tables2 = ['omni-wt-rt-customers-dev', 'omni-wt-rt-users'];
     const [customersData, userData] = await Promise.all(
@@ -477,7 +475,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
         return _.get(response, 'Items', false);
       })
     );
-    console.info('🚀 ~ file: helper.js:467 ~ userData:', userData)
+    console.info('🚀 ~ file: helper.js:467 ~ userData:', userData);
     return { shipmentHeaderData, referencesData, shipmentDescData, customersData, userData };
   } catch (err) {
     console.error('🙂 -> file: helper.js:469 -> err:', err);
@@ -507,7 +505,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
           );
           console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
           const response = await queryDynamoDB(param);
-          console.info('🚀 ~ file: helper.js:510 ~ response:', response)
+          console.info('🚀 ~ file: helper.js:510 ~ response:', response);
           return _.get(response, 'Items', false);
         })
       );
@@ -526,7 +524,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         );
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
-        console.info('🚀 ~ file: helper.js:529 ~ response:', response)
+        console.info('🚀 ~ file: helper.js:529 ~ response:', response);
         return _.get(response, 'Items', false);
       })
     );
@@ -660,6 +658,10 @@ function sumNumericValues(items, propertyName) {
 
 async function fetchDataFromTablesList(CONSOL_NO) {
   try {
+    if (!CONSOL_NO) {
+      throw new Error('ConsolNo number is required.');
+    }
+
     const sapparams = {
       TableName: 'omni-wt-rt-shipment-apar-dev',
       IndexName: 'omni-ivia-ConsolNo-index-dev',
@@ -675,10 +677,13 @@ async function fetchDataFromTablesList(CONSOL_NO) {
         ':FK_OrderNo': CONSOL_NO.toString(),
       },
     };
-    console.info('🚀 ~ file: helper.js:678 ~ sapparams:', sapparams)
 
     let shipmentApar = await dynamoDB.query(sapparams).promise();
     shipmentApar = shipmentApar.Items;
+    if (shipmentApar.length === 0) {
+      throw new Error(`No shipment Apar data found for ConsolNo:${CONSOL_NO}`);
+    }
+
     const uniqueShipmentApar = getUniqueObjects(shipmentApar);
 
     const shipmentHeader = [];
@@ -699,7 +704,9 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       };
       const sh = await dynamoDB.query(shparams).promise();
       shipmentHeader.push(...sh.Items);
-
+      if (shipmentHeader.length === 0) {
+        throw new Error(`No shipment header data found:${element.FK_OrderNo}`);
+      }
       const sdparams = {
         TableName: 'omni-wt-rt-shipment-desc-dev',
         KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
@@ -710,6 +717,10 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       const sd = await dynamoDB.query(sdparams).promise();
       shipmentDesc.push(...sd.Items);
 
+      if (shipmentDesc.length === 0) {
+        throw new Error(`No shipment desc data found:${element.FK_OrderNo}`);
+      }
+
       const cstparams = {
         TableName: 'omni-wt-rt-consol-stop-items-dev',
         KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
@@ -719,6 +730,9 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       };
       const cst = await dynamoDB.query(cstparams).promise();
       consolStopItems.push(...cst.Items);
+      if (consolStopItems.length === 0) {
+        throw new Error(`No consol stop items data found for FK_OrderNo:${element.FK_OrderNo}`);
+      }
       const uniqueConsolStopItems = getUniqueObjects(consolStopItems);
 
       for (const csitem of uniqueConsolStopItems) {
@@ -736,7 +750,9 @@ async function fetchDataFromTablesList(CONSOL_NO) {
         consolStopHeaders.push(...csh.Items);
       }
     }
-
+    if (consolStopHeaders.length === 0) {
+      throw new Error(`No consol stop headers data found for CONSOL_NO:${CONSOL_NO}`);
+    }
     const uniqueConsolStopHeaders = getUniqueObjects(consolStopHeaders);
 
     let customer = [];
@@ -751,8 +767,11 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       const customerResult = await dynamoDB.query(customerParam).promise();
       customer = customerResult.Items;
     }
+    if (customer.length === 0) {
+      throw new Error(`No customer data found for BillNo:${shipmentHeader[0].BillNo}`);
+    }
 
-    let references = [];
+    const references = [];
     const refparams = {
       TableName: 'omni-wt-rt-references-dev',
       IndexName: 'omni-wt-rt-ref-orderNo-index-dev',
@@ -763,7 +782,9 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     };
     const refResult = await dynamoDB.query(refparams).promise();
     references.push(...refResult.Items);
-    const trackingNotes = []
+    if (references.length === 0) {
+      throw new Error(`No references data found for FK_OrderNo:${element.FK_OrderNo}`);
+    }
     const tnparams = {
       TableName: 'omni-wt-rt-tracking-notes-dev',
       IndexName: 'omni-tracking-notes-console-index-dev',
@@ -774,17 +795,27 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     };
 
     const trackingNotesResult = await dynamoDB.query(tnparams).promise();
+    console.info('🚀 ~ file: helper.js:777 ~ trackingNotesResult:', trackingNotesResult);
 
-    let users = []
+    if (trackingNotesResult.Items.length === 0) {
+      throw new Error(`No data found in tracking notes table for ConsolNo:${CONSOL_NO}`);
+    }
+    let users = [];
     const userparams = {
       TableName: 'omni-wt-rt-users-dev',
       KeyConditionExpression: 'PK_UserId = :PK_UserId',
       ExpressionAttributeValues: {
-        ':PK_UserId': _.get(trackingNotesResult, "Items[0].FK_UserId", ""),
+        ':PK_UserId': _.get(trackingNotesResult, 'Items[0].FK_UserId', ''),
       },
     };
+    console.info('🚀 ~ file: helper.js:787 ~ userparams:', userparams);
     const usersResult = await dynamoDB.query(userparams).promise();
     users = usersResult.Items;
+    if (users.length === 0) {
+      throw new Error(
+        `No users data found for PK_UserId: ${_.get(trackingNotesResult, 'Items[0].FK_UserId', '')}`
+      );
+    }
 
     return {
       shipmentApar: uniqueShipmentApar,
@@ -794,7 +825,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       consolStopItems,
       customer,
       references,
-      users
+      users,
     };
   } catch (error) {
     console.error('error', error);
@@ -806,9 +837,8 @@ async function populateStops(consolStopHeaders, references, users) {
   const stops = [];
 
   // Fetch location IDs for stops
-  // const locationIds = await fetchLocationIds(consolStopHeaders);
-  const locationIds = ["JLDFNGA", "NSFPAI", "JFGDKNSD"]
-
+  const locationIds = await fetchLocationIds(consolStopHeaders);
+  // const locationIds = ['JLDFNGA', 'NSFPAI', 'JFGDKNSD'];
 
   for (let i = 0; i < consolStopHeaders.length; i++) {
     const stopHeader = consolStopHeaders[i];
@@ -844,7 +874,6 @@ async function populateStops(consolStopHeaders, references, users) {
       stop_type: stoptype,
       requested_service: false,
       prior_uncleared_stops: false,
-      // referenceNumbers: generateReferenceNumbers(references),
       stopNotes: [
         {
           __type: 'stop_note',
@@ -858,12 +887,12 @@ async function populateStops(consolStopHeaders, references, users) {
           __name: 'stopNotes',
           company_id: 'TMS',
           comment_type: 'DC',
-          comments: _.get(users, "[0].UserEmail"),
+          comments: _.get(users, '[0].UserEmail'),
         },
       ],
     };
-    if (stoptype === "PU") {
-      _.set(stop, 'referenceNumbers', generateReferenceNumbers(references))
+    if (stoptype === 'PU') {
+      _.set(stop, 'referenceNumbers', generateReferenceNumbers({ references }));
     }
     stops.push(stop);
   }
@@ -1072,12 +1101,10 @@ function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
   const uppercaseEquipmentCode = fkEquipmentCode.toUpperCase();
 
   // Check if the equipment code exists in the mapping, return the corresponding powerbroker code
-  if (equipmentCodeMapping.hasOwnProperty(uppercaseEquipmentCode)) {
+  if (Object.hasOwn(equipmentCodeMapping, uppercaseEquipmentCode)) {
     return equipmentCodeMapping[uppercaseEquipmentCode];
-  } else {
-    // Return a default value or handle the case when the input is not found
-    return 'UNKNOWN';
   }
+  return '';
 }
 
 module.exports = {
@@ -1102,5 +1129,5 @@ module.exports = {
   sumNumericValues,
   fetchDataFromTablesList,
   populateStops,
-  mapEquipmentCodeToFkPowerbrokerCode
+  mapEquipmentCodeToFkPowerbrokerCode,
 };

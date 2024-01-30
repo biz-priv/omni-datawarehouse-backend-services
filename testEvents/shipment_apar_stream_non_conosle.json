@@ -15,28 +15,28 @@
         },
         "NewImage": {
           "FK_OrderNo": {
-            "S": "5344583"
+            "S": "4206868"
           },
           "SeqNo": {
-            "S": "12"
+            "S": "1"
           },
           "APARCode": {
-            "S": "V"
+            "S": "C"
           },
           "APARStatus": {
             "S": ""
           },
           "APARType": {
-            "S": ""
+            "S": "LB"
           },
           "ChargeCode": {
-            "S": ""
+            "S": "FRT"
           },
           "Complete": {
-            "S": "Y"
+            "S": ""
           },
           "Consolidation": {
-            "S": "Y"
+            "S": "N"
           },
           "ConsolNo": {
             "S": "0"
@@ -45,22 +45,22 @@
             "S": "1900-01-01 00:00:00.000"
           },
           "Cost": {
-            "S": "10.25"
+            "S": "0.00"
           },
           "CreateDateTime": {
-            "S": "2016-09-13 17:52:58.000"
+            "S": "2022-02-25 15:55:49.313"
           },
           "Currency": {
-            "S": ""
+            "S": "USD"
           },
           "CustomerInvoiceNo": {
             "S": ""
           },
           "Description": {
-            "S": ""
+            "S": "FREIGHT CHARGE"
           },
           "DueDate": {
-            "S": "2020-04-02 10:49:21.000"
+            "S": "2022-04-29 17:04:39.000"
           },
           "Extra": {
             "S": "0.00"
@@ -69,10 +69,10 @@
             "S": "Y"
           },
           "FinalizedBy": {
-            "S": "bmarionn"
+            "S": ""
           },
           "FinalizedDate": {
-            "S": "2020-04-02 10:51:01.000"
+            "S": "2022-02-28 17:04:39.000"
           },
           "FinalizedTotal": {
             "S": "0.00"
@@ -87,16 +87,16 @@
             "S": "0"
           },
           "FK_ConsolStationId": {
-            "S": "DFW"
+            "S": ""
           },
           "FK_ConsolStatusId": {
-            "S": "VER"
+            "S": ""
           },
           "FK_ContainerCode": {
-            "S": "D"
+            "S": ""
           },
           "FK_CustNo": {
-            "S": "11251"
+            "S": "0"
           },
           "FK_EquipmentCode": {
             "S": "NULL"
@@ -114,61 +114,61 @@
             "S": "HS"
           },
           "FK_VendorId": {
-            "S": "LIVELOGI"
+            "S": ""
           },
           "InsertedTimeStamp": {
-            "S": "2023:09:28 08:49:51"
+            "S": "2023:09:23 12:16:16"
           },
           "InvoiceDate": {
-            "S": "2020-04-02 10:49:21.000"
+            "S": "1900-01-01 00:00:00.000"
           },
           "InvoiceNo": {
-            "S": "PURGE"
+            "S": ""
           },
           "InvoiceSeqNo": {
             "S": "0"
           },
           "InvPrinted": {
-            "S": "N"
+            "S": "Y"
           },
           "InvPrintedDate": {
-            "S": "1900-01-01 00:00:00.000"
+            "S": "2022-02-28 11:36:06.000"
           },
           "Override": {
             "S": "O"
           },
           "PKSeqNo": {
-            "S": "2883367"
+            "S": "35065559"
           },
           "PostedDateTime": {
-            "S": "1900-01-01 00:00:00.000"
+            "S": "2022-02-28 17:14:06.000"
           },
           "Quantity": {
-            "S": "224.000"
+            "S": "20.000"
           },
           "Rate": {
             "S": "0.0000"
           },
           "ReadyForInvoice": {
-            "S": "N"
+            "S": "Y"
           },
           "ReadyForInvoiceDateTime": {
-            "S": "1900-01-01 00:00:00.000"
+            "S": "2022-02-28 10:58:33.000"
           },
           "RefNo": {
-            "S": "26784"
+            "S": ""
           },
           "Tax": {
             "S": "0.00"
           },
           "Total": {
-            "S": "10.25"
+            "S": "8.30"
           },
           "UpdatedBy": {
-            "S": "bmarionn"
+            "S": "mmensik"
           },
           "UpdatedOn": {
-            "S": "2020-04-02 10:51:01.000"
+            "S": "2022-02-28 17:04:39.000"
           },
           "VendorAmount": {
             "S": "0.00"
