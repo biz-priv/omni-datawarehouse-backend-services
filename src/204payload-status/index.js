@@ -146,7 +146,7 @@ module.exports.handler = async (event) => {
         const createPayloadResponse = await sendPayload({ payload });
         console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
         await updateStatusTable({
-          message: 'SUCCESS',
+          response: createPayloadResponse,
           payload,
           orderNo: orderId,
           status: STATUSES.SENT,
@@ -155,7 +155,7 @@ module.exports.handler = async (event) => {
         console.info('Error', error);
         await updateStatusTable({
           orderNo: orderId,
-          message: error.message,
+          response: error.message,
           payload,
           status: STATUSES.FAILED,
         });
@@ -228,8 +228,8 @@ async function updateStatusTable({ orderNo, status, response, payload }) {
     const updateParam = {
       TableName: STATUS_TABLE,
       Key: { FK_OrderNo: orderNo },
-      UpdateExpression: 'set #Status = :status, Response = :response, Payload = :payload',
-      ExpressionAttributeNames: { '#Status': 'Status' },
+      UpdateExpression: 'set #Status = :status, #Response = :response, Payload = :payload',
+      ExpressionAttributeNames: { '#Status': 'Status', '#Response': 'Response' },
       ExpressionAttributeValues: {
         ':status': status,
         ':response': response,
