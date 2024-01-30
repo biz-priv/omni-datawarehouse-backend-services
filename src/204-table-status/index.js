@@ -32,6 +32,11 @@ module.exports.handler = async (event, context) => {
       '🚀 ~ file: shipment_header_table_stream_processor.js:117 ~ module.exports.handler= ~ e:',
       e
     );
+    await publishSNSTopic({
+      message: ` ${e.message}
+      \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
+      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+    });
     return false;
   }
 };
@@ -40,7 +45,6 @@ async function publishSNSTopic({ message }) {
   // return;
   await sns
     .publish({
-      // TopicArn: 'arn:aws:sns:us-east-1:332281781429:omni-error-notification-topic-dev',
       TopicArn: SNS_TOPIC_ARN,
       Subject: `Error on ${functionName} lambda.`,
       Message: `An error occurred: ${message}`,

@@ -14,19 +14,23 @@ const {
 const { sendPayload, updateOrders } = require('./apis');
 const { STATUSES } = require('../shared/constants/204_create_shipment');
 
-const { STATUS_TABLE } = process.env;
+const { STATUS_TABLE, SNS_TOPIC_ARN } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
+const sns = new AWS.SNS();
 
-module.exports.handler = async (event) => {
+let functionName;
+
+module.exports.handler = async (event, context) => {
   console.info(
     '🙂 -> file: index.js:8 -> module.exports.handler= -> event:',
     JSON.stringify(event)
   );
+  functionName = _.get(context, 'functionName');
   const dynamoEventRecords = event.Records;
 
   try {
     const promises = dynamoEventRecords.map(async (record) => {
-      let payload;
+      let payload = '';
       let orderId;
 
       try {
@@ -182,6 +186,11 @@ module.exports.handler = async (event) => {
     return true; // Modify if needed
   } catch (error) {
     console.error('Error', error);
+    await publishSNSTopic({
+      message: ` ${error.message}
+      \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
+      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
+    });
     return false;
   }
 };
@@ -255,6 +264,17 @@ async function updateStatusTable({ orderNo, status, response, payload }) {
     return await dynamoDb.update(updateParam).promise();
   } catch (err) {
     console.info('🙂 -> file: index.js:224 -> err:', err);
-    return false;
+    throw err;
   }
+}
+
+async function publishSNSTopic({ message }) {
+  // return;
+  await sns
+    .publish({
+      TopicArn: SNS_TOPIC_ARN,
+      Subject: `Error on ${functionName} lambda.`,
+      Message: `An error occurred: ${message}`,
+    })
+    .promise();
 }
