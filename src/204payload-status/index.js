@@ -223,16 +223,16 @@ async function consolNonConsolCommonData({ shipmentAparData }) {
   }
 }
 
-async function updateStatusTable({ orderNo, status, message, payload }) {
+async function updateStatusTable({ orderNo, status, response, payload }) {
   try {
     const updateParam = {
       TableName: STATUS_TABLE,
       Key: { FK_OrderNo: orderNo },
-      UpdateExpression: 'set #Status = :status, Message = :message, Payload = :payload',
+      UpdateExpression: 'set #Status = :status, Response = :response, Payload = :payload',
       ExpressionAttributeNames: { '#Status': 'Status' },
       ExpressionAttributeValues: {
         ':status': status,
-        ':message': message,
+        ':response': response,
         ':payload': payload,
       },
     };

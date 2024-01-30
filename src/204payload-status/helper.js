@@ -177,7 +177,7 @@ async function generateStop(
         comments: _.get(
           confirmationCostData,
           type === 'shipper' ? 'PickupNote' : 'DeliveryNote',
-          ''
+          'Empty'
         ),
       },
     ],
@@ -547,7 +547,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         return _.get(response, 'Items[0]', false);
       })
     );
-    userData = userData.filter((item) => item && _.has(item, 'UserEmail'))[0];
+    userData = [userData.filter((item) => item && _.has(item, 'UserEmail'))[0]];
     return {
       shipmentHeaderData,
       referencesData,
@@ -1027,20 +1027,21 @@ async function calculateSchedArriveEarly(stopHeader, timeZoneCode) {
     timeZoneCode
   );
 
-  if (consolStopTimeBegin.startsWith('1900-01-01')) {
-    // Invalid date, return consolStopDate with added offset
-    return moment(consolStopDate).add(hoursAway, 'hours').format('YYYYMMDDHHmmss') + timeZoneOffset;
-  }
+  // Format date
+  const formattedDate = moment(consolStopDate, 'YYYY-MM-DD').format('YYYYMMDD');
 
-  const formattedDateTime = moment(
-    `${consolStopDate} ${consolStopTimeBegin}`,
-    'YYYY-MM-DD HH:mm:ss.SSS'
-  )
+  // Format time with offset and hours away
+  const formattedTime = moment(consolStopTimeBegin, 'HH:mm:ss.SSS')
     .add(hoursAway, 'hours')
-    .format('YYYYMMDDHHmmss');
+    .utcOffset(timeZoneOffset, true)
+    .format('HHmmssZZ');
+
+  // Combine date and time
+  const formattedDateTime = formattedDate + formattedTime;
+
   console.info('🚀 ~ file: test.js:652 ~ formattedDateTime:', formattedDateTime);
 
-  return formattedDateTime + timeZoneOffset;
+  return formattedDateTime;
 }
 
 async function calculateSchedArriveLate(stopHeader, timeZoneCode) {
@@ -1051,21 +1052,21 @@ async function calculateSchedArriveLate(stopHeader, timeZoneCode) {
     consolStopDate,
     timeZoneCode
   );
+  // Format date
+  const formattedDate = moment(consolStopDate, 'YYYY-MM-DD').format('YYYYMMDD');
 
-  if (consolStopTimeEnd.startsWith('1900-01-01')) {
-    // Invalid date, return consolStopDate with added offset
-    return moment(consolStopDate).add(hoursAway, 'hours').format('YYYYMMDDHHmmss') + timeZoneOffset;
-  }
-
-  const formattedDateTime = moment(
-    `${consolStopDate} ${consolStopTimeEnd}`,
-    'YYYY-MM-DD HH:mm:ss.SSS'
-  )
+  // Format time with offset and hours away
+  const formattedTime = moment(consolStopTimeEnd, 'HH:mm:ss.SSS')
     .add(hoursAway, 'hours')
-    .format('YYYYMMDDHHmmss');
-  console.info('🚀 ~ file: helper.js:941 ~ formattedDateTime:', formattedDateTime);
+    .utcOffset(timeZoneOffset, true)
+    .format('HHmmssZZ');
 
-  return formattedDateTime + timeZoneOffset;
+  // Combine date and time
+  const formattedDateTime = formattedDate + formattedTime;
+
+  console.info('🚀 ~ file: test.js:652 ~ formattedDateTime:', formattedDateTime);
+
+  return formattedDateTime;
 }
 
 async function getConsolTimeZoneOffset(fKConsolStopState, consolStopDate, timeZoneCode) {
