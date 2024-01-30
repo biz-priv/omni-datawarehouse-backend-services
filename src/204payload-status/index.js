@@ -70,7 +70,6 @@ module.exports.handler = async (event) => {
             JSON.stringify(nonConsolPayloadData)
           );
           payload = nonConsolPayloadData;
-          return nonConsolPayloadData;
         }
 
         // Console
@@ -121,7 +120,6 @@ module.exports.handler = async (event) => {
             JSON.stringify(ConsolPayloadData)
           );
           payload = ConsolPayloadData;
-          return ConsolPayloadData;
         }
 
         // MT Payload
@@ -143,7 +141,6 @@ module.exports.handler = async (event) => {
           );
           console.info('🙂 -> file: index.js:114 -> mtPayloadData:', JSON.stringify(mtPayloadData));
           payload = mtPayloadData;
-          return mtPayloadData;
         }
 
         const createPayloadResponse = await sendPayload({ payload });
