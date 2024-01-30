@@ -4,3 +4,4 @@
 npm run prettier-check
 npm run prettify
 npm run lint
+git add .
