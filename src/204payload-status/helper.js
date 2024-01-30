@@ -552,18 +552,28 @@ async function fetchConsoleTableData({ shipmentAparData }) {
 }
 
 async function getAparDataByConsole({ shipmentAparData }) {
-  const shipmentAparParams = {
-    TableName: 'omni-wt-rt-shipment-apar-dev',
-    KeyConditionExpression: 'FK_OrderNo = :orderNo',
-    FilterExpression: 'Consolidation = :consolidation and ConsolNo = :ConsolNo',
-    ExpressionAttributeValues: {
-      ':orderNo': _.get(shipmentAparData, 'FK_OrderNo'),
-      ':ConsolNo': _.get(shipmentAparData, 'ConsolNo'),
-      ':consolidation': 'N',
-    },
-  };
-  console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentAparParams);
-  return _.get(await queryDynamoDB(shipmentAparParams), 'Items', []);
+  try {
+    const shipmentAparParams = {
+      TableName: 'omni-wt-rt-shipment-apar-dev',
+      KeyConditionExpression: 'FK_OrderNo = :orderNo',
+      FilterExpression: 'Consolidation = :consolidation and ConsolNo = :ConsolNo',
+      ExpressionAttributeValues: {
+        ':orderNo': _.get(shipmentAparData, 'FK_OrderNo'),
+        ':ConsolNo': _.get(shipmentAparData, 'ConsolNo'),
+        ':consolidation': 'N',
+      },
+    };
+    console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentAparParams);
+    const result = _.get(await queryDynamoDB(shipmentAparParams), 'Items', []);
+    if (result.length <= 0) {
+      throw new Error(
+        `Shipment apar data with console number ${_.get(shipmentAparData, 'ConsolNo')} not found.`
+      );
+    }
+  } catch (err) {
+    console.error('🙂 -> file: helper.js:546 -> err:', err);
+    throw err;
+  }
 }
 
 async function getVesselForConsole({ shipmentAparConsoleData }) {
