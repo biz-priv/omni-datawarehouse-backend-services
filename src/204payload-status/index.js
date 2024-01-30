@@ -25,55 +25,18 @@ module.exports.handler = async (event) => {
       try {
         const shipmentAparData = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
 
-        const {
-          confirmationCostData: [confirmationCostData],
-          shipperData: [shipperData],
-          consigneeData: [consigneeData],
-        } = await fetchCommonTableData({
-          shipmentAparData,
-        });
-
-        console.info('🙂 -> file: index.js:35 -> consigneeData:', consigneeData);
-        console.info('🙂 -> file: index.js:36 -> shipperData:', shipperData);
-        console.info('🙂 -> file: index.js:37 -> confirmationCostData:', confirmationCostData);
-
-        if (!consigneeData || !shipperData) {
-          console.error('Shipper or Consignee tables are not populated.');
-          throw new Error('Shipper or Consignee tables are not populated.');
-        }
-
-        const { finalConsigneeData, finalShipperData } = getFinalShipperAndConsigneeData({
-          confirmationCostData,
-          consigneeData,
-          shipperData,
-        });
-
-        const { shipperLocationId, consigneeLocationId } = await fetchLocationId({
-          finalConsigneeData,
-          finalShipperData,
-        });
-
-        console.info(
-          '🙂 -> file: index.js:83 -> promises ->  shipperLocationId, consigneeLocationId:',
-          shipperLocationId,
-          consigneeLocationId
-        );
-
-        if (!shipperLocationId || !consigneeLocationId) {
-          console.error('Could not fetch location id.');
-          throw new Error('Could not fetch location id.');
-        }
-
         // Non-Console
         if (
           parseInt(_.get(shipmentAparData, 'ConsolNo', 0), 10) === 0 &&
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
+          const { shipperLocationId, consigneeLocationId } = await consolNonConsolCommomData(shipmentAparData)
           const {
             shipmentHeaderData: [shipmentHeaderData],
             referencesData,
-            shipmentDescData: [shipmentDescData],
+            shipmentDescData,
             customersData: [customersData],
+            userData: [userData],
           } = await fetchNonConsoleTableData({ shipmentAparData });
           if (!shipmentHeaderData) {
             return 'Shipment header data is missing.';
@@ -87,6 +50,7 @@ module.exports.handler = async (event) => {
             shipmentDesc: shipmentDescData,
             shipmentHeader: shipmentHeaderData,
             shipperLocationId,
+            userData
           });
           console.info(
             '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
@@ -101,6 +65,7 @@ module.exports.handler = async (event) => {
           _.get(shipmentAparData, 'Consolidation') === 'Y' &&
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
+          const { shipperLocationId, consigneeLocationId } = await consolNonConsolCommomData(shipmentAparData)
           const shipmentAparDataForConsole = await fetchAparTableForConsole({
             orderNo: _.get(shipmentAparData, 'FK_OrderNo'),
           });
@@ -123,7 +88,7 @@ module.exports.handler = async (event) => {
           console.info('🙂 -> file: index.js:122 -> referencesData:', referencesData);
           console.info('🙂 -> file: index.js:123 -> shipmentHeaderData:', shipmentHeaderData);
 
-          const nonConsolPayloadData = await consolPayload({
+          const ConsolPayloadData = await consolPayload({
             referencesData,
             customersData,
             consigneeLocationId,
@@ -137,8 +102,8 @@ module.exports.handler = async (event) => {
             userData,
           });
           console.info(
-            '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
-            JSON.stringify(nonConsolPayloadData)
+            '🙂 -> file: index.js:114 -> ConsolPayloadData:',
+            JSON.stringify(ConsolPayloadData)
           );
           return 'Console payload';
         }
@@ -147,8 +112,7 @@ module.exports.handler = async (event) => {
           _.get(shipmentAparData, 'Consolidation') === 'N' &&
           _.includes(['MT'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
-          const { shipmentHeader, shipmentDesc, consolStopHeaders, customer, references,users } =
-            await fetchDataFromTablesList(_.get(shipmentAparData, 'ConsolNo', null));
+          const { shipmentHeader, shipmentDesc, consolStopHeaders, customer, references, users } = await fetchDataFromTablesList(_.get(shipmentAparData, 'ConsolNo', null));
 
           const mtPayloadData = await mtPayload(
             shipmentHeader,
@@ -175,3 +139,51 @@ module.exports.handler = async (event) => {
     return prepareBatchFailureObj(dynamoEventRecords); // Modify if needed
   }
 };
+
+
+async function consolNonConsolCommomData() {
+  try {
+    const {
+      confirmationCostData: [confirmationCostData],
+      shipperData: [shipperData],
+      consigneeData: [consigneeData],
+    } = await fetchCommonTableData({
+      shipmentAparData,
+    });
+
+    console.info('🙂 -> file: index.js:35 -> consigneeData:', consigneeData);
+    console.info('🙂 -> file: index.js:36 -> shipperData:', shipperData);
+    console.info('🙂 -> file: index.js:37 -> confirmationCostData:', confirmationCostData);
+
+    if (!consigneeData || !shipperData) {
+      console.error('Shipper or Consignee tables are not populated.');
+      throw new Error('Shipper or Consignee tables are not populated.');
+    }
+
+    const { finalConsigneeData, finalShipperData } = getFinalShipperAndConsigneeData({
+      confirmationCostData,
+      consigneeData,
+      shipperData,
+    });
+
+    const { shipperLocationId, consigneeLocationId } = await fetchLocationId({
+      finalConsigneeData,
+      finalShipperData,
+    });
+
+    console.info(
+      '🙂 -> file: index.js:83 -> promises ->  shipperLocationId, consigneeLocationId:',
+      shipperLocationId,
+      consigneeLocationId
+    );
+
+    if (!shipperLocationId || !consigneeLocationId) {
+      console.error('Could not fetch location id.');
+      throw new Error('Could not fetch location id.');
+    }
+    return { shipperLocationId, consigneeLocationId }
+  } catch (error) {
+    console.error('Error', error);
+    throw new Error(`Error in consolNonConsolCommomData: ${error}`)
+  }
+}

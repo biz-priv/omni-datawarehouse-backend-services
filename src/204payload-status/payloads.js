@@ -10,6 +10,7 @@ const {
   getAparDataByConsole,
   sumNumericValues,
   populateStops,
+  mapEquipmentCodeToFkPowerbrokerCode
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -21,6 +22,7 @@ async function nonConsolPayload({
   finalShipperData,
   finalConsigneeData,
   customersData,
+  userData
 }) {
   let hazmat = _.get(shipmentDesc, 'Hazmat', false);
   // Check if Hazmat is equal to 'Y'
@@ -43,33 +45,34 @@ async function nonConsolPayload({
     customer_id: 'OMNICOT8',
     blnum: _.get(shipmentHeader, 'Housebill', ''),
     entered_user_id: 'apiuser',
-    equipment_type_id: _.get(shipmentHeader, 'FK_EquipmentCode', ''),
+    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(_.get(shipmentHeader, 'FK_EquipmentCode', '')),
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
     hazmat,
     high_value: _.get(shipmentHeader, 'Insurance', 0) > 100000, // TODO: validate this filed
+    hold_reason: "NEW API",
     include_split_point: false,
     is_autorate_dist: false,
     is_container: false,
     is_dedicated: false,
     ltl: _.includes(['FT', 'HS'], _.get(shipmentHeader, 'FK_ServiceLevelId')),
-    on_hold: false,
-    ordered_date: await formatTimestamp(_.get(shipmentHeader, 'OrderDate', '')),
+    on_hold: true,
+    ordered_date: formatTimestamp(_.get(shipmentHeader, 'OrderDate', '')),
     ordered_method: 'M',
+    order_value: _.get(shipmentHeader, 'Insurance', 0),
     pallets_required: false,
-    pieces: _.get(shipmentDesc, 'Pieces', 0),
+    pieces: sumNumericValues(shipmentDesc, 'Pieces'),
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
-    // revenue_code_id: 'PRI',
     round_trip: false,
     ship_status_to_edi: false,
     status: 'A',
     swap: true,
     teams_required: false,
     vessel: _.get(customersData, 'CustName', ''),
-    weight: _.get(shipmentDesc, 'Weight', 0),
+    weight: sumNumericValues(shipmentDesc, 'Weight', 0),
     weight_um: 'LB',
     order_mode: 'T',
     operational_status: 'CLIN',
@@ -85,7 +88,10 @@ async function nonConsolPayload({
       1,
       'PU',
       shipperLocationId,
-      finalConsigneeData
+      finalConsigneeData,
+      "",
+      "shipper",
+      userData
     ),
     await generateStop(
       shipmentHeader,
@@ -211,12 +217,13 @@ async function mtPayload(shipmentHeader, shipmentDesc, consolStopHeaders, custom
     customer_id: 'OMNICOT8',
     blnum: _.get(consolStopHeaders, '[0]FK_ConsolNo', ''),
     entered_user_id: 'apiuser',
-    equipment_type_id: _.get(shipmentHeader, '[0]FK_EquipmentCode', ''),
+    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(_.get(shipmentHeader, '[0]FK_EquipmentCode', '')),
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
     hazmat,
     high_value: _.get(shipmentHeader, '[0]Insurance', 0) > 100000,
+    hold_reason: "NEW API",
     include_split_point: false,
     is_autorate_dist: false,
     is_container: false,

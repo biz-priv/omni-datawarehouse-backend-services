@@ -172,7 +172,7 @@ async function generateStop(
         __name: 'stopNotes',
         company_id: 'TMS',
         comment_type: 'DC',
-        comments: _.get(confirmationCostData, type === 'shipper' ? 'PickupNote' : 'DeliveryNote'),
+        comments: _.get(confirmationCostData, type === 'shipper' ? 'PickupNote' : 'DeliveryNote', ''),
       },
     ],
   };
@@ -319,54 +319,67 @@ async function queryDynamoDB(params) {
 }
 
 async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
+  let shipperLocationId = "BSDJAVB"
   // Get location ID for shipper
-  let shipperLocationId = await getLocationId(
-    finalShipperData.ShipName,
-    finalShipperData.ShipAddress1,
-    finalShipperData.ShipAddress2,
-    finalShipperData.ShipCity,
-    finalShipperData.FK_ShipState,
-    finalShipperData.ShipZip
-  );
+  // let shipperLocationId = await getLocationId(
+  //   finalShipperData.ShipName,
+  //   finalShipperData.ShipAddress1,
+  //   finalShipperData.ShipAddress2,
+  //   finalShipperData.ShipCity,
+  //   finalShipperData.FK_ShipState,
+  //   finalShipperData.ShipZip
+  // );
 
+  let consigneeLocationId = "NFAKJND"
   // Get location ID for consignee
-  let consigneeLocationId = await getLocationId(
-    finalConsigneeData.ConName,
-    finalConsigneeData.ConAddress1,
-    finalConsigneeData.ConAddress2,
-    finalConsigneeData.ConCity,
-    finalConsigneeData.FK_ConState,
-    finalConsigneeData.ConZip
-  );
+  // let consigneeLocationId = await getLocationId(
+  //   finalConsigneeData.ConName,
+  //   finalConsigneeData.ConAddress1,
+  //   finalConsigneeData.ConAddress2,
+  //   finalConsigneeData.ConCity,
+  //   finalConsigneeData.FK_ConState,
+  //   finalConsigneeData.ConZip
+  // );
 
-  // Use the obtained location IDs to create locations if needed
-  if (!shipperLocationId) {
-    shipperLocationId = await createLocation({
-      __type: 'location',
-      company_id: 'TMS',
-      address1: finalShipperData.ShipAddress1,
-      address2: finalShipperData.ShipAddress2,
-      city_name: finalShipperData.ShipCity,
-      is_active: true,
-      name: finalShipperData.ShipName,
-      state: finalShipperData.FK_ShipState,
-      zip_code: finalShipperData.ShipZip,
-    });
-  }
+  return { shipperLocationId, consigneeLocationId }
+  // // Get location ID for consignee
+  // let consigneeLocationId = await getLocationId(
+  //   finalConsigneeData.ConName,
+  //   finalConsigneeData.ConAddress1,
+  //   finalConsigneeData.ConAddress2,
+  //   finalConsigneeData.ConCity,
+  //   finalConsigneeData.FK_ConState,
+  //   finalConsigneeData.ConZip
+  // );
 
-  if (!consigneeLocationId) {
-    consigneeLocationId = await createLocation({
-      __type: 'location',
-      company_id: 'TMS',
-      address1: finalConsigneeData.ConAddress1,
-      address2: finalConsigneeData.ConAddress2,
-      city_name: finalConsigneeData.ConCity,
-      is_active: true,
-      name: finalConsigneeData.ConName,
-      state: finalConsigneeData.FK_ConState,
-      zip_code: finalConsigneeData.ConZip,
-    });
-  }
+  // // Use the obtained location IDs to create locations if needed
+  // if (!shipperLocationId) {
+  //   shipperLocationId = await createLocation({
+  //     __type: 'location',
+  //     company_id: 'TMS',
+  //     address1: finalShipperData.ShipAddress1,
+  //     address2: finalShipperData.ShipAddress2,
+  //     city_name: finalShipperData.ShipCity,
+  //     is_active: true,
+  //     name: finalShipperData.ShipName,
+  //     state: finalShipperData.FK_ShipState,
+  //     zip_code: finalShipperData.ShipZip,
+  //   });
+  // }
+
+  // if (!consigneeLocationId) {
+  //   consigneeLocationId = await createLocation({
+  //     __type: 'location',
+  //     company_id: 'TMS',
+  //     address1: finalConsigneeData.ConAddress1,
+  //     address2: finalConsigneeData.ConAddress2,
+  //     city_name: finalConsigneeData.ConCity,
+  //     is_active: true,
+  //     name: finalConsigneeData.ConName,
+  //     state: finalConsigneeData.FK_ConState,
+  //     zip_code: finalConsigneeData.ConZip,
+  //   });
+  // }
 
   return { shipperLocationId, consigneeLocationId };
 }
@@ -445,11 +458,27 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
       '',
       'omni-wt-rt-customers-dev',
       '',
-      _.get(shipmentHeaderData, 'BillNo', '')
+      _.get(shipmentHeaderData, '[0].BillNo', '')
     );
+    console.info('🚀 ~ file: helper.js:471 ~ BillNo:', _.get(shipmentHeaderData, '[0].BillNo', ''))
     console.info('🙂 -> file: index.js:61 -> customersParams:', customersParams);
-    const customersData = _.get(await queryDynamoDB(customersParams), 'Items', false);
-    return { shipmentHeaderData, referencesData, shipmentDescData, customersData };
+    const tables2 = ['omni-wt-rt-customers-dev', 'omni-wt-rt-users'];
+    const [customersData, userData] = await Promise.all(
+      tables2.map(async (table) => {
+        const param = getParamsByTableName(
+          _.get(shipmentAparData, 'FK_OrderNo'),
+          table,
+          '',
+          _.get(shipmentHeaderData, '[0].BillNo', ''),
+          _.get(shipmentHeaderData, '[0].AcctManager')
+        );
+        console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
+        const response = await queryDynamoDB(param);
+        return _.get(response, 'Items', false);
+      })
+    );
+    console.info('🚀 ~ file: helper.js:467 ~ userData:', userData)
+    return { shipmentHeaderData, referencesData, shipmentDescData, customersData, userData };
   } catch (err) {
     console.error('🙂 -> file: helper.js:469 -> err:', err);
     return { shipmentHeaderData: [], referencesData: [], shipmentDescData: [], customersData: [] };
@@ -478,6 +507,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
           );
           console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
           const response = await queryDynamoDB(param);
+          console.info('🚀 ~ file: helper.js:510 ~ response:', response)
           return _.get(response, 'Items', false);
         })
       );
@@ -496,6 +526,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         );
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
+        console.info('🚀 ~ file: helper.js:529 ~ response:', response)
         return _.get(response, 'Items', false);
       })
     );
@@ -644,6 +675,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
         ':FK_OrderNo': CONSOL_NO.toString(),
       },
     };
+    console.info('🚀 ~ file: helper.js:678 ~ sapparams:', sapparams)
 
     let shipmentApar = await dynamoDB.query(sapparams).promise();
     shipmentApar = shipmentApar.Items;
@@ -774,7 +806,9 @@ async function populateStops(consolStopHeaders, references, users) {
   const stops = [];
 
   // Fetch location IDs for stops
-  const locationIds = await fetchLocationIds(consolStopHeaders);
+  // const locationIds = await fetchLocationIds(consolStopHeaders);
+  const locationIds = ["JLDFNGA", "NSFPAI", "JFGDKNSD"]
+
 
   for (let i = 0; i < consolStopHeaders.length; i++) {
     const stopHeader = consolStopHeaders[i];
@@ -810,7 +844,7 @@ async function populateStops(consolStopHeaders, references, users) {
       stop_type: stoptype,
       requested_service: false,
       prior_uncleared_stops: false,
-      referenceNumbers: generateReferenceNumbers(references),
+      // referenceNumbers: generateReferenceNumbers(references),
       stopNotes: [
         {
           __type: 'stop_note',
@@ -828,7 +862,9 @@ async function populateStops(consolStopHeaders, references, users) {
         },
       ],
     };
-
+    if (stoptype === "PU") {
+      _.set(stop, 'referenceNumbers', generateReferenceNumbers(references))
+    }
     stops.push(stop);
   }
 
@@ -984,6 +1020,66 @@ function getUniqueObjects(array) {
   return Array.from(uniqueSet, JSON.parse);
 }
 
+function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
+  const equipmentCodeMapping = {
+    '22 BOX': 'SBT',
+    '24 BOX': 'SBT',
+    '26 BOX': 'SBT',
+    '48': 'TT',
+    '48 FT AIR': 'TT',
+    '53': 'TT',
+    '53 FT AIR': 'TT',
+    'C': 'C',
+    'CARGO VAN': 'V',
+    'CN': 'CN',
+    'DD': 'DD',
+    'F': 'F',
+    'FA': 'FA',
+    'FC': 'FC',
+    'FD': 'FD',
+    'FH': 'FH',
+    'FM': 'FM',
+    'FN': 'FN',
+    'FO': 'FO',
+    'FS': 'O',
+    'FT': 'FT',
+    'LB': 'LB',
+    'LFT PJ BOX': 'O',
+    'LFTG BOX': 'O',
+    'LG SPRINT': 'SPNT',
+    'PO': 'PO',
+    'R': 'R',
+    'RG': 'RG',
+    'RM': 'RM',
+    'SB': 'SB',
+    'SD': 'SD',
+    'SM SPRINT': 'SPNT',
+    'SR': 'SR',
+    'STRAIGHT': 'SBT',
+    'TM BOX': 'SBM',
+    'TM SPINT': 'SPNT',
+    'V': 'V',
+    'VA': 'VA',
+    'VF': 'VF',
+    'VL': 'VL',
+    'VM': 'VM',
+    'VN': 'VN',
+    'VR': 'VR',
+    'VZ': 'VZ',
+  };
+
+  // Convert the input to uppercase for case-insensitive comparison
+  const uppercaseEquipmentCode = fkEquipmentCode.toUpperCase();
+
+  // Check if the equipment code exists in the mapping, return the corresponding powerbroker code
+  if (equipmentCodeMapping.hasOwnProperty(uppercaseEquipmentCode)) {
+    return equipmentCodeMapping[uppercaseEquipmentCode];
+  } else {
+    // Return a default value or handle the case when the input is not found
+    return 'UNKNOWN';
+  }
+}
+
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
@@ -1006,4 +1102,5 @@ module.exports = {
   sumNumericValues,
   fetchDataFromTablesList,
   populateStops,
+  mapEquipmentCodeToFkPowerbrokerCode
 };
