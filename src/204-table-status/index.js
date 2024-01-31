@@ -197,11 +197,11 @@ async function checkMultiStop(tableData) {
     if (Object.hasOwnProperty.call(originalTableStatuses, key)) {
       const tableStatuses = originalTableStatuses[key];
       if (Object.values(tableStatuses).includes(STATUSES.PENDING) && retryCount < 5) {
-        await publishSNSTopic({
-          message: `All tables are not populated for order id: ${orderNo}. 
-          \n Please check ${STATUS_TABLE} to see which table does not have data. 
-          \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
-        });
+        // await publishSNSTopic({
+        //   message: `All tables are not populated for order id: ${orderNo}.
+        //   \n Please check ${STATUS_TABLE} to see which table does not have data.
+        //   \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
+        // });
         return await updateStatusTable({
           orderNo,
           originalTableStatuses,
@@ -219,7 +219,7 @@ async function checkMultiStop(tableData) {
           orderNo,
           originalTableStatuses,
           retryCount,
-          status: STATUSES.PENDING,
+          status: STATUSES.FAILED,
         });
       }
     }
