@@ -39,6 +39,7 @@ function:
     SEND_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/create-orders.url}
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
     STATUS_TABLE_CONSOLE_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.ConsolNoIndex}
+    STATUS_TABLE_STATUS_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.StatusIndex}
 
   events:
     - schedule: cron(*/5 * * * ? *) #cron for every 5 min
