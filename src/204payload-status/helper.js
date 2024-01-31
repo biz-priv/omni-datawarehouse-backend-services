@@ -4,6 +4,27 @@ const AWS = require('aws-sdk');
 const moment = require('moment-timezone');
 const { getLocationId, createLocation } = require('./apis');
 
+const {
+  SHIPMENT_APAR_TABLE,
+  SHIPMENT_HEADER_TABLE,
+  SHIPMENT_DESC_TABLE,
+  CONSOL_STOP_HEADERS,
+  CONSOL_STOP_ITEMS,
+  CUSTOMER_TABLE,
+  CONFIRMATION_COST,
+  CONFIRMATION_COST_INDEX_KEY_NAME,
+  CONSIGNEE_TABLE,
+  SHIPPER_TABLE,
+  TIMEZONE_MASTER,
+  TIMEZONE_ZIP_CR,
+  REFERENCES_TABLE,
+  USERS_TABLE,
+  TRACKING_NOTES_TABLE,
+  REFERENCES_INDEX_KEY_NAME,
+  TRACKING_NOTES_CONSOLENO_INDEX_KEY,
+  SHIPMENT_APAR_INDEX_KEY_NAME,
+} = process.env;
+
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
   region: 'us-east-1',
 });
@@ -144,11 +165,7 @@ async function generateStop(
     timeZone = await getTimeZoneCode(deliveryZip);
     state = _.get(stateData, 'FK_ConState', '');
   }
-  const timezoneParams = getParamsByTableName(
-    '5344583',
-    'omni-wt-rt-timezone-master-dev',
-    timeZone
-  );
+  const timezoneParams = getParamsByTableName('', 'omni-wt-rt-timezone-master', timeZone);
   console.info('🙂 -> file: helper.js:161 -> timezoneParams:', timezoneParams);
   const timeZoneMaster = await queryDynamoDB(timezoneParams);
 
@@ -177,7 +194,7 @@ async function generateStop(
         comments: _.get(
           confirmationCostData,
           type === 'shipper' ? 'PickupNote' : 'DeliveryNote',
-          'Empty'
+          'NA'
         ),
       },
     ],
@@ -198,10 +215,10 @@ async function generateStop(
 
 function getParamsByTableName(orderNo, tableName, timezone, billno, userId, consoleNo) {
   switch (tableName) {
-    case 'omni-wt-rt-confirmation-cost-dev':
+    case 'omni-wt-rt-confirmation-cost':
       return {
-        TableName: 'omni-wt-rt-confirmation-cost-dev',
-        IndexName: 'omni-wt-confirmation-cost-orderNo-index-dev',
+        TableName: CONFIRMATION_COST,
+        IndexName: CONFIRMATION_COST_INDEX_KEY_NAME,
         KeyConditionExpression: 'FK_OrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
@@ -219,40 +236,40 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
       };
     case 'omni-wt-rt-shipment-header-console':
       return {
-        TableName: 'omni-wt-rt-shipment-header-dev',
+        TableName: SHIPMENT_HEADER_TABLE,
         KeyConditionExpression: 'PK_OrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
         },
       };
-    case 'omni-wt-rt-references-dev':
+    case 'omni-wt-rt-references':
       return {
-        TableName: 'omni-wt-rt-references-dev',
-        IndexName: 'omni-wt-rt-ref-orderNo-index-dev',
+        TableName: REFERENCES_TABLE,
+        IndexName: REFERENCES_INDEX_KEY_NAME,
         KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
         ExpressionAttributeValues: {
           ':FK_OrderNo': orderNo,
         },
       };
-    case 'omni-wt-rt-shipper-dev':
+    case 'omni-wt-rt-shipper':
       return {
-        TableName: 'omni-wt-rt-shipper-dev',
+        TableName: SHIPPER_TABLE,
         KeyConditionExpression: 'FK_ShipOrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
         },
       };
-    case 'omni-wt-rt-consignee-dev':
+    case 'omni-wt-rt-consignee':
       return {
-        TableName: 'omni-wt-rt-consignee-dev',
+        TableName: CONSIGNEE_TABLE,
         KeyConditionExpression: 'FK_ConOrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
         },
       };
-    case 'omni-wt-rt-shipment-apar-dev':
+    case 'omni-wt-rt-shipment-apar':
       return {
-        TableName: 'omni-wt-rt-shipment-apar-dev',
+        TableName: SHIPMENT_APAR_TABLE,
         KeyConditionExpression: 'FK_OrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
@@ -260,7 +277,7 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
       };
     case 'omni-wt-rt-shipment-apar-console':
       return {
-        TableName: 'omni-wt-rt-shipment-apar-dev',
+        TableName: SHIPMENT_APAR_TABLE,
         KeyConditionExpression: 'FK_OrderNo = :orderNo',
         FilterExpression: 'Consolidation = :consolidation',
         ExpressionAttributeValues: {
@@ -268,25 +285,25 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
           ':consolidation': 'N',
         },
       };
-    case 'omni-wt-rt-shipment-desc-dev':
+    case 'omni-wt-rt-shipment-desc':
       return {
-        TableName: 'omni-wt-rt-shipment-desc-dev',
+        TableName: SHIPMENT_DESC_TABLE,
         KeyConditionExpression: 'FK_OrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
         },
       };
-    case 'omni-wt-rt-timezone-master-dev':
+    case 'omni-wt-rt-timezone-master':
       return {
-        TableName: 'omni-wt-rt-timezone-master-dev',
+        TableName: TIMEZONE_MASTER,
         KeyConditionExpression: 'PK_TimeZoneCode = :code',
         ExpressionAttributeValues: {
           ':code': timezone,
         },
       };
-    case 'omni-wt-rt-customers-dev':
+    case 'omni-wt-rt-customers':
       return {
-        TableName: 'omni-wt-rt-customers-dev',
+        TableName: CUSTOMER_TABLE,
         KeyConditionExpression: 'PK_CustNo = :PK_CustNo',
         ExpressionAttributeValues: {
           ':PK_CustNo': billno,
@@ -294,7 +311,7 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
       };
     case 'omni-wt-rt-users':
       return {
-        TableName: 'omni-wt-rt-users-dev',
+        TableName: USERS_TABLE,
         KeyConditionExpression: 'PK_UserId = :PK_UserId',
         ExpressionAttributeValues: {
           ':PK_UserId': userId,
@@ -302,8 +319,8 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
       };
     case 'omni-wt-rt-tracking-notes':
       return {
-        TableName: 'omni-wt-rt-tracking-notes-dev',
-        IndexName: 'omni-tracking-notes-console-index-dev',
+        TableName: TRACKING_NOTES_TABLE,
+        IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
         KeyConditionExpression: 'ConsolNo = :ConsolNo',
         ExpressionAttributeValues: {
           ':ConsolNo': consoleNo,
@@ -411,11 +428,7 @@ async function fetchAparTableForConsole({ orderNo }) {
 }
 
 async function fetchCommonTableData({ shipmentAparData }) {
-  const tables = [
-    'omni-wt-rt-confirmation-cost-dev',
-    'omni-wt-rt-shipper-dev',
-    'omni-wt-rt-consignee-dev',
-  ];
+  const tables = ['omni-wt-rt-confirmation-cost', 'omni-wt-rt-shipper', 'omni-wt-rt-consignee'];
 
   try {
     const [confirmationCostData, shipperData, consigneeData] = await Promise.all(
@@ -437,8 +450,8 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
   try {
     const tables = [
       'omni-wt-rt-shipment-header-non-console',
-      'omni-wt-rt-references-dev',
-      'omni-wt-rt-shipment-desc-dev',
+      'omni-wt-rt-references',
+      'omni-wt-rt-shipment-desc',
     ];
 
     const [shipmentHeaderData, referencesData, shipmentDescData] = await Promise.all(
@@ -454,13 +467,13 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
     }
     const customersParams = getParamsByTableName(
       '',
-      'omni-wt-rt-customers-dev',
+      'omni-wt-rt-customers',
       '',
       _.get(shipmentHeaderData, '[0].BillNo', '')
     );
     console.info('🚀 ~ file: helper.js:471 ~ BillNo:', _.get(shipmentHeaderData, '[0].BillNo', ''));
     console.info('🙂 -> file: index.js:61 -> customersParams:', customersParams);
-    const tables2 = ['omni-wt-rt-customers-dev', 'omni-wt-rt-users'];
+    const tables2 = ['omni-wt-rt-customers', 'omni-wt-rt-users'];
     const [customersData, userData] = await Promise.all(
       tables2.map(async (table) => {
         const param = getParamsByTableName(
@@ -475,10 +488,10 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
         return _.get(response, 'Items', false);
       })
     );
-    console.info('🚀 ~ file: helper.js:467 ~ userData:', userData);
+    console.info('🚀 ~ file: helper.js:491 ~ userData:', userData);
     return { shipmentHeaderData, referencesData, shipmentDescData, customersData, userData };
   } catch (err) {
-    console.error('🙂 -> file: helper.js:469 -> err:', err);
+    console.error('🙂 -> file: helper.js:494 -> err:', err);
     return { shipmentHeaderData: [], referencesData: [], shipmentDescData: [], customersData: [] };
   }
 }
@@ -487,8 +500,8 @@ async function fetchConsoleTableData({ shipmentAparData }) {
   try {
     const tables = [
       'omni-wt-rt-shipment-header-console',
-      'omni-wt-rt-references-dev',
-      'omni-wt-rt-shipment-desc-dev',
+      'omni-wt-rt-references',
+      'omni-wt-rt-shipment-desc',
       'omni-wt-rt-tracking-notes',
     ];
 
@@ -512,7 +525,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
     if (shipmentHeaderData === 0 || trackingNotesData === 0) {
       throw new Error('Missing data in customers or users');
     }
-    const tables2 = ['omni-wt-rt-customers-dev'];
+    const tables2 = ['omni-wt-rt-customers'];
     const [customersData] = await Promise.all(
       tables2.map(async (table) => {
         const param = getParamsByTableName(
@@ -572,8 +585,8 @@ async function fetchConsoleTableData({ shipmentAparData }) {
 async function getAparDataByConsole({ shipmentAparData }) {
   try {
     const shipmentAparParams = {
-      TableName: 'omni-wt-rt-shipment-apar-dev',
-      IndexName: 'omni-ivia-ConsolNo-index-dev',
+      TableName: SHIPMENT_APAR_TABLE,
+      IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       FilterExpression: 'Consolidation = :consolidation',
       ExpressionAttributeValues: {
@@ -601,7 +614,7 @@ async function getVesselForConsole({ shipmentAparConsoleData }) {
   const shipmentHeaderParam = getParamsByTableName(orderNo, 'omni-wt-rt-shipment-header-console');
   console.info('🙂 -> file: helper.js:555 -> shipmentHeaderParam:', shipmentHeaderParam);
   const billno = _.get(await queryDynamoDB(shipmentHeaderParam), 'Items.[0].BillNo');
-  const customersParams = getParamsByTableName('', 'omni-wt-rt-customers-dev', '', billno);
+  const customersParams = getParamsByTableName('', 'omni-wt-rt-customers', '', billno);
   console.info('🙂 -> file: helper.js:558 -> customersParams:', customersParams);
   return _.get(await queryDynamoDB(customersParams), 'Items.[0].CustName', '');
 }
@@ -610,7 +623,7 @@ async function getWeightForConsole({ shipmentAparConsoleData: aparData }) {
   const descData = await Promise.all(
     aparData.map(async (data) => {
       const shipmentDescParams = {
-        TableName: 'omni-wt-rt-shipment-desc-dev',
+        TableName: SHIPMENT_DESC_TABLE,
         KeyConditionExpression: 'FK_OrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': _.get(data, 'FK_OrderNo'),
@@ -632,7 +645,7 @@ async function getHazmat({ shipmentAparConsoleData: aparData }) {
   const descData = await Promise.all(
     aparData.map(async (data) => {
       const shipmentDescParams = {
-        TableName: 'omni-wt-rt-shipment-desc-dev',
+        TableName: SHIPMENT_DESC_TABLE,
         KeyConditionExpression: 'FK_OrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': _.get(data, 'FK_OrderNo'),
@@ -658,7 +671,7 @@ async function getHighValue({ shipmentAparConsoleData: aparData, type = 'high_va
   const descData = await Promise.all(
     aparData.map(async (data) => {
       const shipmentHeaderParams = {
-        TableName: 'omni-wt-rt-shipment-header-dev',
+        TableName: SHIPMENT_HEADER_TABLE,
         KeyConditionExpression: 'PK_OrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': _.get(data, 'FK_OrderNo'),
@@ -700,8 +713,8 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     }
 
     const sapparams = {
-      TableName: 'omni-wt-rt-shipment-apar-dev',
-      IndexName: 'omni-ivia-ConsolNo-index-dev',
+      TableName: SHIPMENT_APAR_TABLE,
+      IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       FilterExpression:
         'FK_VendorId = :FK_VendorId and Consolidation = :Consolidation and FK_ServiceId = :FK_ServiceId and SeqNo <> :SeqNo and FK_OrderNo <> :FK_OrderNo',
@@ -734,7 +747,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       element = uniqueElement;
 
       const shparams = {
-        TableName: 'omni-wt-rt-shipment-header-dev',
+        TableName: SHIPMENT_HEADER_TABLE,
         KeyConditionExpression: 'PK_OrderNo = :PK_OrderNo',
         ExpressionAttributeValues: {
           ':PK_OrderNo': element.FK_OrderNo.toString(),
@@ -746,7 +759,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
         throw new Error(`No shipment header data found:${element.FK_OrderNo}`);
       }
       const sdparams = {
-        TableName: 'omni-wt-rt-shipment-desc-dev',
+        TableName: SHIPMENT_DESC_TABLE,
         KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
         ExpressionAttributeValues: {
           ':FK_OrderNo': element.FK_OrderNo.toString(),
@@ -760,7 +773,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       }
 
       const cstparams = {
-        TableName: 'omni-wt-rt-consol-stop-items-dev',
+        TableName: CONSOL_STOP_ITEMS,
         KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
         ExpressionAttributeValues: {
           ':FK_OrderNo': element.FK_OrderNo.toString(),
@@ -775,7 +788,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
 
       for (const csitem of uniqueConsolStopItems) {
         const cshparams = {
-          TableName: 'omni-wt-rt-consol-stop-headers-dev',
+          TableName: CONSOL_STOP_HEADERS,
           KeyConditionExpression: 'PK_ConsolStopId = :PK_ConsolStopId',
           FilterExpression: 'FK_ConsolNo = :ConsolNo',
           ExpressionAttributeValues: {
@@ -796,7 +809,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     let customer = [];
     if (shipmentHeader.length > 0 && shipmentHeader[0].BillNo !== '') {
       const customerParam = {
-        TableName: 'omni-wt-rt-customers-dev',
+        TableName: CUSTOMER_TABLE,
         KeyConditionExpression: 'PK_CustNo = :PK_CustNo',
         ExpressionAttributeValues: {
           ':PK_CustNo': shipmentHeader[0].BillNo,
@@ -811,8 +824,8 @@ async function fetchDataFromTablesList(CONSOL_NO) {
 
     const references = [];
     const refparams = {
-      TableName: 'omni-wt-rt-references-dev',
-      IndexName: 'omni-wt-rt-ref-orderNo-index-dev',
+      TableName: REFERENCES_TABLE,
+      IndexName: REFERENCES_INDEX_KEY_NAME,
       KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
       ExpressionAttributeValues: {
         ':FK_OrderNo': element.FK_OrderNo.toString(),
@@ -824,7 +837,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       throw new Error(`No references data found for FK_OrderNo:${element.FK_OrderNo}`);
     }
     const tnparams = {
-      TableName: 'omni-wt-rt-tracking-notes-dev',
+      TableName: TRACKING_NOTES_TABLE,
       IndexName: 'omni-tracking-notes-console-index-dev',
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
@@ -840,7 +853,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     }
     let users = [];
     const userparams = {
-      TableName: 'omni-wt-rt-users-dev',
+      TableName: USERS_TABLE,
       KeyConditionExpression: 'PK_UserId = :PK_UserId',
       ExpressionAttributeValues: {
         ':PK_UserId': _.get(trackingNotesResult, 'Items[0].FK_UserId', ''),
@@ -920,7 +933,7 @@ async function populateStops(consolStopHeaders, references, users) {
           comment_type: 'DC',
           comments:
             _.get(stopHeader, 'ConsolStopNotes', '') === ''
-              ? 'Empty'
+              ? 'NA'
               : _.get(stopHeader, 'ConsolStopNotes'),
         },
         {
@@ -977,7 +990,7 @@ async function fetchLocationIds(stopsData) {
 async function getTimeZoneCode(zipcode) {
   try {
     const params = {
-      TableName: 'omni-wt-rt-timezone-zip-cr-dev',
+      TableName: TIMEZONE_ZIP_CR,
       KeyConditionExpression: 'ZipCode = :code',
       ExpressionAttributeValues: {
         ':code': zipcode,
@@ -1001,7 +1014,7 @@ async function getTimeZoneCode(zipcode) {
 async function getHoursAwayFromTimeZone(timeZoneCode) {
   try {
     const params = {
-      TableName: 'omni-wt-rt-timezone-master-dev',
+      TableName: TIMEZONE_MASTER,
       KeyConditionExpression: 'PK_TimeZoneCode = :code',
       ExpressionAttributeValues: {
         ':code': timeZoneCode,

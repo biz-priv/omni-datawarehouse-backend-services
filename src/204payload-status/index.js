@@ -149,23 +149,20 @@ module.exports.handler = async (event, context) => {
 
         const createPayloadResponse = await sendPayload({ payload });
         console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
-        if (
-          parseInt(_.get(shipmentAparData, 'ConsolNo', null), 10) !== null &&
-          _.get(shipmentAparData, 'Consolidation') === 'N' &&
-          _.includes(['MT'], _.get(shipmentAparData, 'FK_ServiceId'))
-        ) {
-          const movements = _.get(createPayloadResponse, 'movements', []);
-          // Add "brokerage_status" to each movement
-          const updatedMovements = movements.map((movement) => ({
-            ...movement,
-            brokerage_status: 'NEWOMNI',
-          }));
-          // Update the movements array in the response
-          _.set(createPayloadResponse, 'movements', updatedMovements);
-          await updateOrders({ payload: createPayloadResponse });
-        }
+
+        const movements = _.get(createPayloadResponse, 'movements', []);
+        // Add "brokerage_status" to each movement
+        const updatedMovements = movements.map((movement) => ({
+          ...movement,
+          brokerage_status: 'NEWOMNI',
+        }));
+        // Update the movements array in the response
+        _.set(createPayloadResponse, 'movements', updatedMovements);
+
+        const updatedOrderResponse = await updateOrders({ payload: createPayloadResponse });
+
         await updateStatusTable({
-          response: createPayloadResponse,
+          response: updatedOrderResponse,
           payload,
           orderNo: orderId,
           status: STATUSES.SENT,

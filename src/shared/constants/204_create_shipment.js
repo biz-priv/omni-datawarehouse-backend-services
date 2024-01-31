@@ -1,5 +1,18 @@
 'use strict';
 
+const {
+  SHIPMENT_HEADER_TABLE,
+  SHIPMENT_DESC_TABLE,
+  CONSOL_STOP_ITEMS,
+  CONFIRMATION_COST,
+  CONFIRMATION_COST_INDEX_KEY_NAME,
+  CONSIGNEE_TABLE,
+  SHIPPER_TABLE,
+  REFERENCES_TABLE,
+  TRACKING_NOTES_TABLE,
+  TRACKING_NOTES_CONSOLENO_INDEX_KEY,
+} = process.env;
+
 const STATUSES = {
   PENDING: 'PENDING',
   READY: 'READY',
@@ -39,37 +52,37 @@ const CONSOLE_WISE_TABLES = {
 const TABLE_PARAMS = {
   [TYPES.CONSOLE]: {
     tbl_ConfirmationCost: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-confirmation-cost-dev',
-      IndexName: 'omni-wt-confirmation-cost-orderNo-index-dev',
+      TableName: CONFIRMATION_COST,
+      IndexName: CONFIRMATION_COST_INDEX_KEY_NAME,
       KeyConditionExpression: 'FK_OrderNo = :orderNo',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
       },
     }),
     tbl_Shipper: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-shipper-dev',
+      TableName: SHIPPER_TABLE,
       KeyConditionExpression: 'FK_ShipOrderNo = :orderNo',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
       },
     }),
     tbl_Consignee: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-consignee-dev',
+      TableName: CONSIGNEE_TABLE,
       KeyConditionExpression: 'FK_ConOrderNo = :orderNo',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
       },
     }),
     tbl_ShipmentHeader: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-shipment-header-dev',
+      TableName: SHIPMENT_HEADER_TABLE,
       KeyConditionExpression: 'PK_OrderNo = :orderNo',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
       },
     }),
     tbl_TrackingNotes: ({ consoleNo }) => ({
-      TableName: 'omni-wt-rt-tracking-notes-dev',
-      IndexName: 'omni-tracking-notes-console-index-dev',
+      TableName: TRACKING_NOTES_TABLE,
+      IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
         ':ConsolNo': consoleNo,
@@ -78,29 +91,29 @@ const TABLE_PARAMS = {
   },
   [TYPES.NON_CONSOLE]: {
     tbl_ConfirmationCost: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-confirmation-cost-dev',
-      IndexName: 'omni-wt-confirmation-cost-orderNo-index-dev',
+      TableName: CONFIRMATION_COST,
+      IndexName: CONFIRMATION_COST_INDEX_KEY_NAME,
       KeyConditionExpression: 'FK_OrderNo = :orderNo',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
       },
     }),
     tbl_Shipper: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-shipper-dev',
+      TableName: SHIPPER_TABLE,
       KeyConditionExpression: 'FK_ShipOrderNo = :orderNo',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
       },
     }),
     tbl_Consignee: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-consignee-dev',
+      TableName: CONSIGNEE_TABLE,
       KeyConditionExpression: 'FK_ConOrderNo = :orderNo',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
       },
     }),
     tbl_ShipmentHeader: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-shipment-header-dev',
+      TableName: SHIPMENT_HEADER_TABLE,
       KeyConditionExpression: 'PK_OrderNo = :orderNo',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
@@ -109,21 +122,21 @@ const TABLE_PARAMS = {
   },
   [TYPES.MULTI_STOP]: {
     tbl_ShipmentHeader: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-shipment-header-dev',
+      TableName: SHIPMENT_HEADER_TABLE,
       KeyConditionExpression: 'PK_OrderNo = :PK_OrderNo',
       ExpressionAttributeValues: {
         ':PK_OrderNo': orderNo,
       },
     }),
     tbl_ConsolStopItems: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-consol-stop-items-dev',
+      TableName: CONSOL_STOP_ITEMS,
       KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
       ExpressionAttributeValues: {
         ':FK_OrderNo': orderNo,
       },
     }),
     tbl_References: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-references-dev',
+      TableName: REFERENCES_TABLE,
       IndexName: 'omni-wt-rt-ref-orderNo-index-dev',
       KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
       ExpressionAttributeValues: {
@@ -131,15 +144,15 @@ const TABLE_PARAMS = {
       },
     }),
     tbl_ShipmentDesc: ({ orderNo }) => ({
-      TableName: 'omni-wt-rt-shipment-desc-dev',
+      TableName: SHIPMENT_DESC_TABLE,
       KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
       ExpressionAttributeValues: {
         ':FK_OrderNo': orderNo,
       },
     }),
     tbl_TrackingNotes: ({ consoleNo }) => ({
-      TableName: 'omni-wt-rt-tracking-notes-dev',
-      IndexName: 'omni-tracking-notes-console-index-dev',
+      TableName: TRACKING_NOTES_TABLE,
+      IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
         ':ConsolNo': consoleNo,

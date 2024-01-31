@@ -83,7 +83,7 @@ functions:
   pod-doc-upload: ${file(config/functions/pod-doc-upload.yml):function}
   shipment-header-table-stream-processor: ${file(config/functions/shipment-header-table-stream-processor.yml):function}
 
-  204-payload-status: ${file(config/functions/204PayloadStatus.yml):function}
+  204-payload-status: ${file(config/functions/204-payload-status.yml):function}
   204-create-shipment-stream-processor: ${file(config/functions/204-create-shipment-stream-processor.yml):function}
   204-table-status: ${file(config/functions/204-table-status.yml):function}
 

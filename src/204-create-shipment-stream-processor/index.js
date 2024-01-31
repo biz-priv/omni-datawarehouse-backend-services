@@ -9,7 +9,14 @@ const {
 } = require('../shared/constants/204_create_shipment');
 const moment = require('moment-timezone');
 
-const { STATUS_TABLE, SNS_TOPIC_ARN, STAGE } = process.env;
+const {
+  STATUS_TABLE,
+  SNS_TOPIC_ARN,
+  STAGE,
+  SHIPMENT_APAR_TABLE,
+  SHIPMENT_APAR_INDEX_KEY_NAME,
+  STATUS_TABLE_CONSOLE_INDEX,
+} = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
@@ -77,6 +84,11 @@ module.exports.handler = async (event, context) => {
         vendorId === VENDOR
       ) {
         console.info('Multi Stops');
+        const existingConsoleData = await fetch204TableDataForConsole({ consolNo });
+        if (get(existingConsoleData, 'Items', []).length > 0) {
+          console.info(`Record already exists for consol number ${consolNo}`);
+          return `Record already exists for consol number ${consolNo}`;
+        }
         const result = await fetchConsoleForOrderId({ consolNo });
         console.info('🙂 -> file: index.js:81 -> result:', result);
         const tableStatuses = {};
@@ -144,8 +156,8 @@ async function publishSNSTopic({ message }) {
 
 async function fetchConsoleForOrderId({ consolNo }) {
   const params = {
-    TableName: 'omni-wt-rt-shipment-apar-dev',
-    IndexName: 'omni-ivia-ConsolNo-index-dev',
+    TableName: SHIPMENT_APAR_TABLE,
+    IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
     KeyConditionExpression: 'ConsolNo = :ConsolNo',
     FilterExpression:
       'FK_VendorId = :FK_VendorId and Consolidation = :Consolidation and FK_ServiceId = :FK_ServiceId and SeqNo <> :SeqNo and FK_OrderNo <> :FK_OrderNo',
@@ -156,6 +168,18 @@ async function fetchConsoleForOrderId({ consolNo }) {
       ':FK_ServiceId': 'MT',
       ':SeqNo': '9999',
       ':FK_OrderNo': consolNo.toString(),
+    },
+  };
+  return await dynamoDb.query(params).promise();
+}
+
+async function fetch204TableDataForConsole({ consolNo }) {
+  const params = {
+    TableName: STATUS_TABLE,
+    IndexName: STATUS_TABLE_CONSOLE_INDEX,
+    KeyConditionExpression: 'ConsolNo = :ConsolNo',
+    ExpressionAttributeValues: {
+      ':ConsolNo': consolNo.toString(),
     },
   };
   return await dynamoDb.query(params).promise();

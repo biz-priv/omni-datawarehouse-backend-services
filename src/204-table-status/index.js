@@ -29,7 +29,7 @@ module.exports.handler = async (event, context) => {
     return false;
   } catch (e) {
     console.error(
-      '🚀 ~ file: shipment_header_table_stream_processor.js:117 ~ module.exports.handler= ~ e:',
+      '🚀 ~ file: shipment_header_table_stream_processor.js:32 ~ module.exports.handler= ~ e:',
       e
     );
     await publishSNSTopic({
