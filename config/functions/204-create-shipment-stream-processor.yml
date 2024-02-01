@@ -19,6 +19,7 @@ function:
       - '!**/*'
       - 'src/204-create-shipment-stream-processor/*'
       - 'src/shared/constants/204_create_shipment.js'
+      - 'src/204payload-status/helper.js'
   environment:
     SNS_TOPIC_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
     STAGE: ${self:provider.stage}
