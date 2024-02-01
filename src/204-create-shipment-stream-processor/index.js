@@ -8,6 +8,7 @@ const {
   VENDOR,
 } = require('../shared/constants/204_create_shipment');
 const moment = require('moment-timezone');
+const { setDelay } = require('../204payload-status/helper');
 
 const {
   STATUS_TABLE,
@@ -24,14 +25,11 @@ let functionName;
 let orderId;
 module.exports.handler = async (event, context) => {
   try {
-    console.info('🙂 -> file: index.js:11 -> SNS_TOPIC_ARN:', SNS_TOPIC_ARN);
-
     functionName = get(context, 'functionName');
-    console.info('🙂 -> file: index.js:8 -> functionName:', functionName);
-    console.info(
-      '🚀 ~ file: shipment_header_table_stream_processor.js:8 ~ exports.handler= ~ event:',
-      JSON.stringify(event)
-    );
+    /**
+     * added 45 sec delay
+     */
+    await setDelay(45);
 
     for (const record of get(event, 'Records', [])) {
       const shipmentAparData = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);

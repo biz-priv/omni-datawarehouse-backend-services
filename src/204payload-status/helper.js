@@ -1162,6 +1162,21 @@ function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
   return '';
 }
 
+/**
+ * creates delay of {sec}
+ * @param {*} sec
+ * @returns
+ */
+function setDelay(sec) {
+  console.info('delay started');
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.info('delay end');
+      resolve(true);
+    }, sec * 1000);
+  });
+}
+
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
@@ -1186,4 +1201,5 @@ module.exports = {
   populateStops,
   mapEquipmentCodeToFkPowerbrokerCode,
   getPieces,
+  setDelay,
 };
