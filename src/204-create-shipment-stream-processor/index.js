@@ -99,6 +99,7 @@ module.exports.handler = async (event, context) => {
 
         await insertShipmentStatus({
           orderNo: orderId,
+          consolNo: consolNo.toString(),
           status: STATUSES.PENDING,
           type: TYPES.MULTI_STOP,
           tableStatuses,
@@ -120,12 +121,20 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function insertShipmentStatus({ orderNo, status, type, tableStatuses, ShipmentAparData }) {
+async function insertShipmentStatus({
+  orderNo,
+  consolNo,
+  status,
+  type,
+  tableStatuses,
+  ShipmentAparData,
+}) {
   try {
     const params = {
       TableName: STATUS_TABLE,
       Item: {
         FK_OrderNo: orderNo,
+        ConsolNo: consolNo,
         Status: status,
         Type: type,
         TableStatuses: tableStatuses,
