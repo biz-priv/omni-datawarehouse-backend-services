@@ -8,7 +8,6 @@ const {
   VENDOR,
 } = require('../shared/constants/204_create_shipment');
 const moment = require('moment-timezone');
-const { setDelay } = require('../204payload-status/helper');
 
 const {
   STATUS_TABLE,
@@ -49,7 +48,7 @@ module.exports.handler = async (event, context) => {
 
       if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
         console.info('Non Console');
-        return await insertShipmentStatus({
+        await insertShipmentStatus({
           orderNo: orderId,
           status: STATUSES.PENDING,
           type: TYPES.NON_CONSOLE,
@@ -65,7 +64,7 @@ module.exports.handler = async (event, context) => {
         vendorId === VENDOR
       ) {
         console.info('Console');
-        return await insertShipmentStatus({
+        await insertShipmentStatus({
           orderNo: orderId,
           status: STATUSES.PENDING,
           type: TYPES.CONSOLE,
@@ -103,7 +102,6 @@ module.exports.handler = async (event, context) => {
           tableStatuses,
           ShipmentAparData: shipmentAparData,
         });
-        return true;
       }
     }
 
@@ -190,4 +188,19 @@ async function fetch204TableDataForConsole({ consolNo }) {
     },
   };
   return await dynamoDb.query(params).promise();
+}
+
+/**
+ * creates delay of {sec}
+ * @param {*} sec
+ * @returns
+ */
+function setDelay(sec) {
+  console.info('delay started');
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.info('delay end');
+      resolve(true);
+    }, sec * 1000);
+  });
 }

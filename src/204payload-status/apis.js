@@ -98,10 +98,11 @@ async function updateOrders({ payload: data }) {
     const responseData = _.get(response, 'data', {});
     console.info('🙂 -> file: apis.js:54 -> updateOrders -> responseData:', responseData);
     // Return the created location data or perform additional processing as needed
-    return _.get(responseData, 'id', false);
+    return responseData;
   } catch (error) {
-    console.error('🙂 -> file: apis.js:58 -> updateOrders -> error:', error);
-    throw error;
+    console.info('🙂 -> file: apis.js:103 -> error:', error);
+    const errorMessage = _.get(error, 'response.data', error.message);
+    throw new Error(errorMessage);
   }
 }
 
