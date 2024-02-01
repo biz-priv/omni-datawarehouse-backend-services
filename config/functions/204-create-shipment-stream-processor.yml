@@ -9,7 +9,7 @@ function:
   events:
     - stream:
         arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.streamArn~true}
-        batchSize: 5
+        batchSize: 1
         maximumRetryAttempts: 3
         bisectBatchOnFunctionError: true
         filterPatterns:

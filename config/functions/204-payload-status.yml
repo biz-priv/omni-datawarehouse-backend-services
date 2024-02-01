@@ -43,7 +43,7 @@ function:
   events:
     - stream:
         arn: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.streamArn}
-        batchSize: 1
+        batchSize: 5
         maximumRetryAttempts: 3
         bisectBatchOnFunctionError: true
         filterPatterns:
