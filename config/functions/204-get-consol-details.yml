@@ -5,6 +5,7 @@ function:
   timeout: 500
   layers:
     - !Ref DWBackendLambdaLayer
+
   environment:
     DB_USERNAME: ${ssm:/omni-dw/${self:provider.stage}/worldTrak/source-db/userName}
     DB_PASSWORD: ${ssm:/omni-dw/${self:provider.stage}/worldTrak/source-db/password}
@@ -14,7 +15,8 @@ function:
     ERROR_SNS_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
 
   package:
-    include:
+    patterns:
+      - '!**/*'
       - 'src/204-get-consol-details-api/index.js'
 
   events:

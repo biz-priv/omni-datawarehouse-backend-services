@@ -62,9 +62,9 @@ async function connectToSQLServer() {
   };
   console.info('🚀 ~ file: index.js:62 ~ config:', config);
   try {
-    sql.connect(config);
-    console.info('Connected to SQL Server');
+    await sql.connect(config);
     const request = new sql.Request();
+    console.info('Connected to SQL Server');
     return request;
   } catch (err) {
     console.error('Error: ', err);
