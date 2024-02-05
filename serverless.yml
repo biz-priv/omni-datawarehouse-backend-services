@@ -88,7 +88,7 @@ functions:
   204-table-status: ${file(config/functions/204-table-status.yml):function}
   204-get-consol-details: ${file(config/functions/204-get-consol-details.yml):function}
   204-consol-processor: ${file(config/functions/204-consol-processor.yml):function}
-  204-multistop-event-processor: ${file(config/functions/204-consol-processor.yml):function}
+  204-multistop-event-processor: ${file(config/functions/204-multistop-event-processor.yml):function}
 
 resources:
   Resources:
