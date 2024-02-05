@@ -54,7 +54,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.1163.0",
-    "axios": "^1.6.5",
+    "axios": "^1.6.7",
     "joi": "^17.11.0",
     "lodash": "^4.17.21",
     "moment-timezone": "^0.5.39",

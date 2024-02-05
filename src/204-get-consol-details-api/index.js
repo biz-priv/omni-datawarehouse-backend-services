@@ -24,7 +24,7 @@ module.exports.handler = async (event) => {
     );
     console.info('🚀 ~ file: index.js:24 ~ queryResult:', queryResult);
 
-    const transformedResult = _.get(queryResult, 'recordset', []);
+    const transformedResult = _.get(queryResult, 'recordset', []).map((item) => item.fk_orderno);
 
     // Return the transformed result as a JSON response
     const response = {

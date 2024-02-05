@@ -1,6 +1,7 @@
 'use strict';
 
 const AWS = require('aws-sdk');
+const axios = require('axios');
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const _ = require('lodash');
@@ -36,8 +37,10 @@ module.exports.handler = async (event) => {
         consolidation === 'N' &&
         serviceLevelId === 'MT'
       ) {
+        const orderIds = await makeGetRequest(consolNo);
+        const joinedOrderIds = orderIds.join(',');
         const data = {
-          FK_OrderNo: orderId,
+          FK_OrderNo: joinedOrderIds,
           ConsolNo: consolNo,
           InsertedTimeStamp: moment.tz('America/Chicago').format(),
         };
@@ -64,5 +67,24 @@ async function storeData(data) {
     console.info(`Data stored successfully:, ${JSON.stringify(data)}`);
   } catch (error) {
     console.error('Error storing data:', error);
+  }
+}
+
+async function makeGetRequest(consolno) {
+  const apiKey = 'ymSMkcdTJ5E7A4rP6em02qga3anLajSRCTpuf610';
+  const url = `https://6enkvvfa45.execute-api.us-east-1.amazonaws.com/dev/consol/details?consolno=${consolno}`;
+
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'x-api-key': apiKey,
+      },
+    });
+
+    console.info(JSON.stringify(response.data));
+    return response.data;
+  } catch (error) {
+    console.error(error);
+    throw error;
   }
 }
