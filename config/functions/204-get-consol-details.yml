@@ -1,0 +1,25 @@
+function:
+  name: 204-get-consol-details-api-${self:provider.stage}
+  handler: src/204-get-consol-details-api/index.handler
+  runtime: nodejs18.x
+  timeout: 500
+  layers:
+    - !Ref DWBackendLambdaLayer
+  environment:
+    DB_USERNAME: ${ssm:/omni-dw/${self:provider.stage}/worldTrak/source-db/userName}
+    DB_PASSWORD: ${ssm:/omni-dw/${self:provider.stage}/worldTrak/source-db/password}
+    DB_SERVER: ${ssm:/omni-dw/${self:provider.stage}/worldTrak/source-db/serverName}
+    DB_PORT: ${ssm:/omni-dw/${self:provider.stage}/worldTrak/source-db/port}
+    DB_DATABASE: ${ssm:/omni-dw/${self:provider.stage}/worldTrak/source-db/name}
+    ERROR_SNS_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
+
+  package:
+    include:
+      - 'src/204-get-consol-details-api/index.js'
+
+  events:
+    - http:
+        path: /consol/details
+        method: get
+        cors: true
+        private: true

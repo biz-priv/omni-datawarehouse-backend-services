@@ -1,0 +1,27 @@
+function:
+  handler: src/204-consol-processor/index.handler
+  name: 204-consol-processor-${self:provider.stage}
+  description: process and filters shipment apar table stream for 204 create shipment - ${self:provider.stage}
+  runtime: nodejs18.x
+  timeout: 500
+  layers:
+    - !Ref DWBackendLambdaLayer
+  events:
+    - stream:
+        arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.streamArn~true}
+        batchSize: 5
+        maximumRetryAttempts: 3
+        bisectBatchOnFunctionError: true
+        filterPatterns:
+          - {
+              dynamodb:
+                { NewImage: { FK_VendorId: { S: ['LIVELOGI'] }, FK_ServiceId: { S: ['MT'] } } },
+            }
+  package:
+    patterns:
+      - '!**/*'
+      - 'src/204-consol-processor/index.js'
+  environment:
+    SNS_TOPIC_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
+    STAGE: ${self:provider.stage}
+    CONSOL_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}

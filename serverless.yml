@@ -86,6 +86,9 @@ functions:
   204-payload-status: ${file(config/functions/204-payload-status.yml):function}
   204-create-shipment-stream-processor: ${file(config/functions/204-create-shipment-stream-processor.yml):function}
   204-table-status: ${file(config/functions/204-table-status.yml):function}
+  204-get-consol-details: ${file(config/functions/204-get-consol-details.yml):function}
+  204-consol-processor: ${file(config/functions/204-consol-processor.yml):function}
+  204-multistop-event-processor: ${file(config/functions/204-consol-processor.yml):function}
 
 resources:
   Resources:

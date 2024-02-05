@@ -9,20 +9,14 @@ const {
 } = require('../shared/constants/204_create_shipment');
 const moment = require('moment-timezone');
 
-const {
-  STATUS_TABLE,
-  SNS_TOPIC_ARN,
-  STAGE,
-  SHIPMENT_APAR_TABLE,
-  SHIPMENT_APAR_INDEX_KEY_NAME,
-  STATUS_TABLE_CONSOLE_INDEX,
-} = process.env;
+const { STATUS_TABLE, SNS_TOPIC_ARN, STAGE } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
 let functionName;
 let orderId;
 module.exports.handler = async (event, context) => {
+  console.info('🚀 ~ file: index.js:26 ~ event:', event);
   try {
     functionName = get(context, 'functionName');
     /**
@@ -69,37 +63,6 @@ module.exports.handler = async (event, context) => {
           status: STATUSES.PENDING,
           type: TYPES.CONSOLE,
           tableStatuses: CONSOLE_WISE_TABLES[TYPES.CONSOLE],
-          ShipmentAparData: shipmentAparData,
-        });
-      }
-
-      if (
-        !isNaN(consolNo) &&
-        consolNo >= 0 &&
-        get(shipmentAparData, 'Consolidation') === 'N' &&
-        includes(['MT'], serviceLevelId) &&
-        vendorId === VENDOR
-      ) {
-        console.info('Multi Stops');
-        const existingConsoleData = await fetch204TableDataForConsole({ consolNo });
-        if (get(existingConsoleData, 'Items', []).length > 0) {
-          console.info(`Record already exists for consol number ${consolNo}`);
-          return `Record already exists for consol number ${consolNo}`;
-        }
-        const result = await fetchConsoleForOrderId({ consolNo });
-        console.info('🙂 -> file: index.js:81 -> result:', result);
-        const tableStatuses = {};
-        get(result, 'Items', []).map(
-          async (item) =>
-            (tableStatuses[get(item, 'FK_OrderNo')] = CONSOLE_WISE_TABLES[TYPES.MULTI_STOP])
-        );
-
-        await insertShipmentStatus({
-          orderNo: orderId,
-          consolNo: consolNo.toString(),
-          status: STATUSES.PENDING,
-          type: TYPES.MULTI_STOP,
-          tableStatuses,
           ShipmentAparData: shipmentAparData,
         });
       }
@@ -157,37 +120,6 @@ async function publishSNSTopic({ message }) {
       Message: `An error occurred: ${message}`,
     })
     .promise();
-}
-
-async function fetchConsoleForOrderId({ consolNo }) {
-  const params = {
-    TableName: SHIPMENT_APAR_TABLE,
-    IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
-    KeyConditionExpression: 'ConsolNo = :ConsolNo',
-    FilterExpression:
-      'FK_VendorId = :FK_VendorId and Consolidation = :Consolidation and FK_ServiceId = :FK_ServiceId and SeqNo <> :SeqNo and FK_OrderNo <> :FK_OrderNo',
-    ExpressionAttributeValues: {
-      ':ConsolNo': consolNo.toString(),
-      ':FK_VendorId': 'LIVELOGI',
-      ':Consolidation': 'N',
-      ':FK_ServiceId': 'MT',
-      ':SeqNo': '9999',
-      ':FK_OrderNo': consolNo.toString(),
-    },
-  };
-  return await dynamoDb.query(params).promise();
-}
-
-async function fetch204TableDataForConsole({ consolNo }) {
-  const params = {
-    TableName: STATUS_TABLE,
-    IndexName: STATUS_TABLE_CONSOLE_INDEX,
-    KeyConditionExpression: 'ConsolNo = :ConsolNo',
-    ExpressionAttributeValues: {
-      ':ConsolNo': consolNo.toString(),
-    },
-  };
-  return await dynamoDb.query(params).promise();
 }
 
 /**
