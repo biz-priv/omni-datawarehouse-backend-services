@@ -39,6 +39,7 @@ function:
     SEND_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/create-orders.url}
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
     STATUS_TABLE_CONSOLE_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.ConsolNoIndex}
+    CONSOL_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
 
   events:
     - stream:

@@ -208,8 +208,8 @@ async function checkMultiStop(tableData) {
       if (Object.values(tableStatuses).includes(STATUSES.PENDING) && retryCount >= 5) {
         await publishSNSTopic({
           message: `All tables are not populated for order id: ${orderNo}. 
-          \n Please check ${STATUS_TABLE} to see which table does not have data. 
-          \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
+              \n Please check ${STATUS_TABLE} to see which table does not have data. 
+              \n Retrigger the process by changing Status to ${STATUSES.PENDING} and resetting the RetryCount to 0.`,
         });
         return await updateStatusTable({
           orderNo,

@@ -6,6 +6,7 @@ const axios = require('axios');
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const _ = require('lodash');
 const moment = require('moment-timezone');
+const { STATUSES } = require('../shared/constants/204_create_shipment');
 
 const { CONSOL_STATUS_TABLE } = process.env;
 
@@ -23,26 +24,26 @@ module.exports.handler = async (event) => {
       const consolNo = parseInt(_.get(shipmentAparData, 'ConsolNo', null), 10);
       console.info('🙂 -> file: index.js:23 -> consolNo:', consolNo);
 
-      const serviceLevelId = _.get(shipmentAparData, 'FK_ServiceId');
-      console.info('🙂 -> file: index.js:26 -> serviceLevelId:', serviceLevelId);
+      const serviceId = _.get(shipmentAparData, 'FK_ServiceId');
+      console.info('🙂 -> file: index.js:26 -> serviceLevelId:', serviceId);
 
       const vendorId = _.get(shipmentAparData, 'FK_VendorId', '').toUpperCase();
       console.info('🙂 -> file: index.js:33 -> vendorId:', vendorId);
 
       const consolidation = _.get(shipmentAparData, 'Consolidation', '');
 
-      if (
-        !isNaN(consolNo) &&
-        consolNo !== null &&
-        consolidation === 'N' &&
-        serviceLevelId === 'MT'
-      ) {
+      if (!isNaN(consolNo) && consolNo !== null && consolidation === 'N' && serviceId === 'MT') {
         const orderIds = await makeGetRequest(consolNo);
-        const joinedOrderIds = orderIds.join(',');
+        // const orderIds = ['5345530', '5345531'];
+        const orderIdCount = _.get(orderIds, 'length', 0);
         const data = {
-          FK_OrderNo: joinedOrderIds,
+          FK_OrderNo: orderIds.join(','),
           ConsolNo: consolNo,
-          InsertedTimeStamp: moment.tz('America/Chicago').format(),
+          CreatedAt: moment.tz('America/Chicago').format(),
+          LastUpdatedAt: moment.tz('America/Chicago').format(),
+          OrderIdCount: orderIdCount,
+          Status: STATUSES.PENDING,
+          ShipmentAparData: shipmentAparData,
         };
         console.info('🙂 -> file: index.js:43 -> data:', data);
         // If all conditions are met, store the data in the consol-status table

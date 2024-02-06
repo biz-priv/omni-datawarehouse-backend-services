@@ -17,34 +17,43 @@ module.exports.handler = async (event, context) => {
 
   try {
     const promises = _.get(event, 'Records', []).map(async (record) => {
-      const shipmentAparData = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
-      console.info('🙂 -> file: index.js:17 -> shipmentAparData:', shipmentAparData);
+      const newImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
+      const oldImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.OldImage);
+      const newImageStatus = _.get(newImage, 'Status', '');
+      const oldImageStatus = _.get(oldImage, 'Status', '');
+      const eventName = _.get(record, 'eventName', '');
+      if (
+        (oldImageStatus === STATUSES.SENT &&
+          newImageStatus === STATUSES.PENDING &&
+          eventName === 'MODIFY') ||
+        eventName === 'INSERT'
+      ) {
+        // Extract comma-separated FK_OrderNo values and convert to an array
+        orderIdList = _.get(newImage, 'FK_OrderNo', '')
+          .split(',')
+          .map((orderId) => orderId.trim());
+        console.info('🙂 -> file: index.js:23 -> orderIdList:', orderIdList);
 
-      // Extract comma-separated FK_OrderNo values and convert to an array
-      orderIdList = _.get(shipmentAparData, 'FK_OrderNo', '')
-        .split(',')
-        .map((orderId) => orderId.trim());
-      console.info('🙂 -> file: index.js:23 -> orderIdList:', orderIdList);
+        const consolNo = parseInt(_.get(newImage, 'ConsolNo', null), 10);
+        console.info('🙂 -> file: index.js:23 -> consolNo:', consolNo);
+        const aparData = _.get(newImage, 'ShipmentAparData', {});
+        // Create a dictionary to store status for each FK_OrderNo
+        const tableStatuses = {};
 
-      const consolNo = parseInt(_.get(shipmentAparData, 'ConsolNo', null), 10);
-      console.info('🙂 -> file: index.js:23 -> consolNo:', consolNo);
+        // Process each orderId using .map
+        orderIdList.map(
+          async (orderId) => (tableStatuses[orderId] = CONSOLE_WISE_TABLES[TYPES.MULTI_STOP])
+        );
 
-      // Create a dictionary to store status for each FK_OrderNo
-      const tableStatuses = {};
-
-      // Process each orderId using .map
-      orderIdList.map(
-        async (orderId) => (tableStatuses[orderId] = CONSOLE_WISE_TABLES[TYPES.MULTI_STOP])
-      );
-
-      await insertShipmentStatus({
-        orderIdList,
-        consolNo: consolNo.toString(),
-        status: STATUSES.PENDING,
-        type: TYPES.MULTI_STOP,
-        tableStatuses,
-        ShipmentAparData: shipmentAparData,
-      });
+        await insertShipmentStatus({
+          orderIdList,
+          consolNo: consolNo.toString(),
+          status: STATUSES.PENDING,
+          type: TYPES.MULTI_STOP,
+          tableStatuses,
+          ShipmentAparData: aparData,
+        });
+      }
     });
 
     await Promise.all(promises);
@@ -58,7 +67,8 @@ module.exports.handler = async (event, context) => {
 };
 
 async function insertShipmentStatus({
-  orderNo,
+  // eslint-disable-next-line no-shadow
+  orderIdList,
   consolNo,
   status,
   type,
@@ -66,10 +76,11 @@ async function insertShipmentStatus({
   ShipmentAparData,
 }) {
   try {
+    console.info('first orderNo:', orderIdList[0]);
     const params = {
       TableName: STATUS_TABLE,
       Item: {
-        FK_OrderNo: orderNo,
+        FK_OrderNo: consolNo,
         ConsolNo: consolNo,
         Status: status,
         Type: type,

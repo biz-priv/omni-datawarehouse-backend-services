@@ -15,169 +15,179 @@
         },
         "NewImage": {
           "FK_OrderNo": {
-            "S": "322689"
-          },
-          "SeqNo": {
-            "S": "9999"
-          },
-          "APARCode": {
-            "S": "V"
-          },
-          "APARStatus": {
-            "S": ""
-          },
-          "APARType": {
-            "S": "CLB"
-          },
-          "ChargeCode": {
-            "S": ""
-          },
-          "Complete": {
-            "S": "Y"
-          },
-          "Consolidation": {
-            "S": "Y"
+            "S": "5345530,5345531"
           },
           "ConsolNo": {
-            "S": "322689"
+            "S": "336154"
           },
-          "ConsolShipDateTime": {
-            "S": "2023-04-20 13:47:00.000"
-          },
-          "Cost": {
-            "S": "2200.00"
-          },
-          "CreateDateTime": {
-            "S": "2023-04-20 13:50:28.000"
-          },
-          "Currency": {
-            "S": "USD"
-          },
-          "CustomerInvoiceNo": {
-            "S": ""
-          },
-          "Description": {
-            "S": ""
-          },
-          "DueDate": {
-            "S": "2023-06-01 00:00:00.000"
-          },
-          "Extra": {
-            "S": "0.00"
-          },
-          "Finalize": {
-            "S": "Y"
-          },
-          "FinalizedBy": {
-            "S": "jpuerto"
-          },
-          "FinalizedDate": {
-            "S": "2023-05-30 11:56:32.000"
-          },
-          "FinalizedTotal": {
-            "S": "2200.00"
-          },
-          "FK_AccountCode": {
-            "S": ""
-          },
-          "FK_AirCode": {
-            "S": ""
-          },
-          "FK_CodeNo": {
-            "S": "0"
-          },
-          "FK_ConsolStationId": {
-            "S": "LAX"
-          },
-          "FK_ConsolStatusId": {
-            "S": "AAD"
-          },
-          "FK_ContainerCode": {
-            "S": "D"
-          },
-          "FK_CustNo": {
-            "S": "31426"
-          },
-          "FK_EquipmentCode": {
-            "S": "53 FT AIR"
-          },
-          "FK_HandlingStation": {
-            "S": ""
-          },
-          "FK_PaymentTermCode": {
-            "S": "NULL"
-          },
-          "FK_PaymentTermCode1": {
-            "S": "NULL"
-          },
-          "FK_ServiceId": {
-            "S": "TL"
-          },
-          "FK_VendorId": {
-            "S": "LIVELOGI"
-          },
-          "InsertedTimeStamp": {
-            "S": "2023:05:31 14:49:42"
-          },
-          "InvoiceDate": {
-            "S": "2023-05-02 00:00:00.000"
-          },
-          "InvoiceNo": {
-            "S": "0154558"
-          },
-          "InvoiceSeqNo": {
-            "S": "0"
-          },
-          "InvPrinted": {
-            "S": "N"
-          },
-          "InvPrintedDate": {
-            "S": "1900-01-01 00:00:00.000"
-          },
-          "Override": {
-            "S": "O"
-          },
-          "PKSeqNo": {
-            "S": "43217690"
-          },
-          "PostedDateTime": {
-            "S": "2023-05-31 14:39:13.000"
-          },
-          "Quantity": {
-            "S": "10347.000"
-          },
-          "Rate": {
-            "S": "0.0000"
-          },
-          "ReadyForInvoice": {
-            "S": "N"
-          },
-          "ReadyForInvoiceDateTime": {
-            "S": "1900-01-01 00:00:00.000"
-          },
-          "RefNo": {
-            "S": "0154558"
-          },
-          "Tax": {
-            "S": "0.00"
-          },
-          "Total": {
-            "S": "2200.00"
-          },
-          "UpdatedBy": {
-            "S": "eburbidge"
-          },
-          "UpdatedOn": {
-            "S": "2023-05-31 14:39:13.000"
-          },
-          "VendorAmount": {
-            "S": "0.00"
-          },
-          "VendorCostSeqNo": {
-            "S": "0"
-          },
-          "Weight": {
-            "S": "10347.0"
+          "ShipmentAparData": {
+            "M": {
+              "FK_OrderNo": {
+                "S": "5345530"
+              },
+              "SeqNo": {
+                "S": "1"
+              },
+              "APARCode": {
+                "S": "V"
+              },
+              "APARStatus": {
+                "S": ""
+              },
+              "APARType": {
+                "S": "CLB"
+              },
+              "ChargeCode": {
+                "S": ""
+              },
+              "Complete": {
+                "S": "Y"
+              },
+              "Consolidation": {
+                "S": "N"
+              },
+              "ConsolNo": {
+                "S": "266434"
+              },
+              "ConsolShipDateTime": {
+                "S": "1900-01-01 00:00:00.000"
+              },
+              "Cost": {
+                "S": "1798.13"
+              },
+              "CreateDateTime": {
+                "S": "2022-04-19 17:03:19.000"
+              },
+              "Currency": {
+                "S": "USD"
+              },
+              "CustomerInvoiceNo": {
+                "S": ""
+              },
+              "Description": {
+                "S": ""
+              },
+              "DueDate": {
+                "S": "2022-05-28 00:00:00.000"
+              },
+              "Extra": {
+                "S": "0.00"
+              },
+              "Finalize": {
+                "S": "Y"
+              },
+              "FinalizedBy": {
+                "S": "gcaicedo"
+              },
+              "FinalizedDate": {
+                "S": "2022-05-12 14:30:05.000"
+              },
+              "FinalizedTotal": {
+                "S": "1798.13"
+              },
+              "FK_AccountCode": {
+                "S": ""
+              },
+              "FK_AirCode": {
+                "S": ""
+              },
+              "FK_CodeNo": {
+                "S": "0"
+              },
+              "FK_ConsolStationId": {
+                "S": "ORD"
+              },
+              "FK_ConsolStatusId": {
+                "S": ""
+              },
+              "FK_ContainerCode": {
+                "S": "D"
+              },
+              "FK_CustNo": {
+                "S": "31426"
+              },
+              "FK_EquipmentCode": {
+                "S": "NULL"
+              },
+              "FK_HandlingStation": {
+                "S": ""
+              },
+              "FK_PaymentTermCode": {
+                "S": "NULL"
+              },
+              "FK_PaymentTermCode1": {
+                "S": "NULL"
+              },
+              "FK_ServiceId": {
+                "S": "MT"
+              },
+              "FK_VendorId": {
+                "S": "LIVELOGI"
+              },
+              "InsertedTimeStamp": {
+                "S": "2023:02:26 04:37:42"
+              },
+              "InvoiceDate": {
+                "S": "2022-04-28 00:00:00.000"
+              },
+              "InvoiceNo": {
+                "S": "0118457"
+              },
+              "InvoiceSeqNo": {
+                "S": "0"
+              },
+              "InvPrinted": {
+                "S": "N"
+              },
+              "InvPrintedDate": {
+                "S": "1900-01-01 00:00:00.000"
+              },
+              "Override": {
+                "S": "O"
+              },
+              "PKSeqNo": {
+                "S": "36235533"
+              },
+              "PostedDateTime": {
+                "S": "2022-05-16 12:25:59.000"
+              },
+              "Quantity": {
+                "S": "12000.000"
+              },
+              "Rate": {
+                "S": "0.0000"
+              },
+              "ReadyForInvoice": {
+                "S": "N"
+              },
+              "ReadyForInvoiceDateTime": {
+                "S": "1900-01-01 00:00:00.000"
+              },
+              "RefNo": {
+                "S": "266434"
+              },
+              "Tax": {
+                "S": "0.00"
+              },
+              "Total": {
+                "S": "1798.13"
+              },
+              "UpdatedBy": {
+                "S": "cralston"
+              },
+              "UpdatedOn": {
+                "S": "2022-05-16 12:25:59.000"
+              },
+              "VendorAmount": {
+                "S": "0.00"
+              },
+              "VendorCostSeqNo": {
+                "S": "0"
+              },
+              "Weight": {
+                "S": "0.0"
+              }
+            }
           }
         },
         "OldImage": {},
