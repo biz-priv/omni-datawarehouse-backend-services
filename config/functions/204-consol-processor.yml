@@ -21,6 +21,7 @@ function:
     patterns:
       - '!**/*'
       - 'src/204-consol-processor/index.js'
+      - 'src/shared/constants/204_create_shipment.js'
   environment:
     SNS_TOPIC_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
     STAGE: ${self:provider.stage}
