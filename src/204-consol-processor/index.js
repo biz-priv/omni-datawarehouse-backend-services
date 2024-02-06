@@ -38,7 +38,7 @@ module.exports.handler = async (event) => {
         const orderIdCount = _.get(orderIds, 'length', 0);
         const data = {
           FK_OrderNo: orderIds.join(','),
-          ConsolNo: consolNo,
+          ConsolNo: consolNo.toString(),
           CreatedAt: moment.tz('America/Chicago').format(),
           LastUpdatedAt: moment.tz('America/Chicago').format(),
           OrderIdCount: orderIdCount,
