@@ -12,7 +12,7 @@ const sns = new AWS.SNS();
 let functionName;
 let orderIdList;
 module.exports.handler = async (event, context) => {
-  console.info('🚀 ~ file: index.js:9 ~ event:', event);
+  console.info('🚀 ~ file: index.js:9 ~ event:', JSON.stringify(event));
   functionName = _.get(context, 'functionName');
 
   try {
@@ -77,25 +77,81 @@ async function insertShipmentStatus({
 }) {
   try {
     console.info('first orderNo:', orderIdList[0]);
-    const params = {
+
+    // Construct params for the query
+    const queryParams = {
       TableName: STATUS_TABLE,
-      Item: {
-        FK_OrderNo: consolNo,
-        ConsolNo: consolNo,
-        Status: status,
-        Type: type,
-        TableStatuses: tableStatuses,
-        ShipmentAparData,
-        CreatedAt: moment.tz('America/Chicago').format(),
-        LastUpdateBy: functionName,
-        LastUpdatedAt: moment.tz('America/Chicago').format(),
+      KeyConditionExpression: 'FK_OrderNo = :consolNo',
+      ExpressionAttributeValues: {
+        ':consolNo': consolNo,
       },
     };
-    console.info('🙂 -> file: index.js:106 -> params:', params);
-    await dynamoDb.put(params).promise();
-    console.info('Record created successfully.');
+
+    // Execute the query
+    const queryResult = await dynamoDb.query(queryParams).promise();
+    console.info('🚀 ~ file: index.js:92 ~ queryResult:', queryResult);
+
+    let params;
+    if (queryResult.Items && queryResult.Items.length > 0) {
+      // Record with the FK_OrderNo exists, update the fields
+      params = {
+        TableName: STATUS_TABLE,
+        Key: {
+          FK_OrderNo: consolNo,
+        },
+        UpdateExpression: `
+      set #Status = :status,
+      #Type = :type,
+      #TableStatuses = :tableStatuses,
+      #CreatedAt = :createdAt,
+      #LastUpdateBy = :lastUpdateBy,
+      #LastUpdatedAt = :lastUpdatedAt,
+      #ShipmentAparData = :ShipmentAparData
+    `,
+        ExpressionAttributeNames: {
+          '#Status': 'Status',
+          '#Type': 'Type',
+          '#TableStatuses': 'TableStatuses',
+          '#CreatedAt': 'CreatedAt',
+          '#LastUpdateBy': 'LastUpdateBy',
+          '#LastUpdatedAt': 'LastUpdatedAt',
+          '#ShipmentAparData': 'ShipmentAparData',
+        },
+        ExpressionAttributeValues: {
+          ':status': status,
+          ':type': type,
+          ':tableStatuses': tableStatuses,
+          ':createdAt': moment.tz('America/Chicago').format(),
+          ':lastUpdateBy': functionName,
+          ':lastUpdatedAt': moment.tz('America/Chicago').format(),
+          ':ShipmentAparData': ShipmentAparData,
+        },
+        ReturnValues: 'UPDATED_NEW',
+      };
+
+      const result = await dynamoDb.update(params).promise();
+      console.info('🚀 ~ file: index.js:133 ~ updated result:', result);
+    } else {
+      // Record with the FK_OrderNo does not exist, create a new record
+      params = {
+        TableName: STATUS_TABLE,
+        Item: {
+          FK_OrderNo: consolNo,
+          ConsolNo: consolNo,
+          Status: status,
+          Type: type,
+          TableStatuses: tableStatuses,
+          ShipmentAparData,
+          CreatedAt: moment.tz('America/Chicago').format(),
+          LastUpdateBy: functionName,
+          LastUpdatedAt: moment.tz('America/Chicago').format(),
+        },
+      };
+
+      await dynamoDb.put(params).promise();
+    }
   } catch (error) {
-    console.info('🙂 -> file: index.js:78 -> error:', error);
+    console.error('Error inserting or updating record:', error);
     throw error;
   }
 }

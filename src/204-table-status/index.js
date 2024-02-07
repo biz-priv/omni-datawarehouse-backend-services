@@ -178,7 +178,7 @@ async function checkMultiStop(tableData) {
         tableNames.map(async (tableName) => {
           try {
             console.info('🙂 -> file: index.js:86 -> tableName:', tableName);
-            const param = TABLE_PARAMS[type][tableName]({ orderNo, consoleNo });
+            const param = TABLE_PARAMS[type][tableName]({ orderNo: orderNoForConsol, consoleNo });
             originalTableStatuses[`${orderNoForConsol}`][tableName] = await fetchItemFromTable({
               params: param,
             });

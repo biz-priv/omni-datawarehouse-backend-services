@@ -11,7 +11,7 @@ const { STATUSES } = require('../shared/constants/204_create_shipment');
 const { CONSOL_STATUS_TABLE } = process.env;
 
 module.exports.handler = async (event) => {
-  console.info('🚀 ~ file: index.js:9 ~ event:', event);
+  console.info('🚀 ~ file: index.js:9 ~ event:', JSON.stringify(event));
 
   try {
     const promises = _.get(event, 'Records', []).map(async (record) => {

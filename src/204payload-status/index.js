@@ -145,16 +145,17 @@ module.exports.handler = async (event, context) => {
           );
           console.info('🙂 -> file: index.js:114 -> mtPayloadData:', JSON.stringify(mtPayloadData));
           payload = mtPayloadData;
+          orderId = _.get(shipmentAparData, 'ConsolNo', null);
           // Check if payload is not null
           if (payload) {
-            const result = await fetch204TableDataForConsole(
-              _.get(shipmentAparData, 'ConsolNo', null)
-            );
+            const result = await fetch204TableDataForConsole({
+              consolNo: _.get(shipmentAparData, 'ConsolNo', null),
+            });
             console.info('🙂 -> file: index.js:114 -> result:', result);
 
             // Check if result has items and status is sent
             if (result.Items.length > 0) {
-              const oldPayload = _.get(result, 'Items[0].payload', null);
+              const oldPayload = _.get(result, 'Items[0].Payload', null);
 
               // Compare oldPayload with payload constructed now
               if (_.isEqual(oldPayload, payload)) {
@@ -304,7 +305,7 @@ async function updateConsoleTable({ consolNo }) {
     const updateParam = {
       TableName: CONSOL_STATUS_TABLE,
       Key: { ConsolNo: consolNo },
-      UpdateExpression: 'set #Status = :status,',
+      UpdateExpression: 'set #Status = :status',
       ExpressionAttributeNames: { '#Status': 'Status' },
       ExpressionAttributeValues: {
         ':status': STATUSES.SENT,
@@ -324,7 +325,7 @@ async function fetch204TableDataForConsole({ consolNo }) {
     IndexName: STATUS_TABLE_CONSOLE_INDEX,
     KeyConditionExpression: 'ConsolNo = :ConsolNo',
     ExpressionAttributeValues: {
-      ':ConsolNo': consolNo.toString(),
+      ':ConsolNo': consolNo,
     },
   };
   return await dynamoDb.query(params).promise();
