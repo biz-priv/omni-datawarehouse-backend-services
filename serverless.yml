@@ -85,7 +85,6 @@ functions:
 
   204-payload-status: ${file(config/functions/204-payload-status.yml):function}
   204-create-shipment-stream-processor: ${file(config/functions/204-create-shipment-stream-processor.yml):function}
-  204-table-status: ${file(config/functions/204-table-status.yml):function}
   204-mt-console-processor: ${file(config/functions/204-mt-console-processor.yml):function}
   204-p2p-processor: ${file(config/functions/204-p2p-processor.yml):function}
 

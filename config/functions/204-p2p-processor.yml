@@ -1,12 +1,12 @@
 ---
 function:
   handler: src/204-p2p-processor/index.handler
-  name: omni-204-p2p-shipments-processor-${self:provider.stage}
+  name: omni-204-p2p-processor-${self:provider.stage}
   description: 204 P2P shipments processor - ${self:provider.stage}
   runtime: nodejs16.x
   timeout: 500
   layers:
-    - { Ref: OmniWdLayerLambdaLayer }
+    - { Ref: DWBackendLambdaLayer }
   package:
     patterns:
       - '!**/*'

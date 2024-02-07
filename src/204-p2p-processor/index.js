@@ -14,9 +14,9 @@ module.exports.handler = async (event, context) => {
   try {
     functionName = get(context, 'functionName');
     console.info('🙂 -> file: index.js:8 -> functionName:', functionName);
-    const pendingStatus = await queryTableStatusPending();
+    const pendingStatusResult = await queryTableStatusPending();
     await Promise.all([
-      ...pendingStatus.filter(({ Type }) => Type !== TYPES.MULTI_STOP).map(checkTable),
+      ...pendingStatusResult.filter(({ Type }) => Type !== TYPES.MULTI_STOP).map(checkTable),
     ]);
     return 'success';
   } catch (e) {
