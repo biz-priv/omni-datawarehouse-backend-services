@@ -16,7 +16,7 @@ const sns = new AWS.SNS();
 let functionName;
 let orderId;
 module.exports.handler = async (event, context) => {
-  console.info('🚀 ~ file: index.js:26 ~ event:', event);
+  console.info('🚀 ~ file: index.js:26 ~ event:', JSON.stringify(event));
   try {
     functionName = get(context, 'functionName');
     let type;
@@ -37,6 +37,8 @@ module.exports.handler = async (event, context) => {
         const vendorId = get(shipmentAparData, 'FK_VendorId', '').toUpperCase();
         console.info('🙂 -> file: index.js:33 -> vendorId:', vendorId);
 
+        const consolidation = get(shipmentAparData, 'Consolidation');
+
         if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
           console.info('Non Console');
           type = TYPES.NON_CONSOLE;
@@ -44,7 +46,7 @@ module.exports.handler = async (event, context) => {
 
         if (
           consolNo > 0 &&
-          get(shipmentAparData, 'Consolidation') === 'Y' &&
+          consolidation === 'Y' &&
           includes(['HS', 'TL'], serviceLevelId) &&
           vendorId === VENDOR
         ) {
@@ -55,7 +57,7 @@ module.exports.handler = async (event, context) => {
         if (
           !isNaN(consolNo) &&
           consolNo !== null &&
-          get(shipmentAparData, 'Consolidation') === 'N' &&
+          consolidation === 'N' &&
           serviceLevelId === 'MT'
         ) {
           console.info('Multi Stop');
