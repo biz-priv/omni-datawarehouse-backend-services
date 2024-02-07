@@ -1,6 +1,6 @@
 function:
-  name: omni-204-mt-processor-${self:provider.stage}
-  handler: src/204-p2p-processor/index.handler
+  name: omni-204-mt-console-processor-${self:provider.stage}
+  handler: src/204-mt-console-processor/index.handler
   runtime: nodejs18.x
   memorySize: 1024
   timeout: 300
@@ -8,7 +8,7 @@ function:
     - { Ref: DWBackendLambdaLayer }
   package:
     include:
-      - 'src/204-p2p-processor/index.js'
+      - 'src/204-mt-console-processor/index.js'
       - 'src/shared/constants/204_create_shipment.js'
     exclude:
       - '**/*'
