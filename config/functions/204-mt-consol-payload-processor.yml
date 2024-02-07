@@ -10,7 +10,7 @@ function:
     include:
       - 'src/204-mt-consol-payload-processor/index.js'
       - 'src/shared/constants/204_create_shipment.js'
-      - 'shared/204-payload-generator/**'
+      - 'src/shared/204-payload-generator/**'
     exclude:
       - '**/*'
   environment:
