@@ -1,40 +1,29 @@
 'use strict';
+
 const { get, pickBy } = require('lodash');
 const AWS = require('aws-sdk');
 const { STATUSES, TABLE_PARAMS, TYPES } = require('../shared/constants/204_create_shipment');
 
-const { SNS_TOPIC_ARN, STATUS_TABLE, STATUS_TABLE_STATUS_INDEX } = process.env;
+const { SNS_TOPIC_ARN, STATUS_TABLE } = process.env;
+
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
 let functionName;
 module.exports.handler = async (event, context) => {
   try {
-    console.info(
-      '🙂 -> file: index.js:13 -> STATUS_TABLE_STATUS_INDEX:',
-      STATUS_TABLE_STATUS_INDEX
-    );
-    console.info('🙂 -> file: index.js:13 -> STATUS_TABLE:', STATUS_TABLE);
     functionName = get(context, 'functionName');
     console.info('🙂 -> file: index.js:8 -> functionName:', functionName);
-    console.info(
-      '🚀 ~ file: shipment_header_table_stream_processor.js:8 ~ exports.handler= ~ event:',
-      JSON.stringify(event)
-    );
-    const statusTableResult = await queryTableStatusIndex();
+    const pendingStatus = await queryTableStatusPending();
     await Promise.all([
-      ...statusTableResult.filter(({ Type }) => Type !== TYPES.MULTI_STOP).map(checkTable),
-      ...statusTableResult.filter(({ Type }) => Type === TYPES.MULTI_STOP).map(checkMultiStop),
+      ...pendingStatus.filter(({ Type }) => Type === TYPES.MULTI_STOP).map(checkMultiStop),
     ]);
-    return false;
+    return 'success';
   } catch (e) {
-    console.error(
-      '🚀 ~ file: shipment_header_table_stream_processor.js:32 ~ module.exports.handler= ~ e:',
-      e
-    );
+    console.error('🚀 ~ file: 204 table status:32 = ~ e:', e);
     await publishSNSTopic({
       message: ` ${e.message}
-      \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
+      \n Please check details on ${'live-204-console-status-table-dev'}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
     });
     return false;
@@ -52,10 +41,10 @@ async function publishSNSTopic({ message }) {
     .promise();
 }
 
-async function queryTableStatusIndex() {
+async function queryTableStatusPending() {
   const params = {
-    TableName: STATUS_TABLE,
-    IndexName: STATUS_TABLE_STATUS_INDEX,
+    TableName: 'live-204-console-status-table-dev',
+    IndexName: 'Status-index',
     KeyConditionExpression: '#Status = :status',
     ExpressionAttributeNames: { '#Status': 'Status' },
     ExpressionAttributeValues: {
@@ -71,85 +60,6 @@ async function queryTableStatusIndex() {
     console.info('Query error:', err);
     throw err;
   }
-}
-
-async function checkTable(tableData) {
-  console.info('🙂 -> file: index.js:80 -> tableData:', tableData);
-  const originalTableStatuses = { ...get(tableData, 'TableStatuses', {}) };
-  const tableNames = Object.keys(
-    pickBy(get(tableData, 'TableStatuses', {}), (value) => value === STATUSES.PENDING)
-  );
-  console.info('🙂 -> file: index.js:81 -> tableName:', tableNames);
-  const type = get(tableData, 'Type');
-  console.info('🙂 -> file: index.js:83 -> type:', type);
-  const orderNo = get(tableData, 'FK_OrderNo');
-  console.info('🙂 -> file: index.js:85 -> orderNo:', orderNo);
-  const consoleNo = get(tableData, 'ShipmentAparData.ConsolNo');
-  console.info('🙂 -> file: index.js:87 -> consoleNo:', consoleNo);
-  const retryCount = get(tableData, 'RetryCount', 0);
-  console.info('🙂 -> file: index.js:90 -> retryCount:', retryCount);
-
-  await Promise.all(
-    tableNames.map(async (tableName) => {
-      try {
-        console.info('🙂 -> file: index.js:86 -> tableName:', tableName);
-        const param = TABLE_PARAMS[type][tableName]({ orderNo, consoleNo });
-        originalTableStatuses[tableName] = await fetchItemFromTable({ params: param });
-      } catch (error) {
-        console.info('🙂 -> file: index.js:95 -> error:', error);
-        throw error;
-      }
-    })
-  );
-  console.info('🙂 -> file: index.js:79 -> originalTableStatuses:', originalTableStatuses);
-  if (Object.values(originalTableStatuses).includes(STATUSES.PENDING) && retryCount >= 5) {
-    await updateStatusTable({
-      orderNo,
-      originalTableStatuses,
-      retryCount,
-      status: STATUSES.FAILED,
-    });
-    await publishSNSTopic({
-      message: `All tables are not populated for order id: ${orderNo}. 
-      \n Please check ${STATUS_TABLE} to see which table does not have data. 
-      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
-    });
-    return false;
-  }
-
-  if (
-    (type === TYPES.CONSOLE || type === TYPES.NON_CONSOLE) &&
-    get(originalTableStatuses, 'tbl_ConfirmationCost') === STATUSES.PENDING &&
-    get(originalTableStatuses, 'tbl_Shipper') === STATUSES.READY &&
-    get(originalTableStatuses, 'tbl_Consignee') === STATUSES.READY &&
-    retryCount <= 3 &&
-    Object.keys(
-      pickBy(get(originalTableStatuses, 'TableStatuses', {}), (value) => value === STATUSES.PENDING)
-    ).length === 1
-  ) {
-    return await updateStatusTable({
-      orderNo,
-      originalTableStatuses,
-      retryCount,
-      status: STATUSES.READY,
-    });
-  }
-
-  if (Object.values(originalTableStatuses).includes(STATUSES.PENDING) && retryCount < 5) {
-    return await updateStatusTable({
-      orderNo,
-      originalTableStatuses,
-      retryCount,
-      status: STATUSES.PENDING,
-    });
-  }
-
-  return await updateStatusTable({
-    orderNo,
-    originalTableStatuses,
-    retryCount,
-    status: STATUSES.READY,
-  });
 }
 
 async function checkMultiStop(tableData) {
@@ -245,7 +155,7 @@ async function fetchItemFromTable({ params }) {
 
 async function updateStatusTable({ orderNo, originalTableStatuses, retryCount, status }) {
   const updateParam = {
-    TableName: STATUS_TABLE,
+    TableName: 'live-204-console-status-table-dev',
     Key: { FK_OrderNo: orderNo },
     UpdateExpression:
       'set TableStatuses = :tableStatuses, RetryCount = :retryCount, #Status = :status',

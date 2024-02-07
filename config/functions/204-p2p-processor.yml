@@ -1,0 +1,46 @@
+---
+function:
+  handler: src/204-p2p-processor/index.handler
+  name: omni-204-p2p-shipments-processor-${self:provider.stage}
+  description: 204 P2P shipments processor - ${self:provider.stage}
+  runtime: nodejs16.x
+  timeout: 500
+  layers:
+    - { Ref: OmniWdLayerLambdaLayer }
+  package:
+    patterns:
+      - '!**/*'
+      - 'src/204-p2p-processor/index.js'
+
+  events:
+    - schedule: cron(*/1 * * * ? *) #cron for every 1 min
+
+  environment:
+    ERROR_SNS_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
+    SHIPMENT_APAR_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.tableName~true}
+    SHIPMENT_APAR_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.ConsolNoIndex}
+    SHIPMENT_HEADER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.tableName~true}
+    CONSIGNEE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consignee/ddb.tableName~true}
+    SHIPPER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipper/ddb.tableName~true}
+    SHIPMENT_DESC_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-desc/ddb.tableName~true}
+    CONFIRMATION_COST: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/confirmation-cost/ddb.tableName~true}
+    CONSOL_STOP_HEADERS: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-headers/ddb.tableName~true}
+    CONSOL_STOP_ITEMS: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-items/ddb.tableName~true}
+    EQUIPMENT_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/equipment/ddb.tableName~true}
+    CUSTOMER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customer/ddb.tableName~true}
+    CONFIRMATION_COST_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/confirmation-cost/ddb.orderNoIndex}
+    TIMEZONE_MASTER: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/timezone-master/ddb.tableName~true}
+    TIMEZONE_ZIP_CR: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/timezone-zip-cr/ddb.tableName~true}
+    REFERENCES_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.tableName~true}
+    REFERENCES_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.orderNoIndex}
+    USERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/users/ddb.tableName~true}
+    TRACKING_NOTES_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.tableName~true}
+    TRACKING_NOTES_CONSOLENO_INDEX_KEY: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.ConsolNoIndex}
+    AUTH: ${ssm:/omni-204-create-shipment/${self:provider.stage}/apis.auth}
+    GET_LOC_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/get-location.url}
+    CREATE_LOC_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/create-location.url}
+    STATUS_TABLE: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.name}
+    SEND_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/create-orders.url}
+    UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
+    STATUS_TABLE_CONSOLE_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.ConsolNoIndex}
+    STATUS_TABLE_STATUS_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.StatusIndex}
