@@ -1,6 +1,6 @@
 function:
-  name: omni-204-payload-status-${self:provider.stage}
-  handler: src/204payload-status/index.handler
+  name: omni-204-mt-consol-payload-processor-${self:provider.stage}
+  handler: src/204-mt-consol-payload-processor/index.handler
   runtime: nodejs18.x
   memorySize: 1024
   timeout: 300
@@ -8,8 +8,9 @@ function:
     - { Ref: DWBackendLambdaLayer }
   package:
     include:
-      - 'src/204payload-status/**'
+      - 'src/204-mt-consol-payload-processor/index.js'
       - 'src/shared/constants/204_create_shipment.js'
+      - 'shared/204-payload-generator/**'
     exclude:
       - '**/*'
   environment:
@@ -40,10 +41,10 @@ function:
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
     STATUS_TABLE_CONSOLE_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.ConsolNoIndex}
     CONSOL_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
-
+    OUTPUT_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/output/ddb.tableName}
   events:
     - stream:
-        arn: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.streamArn}
+        arn: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.streamArn}
         batchSize: 5
         maximumRetryAttempts: 3
         bisectBatchOnFunctionError: true
