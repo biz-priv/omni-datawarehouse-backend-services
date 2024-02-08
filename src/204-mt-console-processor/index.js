@@ -265,11 +265,11 @@ async function checkAndUpdateOrderTable({ orderNo, originalTableStatuses }) {
     existingOrder
   );
 
-  if (Object.keys(existingOrder).length <= 0) {
+  if (existingOrder === STATUSES.PENDING) {
     return false;
   }
 
-  if (Object.keys(existingOrder).length > 0) {
+  if (existingOrder === STATUSES.READY) {
     return await updateOrderStatusTable({
       orderNo,
       originalTableStatuses,
