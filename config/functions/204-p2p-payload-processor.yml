@@ -50,4 +50,7 @@ function:
         maximumRetryAttempts: 3
         bisectBatchOnFunctionError: true
         filterPatterns:
-          - { dynamodb: { NewImage: { Status: { S: ['READY'] } } } }
+          - {
+              dynamodb:
+                { NewImage: { Status: { S: ['READY'] }, Type: { S: ['CONSOLE', 'NON_CONSOLE'] } } },
+            }

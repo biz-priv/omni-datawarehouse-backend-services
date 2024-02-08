@@ -43,7 +43,7 @@ async function publishSNSTopic({ message }) {
 
 async function queryTableStatusPending() {
   const params = {
-    TableName: 'live-204-console-status-table-dev',
+    TableName: STATUS_TABLE,
     IndexName: 'Status-index',
     KeyConditionExpression: '#Status = :status',
     ExpressionAttributeNames: { '#Status': 'Status' },

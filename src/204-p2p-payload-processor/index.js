@@ -13,7 +13,7 @@ const {
   fetchConsoleTableData,
 } = require('../shared/204-payload-generator/helper');
 const { sendPayload, updateOrders } = require('../shared/204-payload-generator/apis');
-const { STATUSES } = require('../shared/constants/204_create_shipment');
+const { STATUSES, TYPES } = require('../shared/constants/204_create_shipment');
 
 const { STATUS_TABLE, SNS_TOPIC_ARN, OUTPUT_TABLE } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
@@ -40,6 +40,7 @@ module.exports.handler = async (event, context) => {
         orderId = _.get(shipmentAparData, 'FK_OrderNo', 0);
         console.info('🙂 -> file: index.js:30 -> shipmentAparData:', shipmentAparData);
         type = _.get(newImage, 'Type', '');
+        if (type === TYPES.MULTI_STOP) return 'Skipping for Multi Stops';
 
         // Non-Console
         if (
@@ -124,6 +125,24 @@ module.exports.handler = async (event, context) => {
             JSON.stringify(ConsolPayloadData)
           );
           payload = ConsolPayloadData;
+        }
+
+        if (payload) {
+          const result = await fetch204TableDataForConsole({
+            orderNo: orderId,
+          });
+          console.info('🙂 -> file: index.js:114 -> result:', result);
+
+          // Check if result has items and status is sent
+          if (result.Items.length > 0) {
+            const oldPayload = _.get(result, 'Items[0].Payload', null);
+
+            // Compare oldPayload with payload constructed now
+            if (_.isEqual(oldPayload, payload)) {
+              console.info('Payload is the same as the old payload. Skipping further processing.');
+              return 'Payload is the same as the old payload. Skipping further processing.';
+            }
+          }
         }
 
         const createPayloadResponse = await sendPayload({ payload });
@@ -283,4 +302,16 @@ async function publishSNSTopic({ message }) {
       Message: `An error occurred: ${message}`,
     })
     .promise();
+}
+
+async function fetch204TableDataForConsole({ orderNo }) {
+  const params = {
+    TableName: STATUS_TABLE,
+    KeyConditionExpression: 'FK_OrderNo = :orderNo',
+    ExpressionAttributeValues: {
+      ':orderNo': orderNo,
+    },
+    ProjectionExpression: 'FK_OrderNo, Payload',
+  };
+  return await dynamoDb.query(params).promise();
 }
