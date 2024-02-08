@@ -274,7 +274,7 @@ async function insertInOutputTable({ orderNo, status, response, payload }) {
     const params = {
       TableName: OUTPUT_TABLE,
       Item: {
-        UUiD: uuidv4(),
+        UUid: uuidv4(),
         FK_OrderNo: orderNo,
         Status: status,
         Type: type,
