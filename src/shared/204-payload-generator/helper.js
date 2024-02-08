@@ -191,11 +191,10 @@ async function generateStop(
         __name: 'stopNotes',
         company_id: 'TMS',
         comment_type: 'DC',
-        comments: _.get(
-          confirmationCostData,
-          type === 'shipper' ? 'PickupNote' : 'DeliveryNote',
-          'NA'
-        ),
+        comments:
+          _.get(confirmationCostData, type === 'shipper' ? 'PickupNote' : 'DeliveryNote', '') === ''
+            ? 'NA'
+            : _.get(confirmationCostData, type === 'shipper' ? 'PickupNote' : 'DeliveryNote'),
       },
     ],
   };
@@ -206,7 +205,7 @@ async function generateStop(
       __name: 'stopNotes',
       company_id: 'TMS',
       comment_type: 'OC',
-      comments: _.get(userData, 'UserEmail'),
+      comments: _.get(userData, 'UserEmail', '') === '' ? 'NA' : _.get(userData, 'UserEmail'),
     });
     _.set(stopData, 'referenceNumbers', generateReferenceNumbers({ references }));
   }
@@ -941,7 +940,7 @@ async function populateStops(consolStopHeaders, references, users) {
           __name: 'stopNotes',
           company_id: 'TMS',
           comment_type: 'DC',
-          comments: _.get(users, '[0].UserEmail'),
+          comments: _.get(users, '[0].UserEmail', '') === '' ? 'NA' : _.get(users, '[0].UserEmail'),
         },
       ],
     };
