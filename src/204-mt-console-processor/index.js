@@ -107,58 +107,6 @@ async function checkMultiStop(tableData) {
   );
   console.info('🙂 -> file: index.js:149 -> originalTableStatuses:', originalTableStatuses);
 
-  // const statuses = Object.entries(originalTableStatuses).map(([key]) => {
-  //   const tableStatuses = originalTableStatuses[key];
-  //   if (Object.values(tableStatuses).includes(STATUSES.PENDING) && retryCount < 5) {
-  //     return STATUSES.PENDING;
-  //   }
-  //   if (Object.values(tableStatuses).includes(STATUSES.PENDING) && retryCount >= 5) {
-  //     return STATUSES.FAILED;
-  //   }
-  //   return STATUSES.READY;
-  // });
-
-  // console.info('🙂 -> file: index.js:120 -> statuses -> statuses:', statuses);
-
-  // if (statuses.includes(STATUSES.FAILED)) {
-  //   await publishSNSTopic({
-  //     message: `All tables are not populated for consol No: ${consolNo}.
-  //         \n Please check ${STATUS_TABLE} to see which table does not have data.
-  //         \n Retrigger the process by changing Status to ${STATUSES.PENDING} and resetting the RetryCount to 0.`,
-  //   });
-  //   await updateConosleStatusTable({
-  //     consolNo,
-  //     originalTableStatuses,
-  //     retryCount,
-  //     status: STATUSES.FAILED,
-  //   });
-  // }
-
-  // if (
-  //   statuses.includes(statuses.includes(STATUSES.PENDING)) &&
-  //   !statuses.includes[STATUSES.FAILED]
-  // ) {
-  //   await updateConosleStatusTable({
-  //     consolNo,
-  //     originalTableStatuses,
-  //     retryCount,
-  //     status: STATUSES.PENDING,
-  //   });
-  // }
-
-  // if (
-  //   !statuses.includes(STATUSES.PENDING) &&
-  //   !statuses.includes[STATUSES.FAILED] &&
-  //   statuses.every((data) => data === STATUSES.READY)
-  // ) {
-  //   await updateConosleStatusTable({
-  //     consolNo,
-  //     originalTableStatuses,
-  //     retryCount,
-  //     status: STATUSES.READY,
-  //   });
-  // }
-
   for (const key in originalTableStatuses) {
     if (Object.hasOwnProperty.call(originalTableStatuses, key)) {
       const tableStatuses = originalTableStatuses[key];
