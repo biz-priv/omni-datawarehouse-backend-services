@@ -93,19 +93,19 @@ module.exports.handler = async (event, context) => {
         await updateStatusTable({
           response: updatedOrderResponse,
           payload,
-          ConsolNo: consolNo,
+          ConsolNo: String(consolNo),
           status: STATUSES.SENT,
         });
         await insertInOutputTable({
           response: updatedOrderResponse,
           payload,
-          ConsolNo: consolNo,
+          ConsolNo: String(consolNo),
           status: STATUSES.SENT,
         });
       } catch (error) {
         console.info('Error', error);
         await insertInOutputTable({
-          ConsolNo: consolNo,
+          ConsolNo: String(consolNo),
           response: error.message,
           payload,
           status: STATUSES.FAILED,

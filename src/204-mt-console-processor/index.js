@@ -16,6 +16,7 @@ module.exports.handler = async (event, context) => {
   try {
     functionName = get(context, 'functionName');
     console.info('🙂 -> file: index.js:8 -> functionName:', functionName);
+    await sleep(20); // delay for 30 seconds to let other order for that console to process
     const pendingStatus = await queryTableStatusPending();
     await Promise.all([...pendingStatus.map(checkMultiStop)]);
     return 'success';
@@ -98,7 +99,7 @@ async function checkMultiStop(tableData) {
           }
         })
       );
-      await updateOrderStatusTable({
+      await checkAndUpdateOrderTable({
         orderNo: orderNoForConsol,
         originalTableStatuses: originalTableStatuses[orderNoForConsol],
       });
@@ -158,7 +159,7 @@ async function fetchItemFromTable({ params }) {
 async function updateConosleStatusTable({ consolNo, originalTableStatuses, retryCount, status }) {
   const updateParam = {
     TableName: CONSOLE_STATUS_TABLE,
-    Key: { ConsolNo: consolNo },
+    Key: { ConsolNo: String(consolNo) },
     UpdateExpression:
       'set TableStatuses = :tableStatuses, RetryCount = :retryCount, #Status = :status, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
     ExpressionAttributeNames: { '#Status': 'Status' },
@@ -178,6 +179,7 @@ async function updateOrderStatusTable({ orderNo, originalTableStatuses }) {
   const status = !includes(originalTableStatuses, STATUSES.PENDING)
     ? STATUSES.READY
     : STATUSES.PENDING;
+
   const updateParam = {
     TableName: STATUS_TABLE,
     Key: { FK_OrderNo: orderNo },
@@ -193,4 +195,36 @@ async function updateOrderStatusTable({ orderNo, originalTableStatuses }) {
   };
   console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
   return await dynamoDb.update(updateParam).promise();
+}
+
+async function checkAndUpdateOrderTable({ orderNo, originalTableStatuses }) {
+  const existingOrderParam = {
+    TableName: STATUS_TABLE,
+    KeyConditionExpression: 'FK_OrderNo = :orderNo',
+    ExpressionAttributeValues: {
+      ':orderNo': orderNo,
+    },
+  };
+
+  const existingOrder = await fetchItemFromTable({ params: existingOrderParam });
+  console.info(
+    '🙂 -> file: index.js:65 -> module.exports.handler= -> existingOrder:',
+    existingOrder
+  );
+
+  if (Object.keys(existingOrder).length <= 0) {
+    return false;
+  }
+
+  if (Object.keys(existingOrder).length > 0) {
+    return await updateOrderStatusTable({
+      orderNo,
+      originalTableStatuses,
+    });
+  }
+  return true;
+}
+
+async function sleep(seconds) {
+  return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }

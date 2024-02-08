@@ -322,7 +322,7 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
         IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
         KeyConditionExpression: 'ConsolNo = :ConsolNo',
         ExpressionAttributeValues: {
-          ':ConsolNo': consoleNo,
+          ':ConsolNo': String(consoleNo),
         },
       };
     default:
@@ -589,7 +589,7 @@ async function getAparDataByConsole({ shipmentAparData }) {
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       FilterExpression: 'Consolidation = :consolidation',
       ExpressionAttributeValues: {
-        ':ConsolNo': _.get(shipmentAparData, 'ConsolNo'),
+        ':ConsolNo': String(_.get(shipmentAparData, 'ConsolNo', '')),
         ':consolidation': 'N',
       },
     };

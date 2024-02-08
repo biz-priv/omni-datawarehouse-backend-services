@@ -85,7 +85,7 @@ const TABLE_PARAMS = {
       IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
-        ':ConsolNo': consoleNo,
+        ':ConsolNo': String(consoleNo),
       },
     }),
   },
@@ -155,7 +155,7 @@ const TABLE_PARAMS = {
       IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
-        ':ConsolNo': consoleNo,
+        ':ConsolNo': String(consoleNo),
       },
     }),
   },
