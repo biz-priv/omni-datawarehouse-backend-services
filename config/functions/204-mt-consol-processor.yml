@@ -1,6 +1,6 @@
 function:
-  name: omni-204-payload-status-${self:provider.stage}
-  handler: src/204payload-status/index.handler
+  name: omni-204-mt-console-processor-${self:provider.stage}
+  handler: src/204-mt-console-processor/index.handler
   runtime: nodejs18.x
   memorySize: 1024
   timeout: 300
@@ -8,7 +8,7 @@ function:
     - { Ref: DWBackendLambdaLayer }
   package:
     include:
-      - 'src/204payload-status/**'
+      - 'src/204-mt-console-processor/index.js'
       - 'src/shared/constants/204_create_shipment.js'
     exclude:
       - '**/*'
@@ -39,13 +39,7 @@ function:
     SEND_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/create-orders.url}
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
     STATUS_TABLE_CONSOLE_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.ConsolNoIndex}
-    CONSOL_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
+    STATUS_TABLE_STATUS_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.StatusIndex}
 
   events:
-    - stream:
-        arn: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.streamArn}
-        batchSize: 5
-        maximumRetryAttempts: 3
-        bisectBatchOnFunctionError: true
-        filterPatterns:
-          - { dynamodb: { NewImage: { Status: { S: ['READY'] } } } }
+    - schedule: cron(*/1 * * * ? *) #cron for every 5 min
