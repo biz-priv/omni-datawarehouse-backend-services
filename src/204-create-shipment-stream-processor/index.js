@@ -9,7 +9,14 @@ const {
 } = require('../shared/constants/204_create_shipment');
 const moment = require('moment-timezone');
 
-const { STATUS_TABLE, SNS_TOPIC_ARN, STAGE, CONSOLE_STATUS_TABLE } = process.env;
+const {
+  STATUS_TABLE,
+  SNS_TOPIC_ARN,
+  STAGE,
+  CONSOLE_STATUS_TABLE,
+  SHIPMENT_APAR_INDEX_KEY_NAME,
+  SHIPMENT_APAR_TABLE,
+} = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
@@ -66,7 +73,7 @@ module.exports.handler = async (event, context) => {
         }
 
         if (type) {
-          return await checkAndUpdateOrderTable({ orderNo: orderId, type });
+          return await checkAndUpdateOrderTable({ orderNo: orderId, type, shipmentAparData });
         }
         return true;
       })
@@ -84,7 +91,7 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function insertShipmentStatus({ orderNo, status, type, tableStatuses }) {
+async function insertShipmentStatus({ orderNo, status, type, tableStatuses, shipmentAparData }) {
   try {
     const params = {
       TableName: STATUS_TABLE,
@@ -93,6 +100,7 @@ async function insertShipmentStatus({ orderNo, status, type, tableStatuses }) {
         Status: status,
         Type: type,
         TableStatuses: tableStatuses,
+        ShipmentAparData: shipmentAparData,
         CreatedAt: moment.tz('America/Chicago').format(),
         LastUpdateBy: functionName,
         LastUpdatedAt: moment.tz('America/Chicago').format(),
@@ -117,7 +125,7 @@ async function publishSNSTopic({ message }) {
     .promise();
 }
 
-async function checkAndUpdateOrderTable({ orderNo, type }) {
+async function checkAndUpdateOrderTable({ orderNo, type, shipmentAparData }) {
   const existingOrderParam = {
     TableName: STATUS_TABLE,
     KeyConditionExpression: 'FK_OrderNo = :orderNo',
@@ -141,6 +149,7 @@ async function checkAndUpdateOrderTable({ orderNo, type }) {
       status: STATUSES.PENDING,
       type,
       tableStatuses: CONSOLE_WISE_TABLES[type],
+      shipmentAparData,
     });
   }
 
@@ -155,11 +164,24 @@ async function checkAndUpdateOrderTable({ orderNo, type }) {
 
 async function insertConsoleStatusTable({ consolNo, status }) {
   try {
+    let orderData = await fetchOrderData({ consolNo });
+    orderData = orderData.map((data) => get(data, 'FK_OrderNo'));
+    console.info('🙂 -> file: index.js:159 -> insertConsoleStatusTable -> orderData:', orderData);
+    const TableStatuses = {};
+    orderData.map((singleOrderId) => {
+      TableStatuses[singleOrderId] = CONSOLE_WISE_TABLES[TYPES.MULTI_STOP];
+      return true;
+    });
+    console.info(
+      '🙂 -> file: index.js:163 -> insertConsoleStatusTable -> TableStatuses:',
+      TableStatuses
+    );
     const params = {
       TableName: CONSOLE_STATUS_TABLE,
       Item: {
         ConsolNo: String(consolNo),
         Status: status,
+        TableStatuses,
         CreatedAt: moment.tz('America/Chicago').format(),
         LastUpdateBy: functionName,
         LastUpdatedAt: moment.tz('America/Chicago').format(),
@@ -195,6 +217,34 @@ async function fetchItemFromTable({ params }) {
     return get(data, 'Items.[0]', {});
   } catch (err) {
     console.info('🙂 -> file: index.js:177 -> fetchItemFromTable -> err:', err);
+    throw err;
+  }
+}
+
+async function fetchOrderData({ consolNo }) {
+  try {
+    const params = {
+      TableName: SHIPMENT_APAR_TABLE,
+      IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
+      KeyConditionExpression: 'ConsolNo = :ConsolNo',
+      ProjectionExpression: 'FK_OrderNo',
+      FilterExpression:
+        'FK_VendorId = :FK_VendorId and Consolidation = :Consolidation and FK_ServiceId = :FK_ServiceId and SeqNo <> :SeqNo and FK_OrderNo <> :FK_OrderNo',
+      ExpressionAttributeValues: {
+        ':ConsolNo': String(consolNo),
+        ':FK_VendorId': VENDOR,
+        ':Consolidation': 'N',
+        ':FK_ServiceId': 'MT',
+        ':SeqNo': '9999',
+        ':FK_OrderNo': String(consolNo),
+      },
+    };
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
+    const data = await dynamoDb.query(params).promise();
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+    return get(data, 'Items', []);
+  } catch (err) {
+    console.info('🙂 -> file: index.js:237 -> fetchOrderData -> err:', err);
     throw err;
   }
 }
