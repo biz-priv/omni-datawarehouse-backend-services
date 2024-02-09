@@ -140,7 +140,12 @@ module.exports.handler = async (event, context) => {
             // Compare oldPayload with payload constructed now
             if (_.isEqual(oldPayload, payload)) {
               console.info('Payload is the same as the old payload. Skipping further processing.');
-              return 'Payload is the same as the old payload. Skipping further processing.';
+              await publishSNSTopic({
+                message: `Payload is the same as the old payload. Skipping further processing.
+              \n Payload: ${JSON.stringify(payload)}`,
+              });
+              throw new Error(`Payload is the same as the old payload. Skipping further processing.
+              \n Payload: ${JSON.stringify(payload)}`);
             }
           }
         }
@@ -264,7 +269,7 @@ async function updateStatusTable({ orderNo, status, response, payload }) {
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
     return await dynamoDb.update(updateParam).promise();
   } catch (err) {
-    console.info('🙂 -> file: index.js:224 -> err:', err);
+    console.error('🙂 -> file: index.js:224 -> err:', err);
     throw err;
   }
 }
@@ -288,30 +293,39 @@ async function insertInOutputTable({ orderNo, status, response, payload }) {
     await dynamoDb.put(params).promise();
     console.info('Record created successfully in output table.');
   } catch (err) {
-    console.info('🙂 -> file: index.js:224 -> err:', err);
+    console.error('🙂 -> file: index.js:296 -> err:', err);
     throw err;
   }
 }
 
 async function publishSNSTopic({ message }) {
-  // return;
-  await sns
-    .publish({
-      TopicArn: SNS_TOPIC_ARN,
-      Subject: `Error on ${functionName} lambda.`,
-      Message: `An error occurred: ${message}`,
-    })
-    .promise();
+  try {
+    await sns
+      .publish({
+        TopicArn: SNS_TOPIC_ARN,
+        Subject: `Error on ${functionName} lambda.`,
+        Message: `An error occurred: ${message}`,
+      })
+      .promise();
+  } catch (error) {
+    console.info('🚀 ~ file: index.js:312 ~ publishSNSTopic ~ error:', error);
+    throw error;
+  }
 }
 
 async function fetch204TableDataForConsole({ orderNo }) {
-  const params = {
-    TableName: STATUS_TABLE,
-    KeyConditionExpression: 'FK_OrderNo = :orderNo',
-    ExpressionAttributeValues: {
-      ':orderNo': orderNo,
-    },
-    ProjectionExpression: 'FK_OrderNo, Payload',
-  };
-  return await dynamoDb.query(params).promise();
+  try {
+    const params = {
+      TableName: STATUS_TABLE,
+      KeyConditionExpression: 'FK_OrderNo = :orderNo',
+      ExpressionAttributeValues: {
+        ':orderNo': orderNo,
+      },
+      ProjectionExpression: 'FK_OrderNo, Payload',
+    };
+    return await dynamoDb.query(params).promise();
+  } catch (error) {
+    console.info('🚀 ~ file: index.js:324 ~ fetch204TableDataForConsole ~ error:', error);
+    throw error;
+  }
 }

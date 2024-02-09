@@ -82,7 +82,7 @@ const refTypeMap = {
 
 // Function to get powerbroker code based on reftypeId
 function getPowerBrokerCode(reftypeId) {
-  return _.get(refTypeMap, reftypeId, 'Code Not Found');
+  return _.get(refTypeMap, reftypeId, 'NA');
 }
 
 function generateReferenceNumbers({ references }) {
@@ -92,8 +92,8 @@ function generateReferenceNumbers({ references }) {
     company_id: 'TMS',
     element_id: '128',
     partner_id: 'TMS',
-    reference_number: _.get(ref, 'ReferenceNo', ''),
-    reference_qual: getPowerBrokerCode(_.get(ref, 'FK_RefTypeId', '')),
+    reference_number: _.get(ref, 'ReferenceNo', 'NA'),
+    reference_qual: getPowerBrokerCode(_.get(ref, 'FK_RefTypeId', 'NA')),
     send_to_driver: true,
     version: '004010',
   }));
@@ -165,6 +165,7 @@ async function generateStop(
     timeZone = await getTimeZoneCode(deliveryZip);
     state = _.get(stateData, 'FK_ConState', '');
   }
+
   const timezoneParams = getParamsByTableName('', 'omni-wt-rt-timezone-master', timeZone);
   console.info('🙂 -> file: helper.js:161 -> timezoneParams:', timezoneParams);
   const timeZoneMaster = await queryDynamoDB(timezoneParams);
@@ -191,10 +192,7 @@ async function generateStop(
         __name: 'stopNotes',
         company_id: 'TMS',
         comment_type: 'DC',
-        comments:
-          _.get(confirmationCostData, type === 'shipper' ? 'PickupNote' : 'DeliveryNote', '') === ''
-            ? 'NA'
-            : _.get(confirmationCostData, type === 'shipper' ? 'PickupNote' : 'DeliveryNote'),
+        comments: getNote(confirmationCostData, type),
       },
     ],
   };
@@ -210,6 +208,22 @@ async function generateStop(
     _.set(stopData, 'referenceNumbers', generateReferenceNumbers({ references }));
   }
   return stopData;
+}
+
+function getNote(confirmationCostData, type) {
+  let note;
+
+  if (type === 'shipper') {
+    note = _.get(confirmationCostData, 'PickupNote', '');
+  } else {
+    note = _.get(confirmationCostData, 'DeliveryNote', '');
+  }
+
+  if (note === '') {
+    note = 'NA';
+  }
+
+  return note;
 }
 
 function getParamsByTableName(orderNo, tableName, timezone, billno, userId, consoleNo) {
@@ -331,6 +345,7 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
 }
 
 async function queryDynamoDB(params) {
+  console.info('🚀 ~ file: helper.js:348 ~ queryDynamoDB ~ params:', params);
   try {
     const result = await dynamoDB.query(params).promise();
     return result;
@@ -341,7 +356,6 @@ async function queryDynamoDB(params) {
 }
 
 async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
-  // const shipperLocationId = 'BSDJAVB';
   // Get location ID for shipper
   let shipperLocationId = await getLocationId(
     finalShipperData.ShipName,
@@ -352,7 +366,6 @@ async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
     finalShipperData.ShipZip
   );
 
-  // const consigneeLocationId = 'NFAKJND';
   // Get location ID for consignee
   let consigneeLocationId = await getLocationId(
     finalConsigneeData.ConName,
@@ -362,8 +375,6 @@ async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
     finalConsigneeData.FK_ConState,
     finalConsigneeData.ConZip
   );
-
-  // return { shipperLocationId, consigneeLocationId };
 
   // Use the obtained location IDs to create locations if needed
   if (!shipperLocationId) {
@@ -888,7 +899,6 @@ async function populateStops(consolStopHeaders, references, users) {
 
   // Fetch location IDs for stops
   const locationIds = await fetchLocationIds(consolStopHeaders);
-  // const locationIds = ['JLDFNGA', 'NSFPAI', 'JFGDKNSD'];
 
   for (let i = 0; i < consolStopHeaders.length; i++) {
     const stopHeader = consolStopHeaders[i];
@@ -906,6 +916,7 @@ async function populateStops(consolStopHeaders, references, users) {
       stoptype = 'SO';
     }
     const timeZoneCode = await getTimeZoneCode(stopHeader.ConsolStopZip);
+    console.info('🚀 ~ file: helper.js:919 ~ populateStops ~ timeZoneCode:', timeZoneCode);
     console.info('🚀 ~ file: helper.js:786 ~ stoptype:', stoptype);
 
     const stop = {
@@ -995,7 +1006,7 @@ async function getTimeZoneCode(zipcode) {
         ':code': zipcode,
       },
     };
-
+    console.info('🚀 ~ file: helper.js:998 ~ getTimeZoneCode ~ params:', params);
     const result = await dynamoDB.query(params).promise();
     const timezoncode = _.get(result, 'Items[0].FK_TimeZoneCode');
     console.info('🚀 ~ file: test.js:603 ~ timezoncode:', timezoncode);
@@ -1019,12 +1030,9 @@ async function getHoursAwayFromTimeZone(timeZoneCode) {
         ':code': timeZoneCode,
       },
     };
-
+    console.info('🚀 ~ file: helper.js:1033 ~ getHoursAwayFromTimeZone ~ params:', params);
     const result = await dynamoDB.query(params).promise();
-
-    // Use lodash _.get to safely access nested properties
     const hoursAway = _.get(result, 'Items[0].HoursAway.S');
-
     // Check if hoursAway is defined and convert to integer
     return hoursAway ? null : parseInt(hoursAway, 10);
   } catch (error) {
@@ -1034,68 +1042,80 @@ async function getHoursAwayFromTimeZone(timeZoneCode) {
 }
 
 async function calculateSchedArriveEarly(stopHeader, timeZoneCode) {
-  const consolStopDate = stopHeader.ConsolStopDate;
-  const consolStopTimeBegin = stopHeader.ConsolStopTimeBegin;
-  const { timeZoneOffset, hoursAway } = await getConsolTimeZoneOffset(
-    stopHeader.FK_ConsolStopState,
-    consolStopDate,
-    timeZoneCode
-  );
+  try {
+    const consolStopDate = stopHeader.ConsolStopDate;
+    const consolStopTimeBegin = stopHeader.ConsolStopTimeBegin;
+    const { timeZoneOffset, hoursAway } = await getConsolTimeZoneOffset(
+      stopHeader.FK_ConsolStopState,
+      consolStopDate,
+      timeZoneCode
+    );
 
-  // Format date
-  const formattedDate = moment(consolStopDate, 'YYYY-MM-DD').format('YYYYMMDD');
+    // Formatted date
+    const formattedDate = moment(consolStopDate, 'YYYY-MM-DD').format('YYYYMMDD');
 
-  // Format time with offset and hours away
-  const formattedTime = moment(consolStopTimeBegin, 'HH:mm:ss.SSS')
-    .add(hoursAway, 'hours')
-    .utcOffset(timeZoneOffset, true)
-    .format('HHmmssZZ');
+    // Format time with offset and hours away
+    const formattedTime = moment(consolStopTimeBegin, 'HH:mm:ss.SSS')
+      .add(hoursAway, 'hours')
+      .utcOffset(timeZoneOffset, true)
+      .format('HHmmssZZ');
 
-  // Combine date and time
-  const formattedDateTime = formattedDate + formattedTime;
-
-  console.info('🚀 ~ file: test.js:652 ~ formattedDateTime:', formattedDateTime);
-
-  return formattedDateTime;
+    // Combine date and time
+    const formattedDateTime = formattedDate + formattedTime;
+    console.info('🚀 ~ file: test.js:652 ~ formattedDateTime:', formattedDateTime);
+    return formattedDateTime;
+  } catch (error) {
+    console.error('🚀 ~ file: helper.js:1068 ~ calculateSchedArriveEarly ~ error:', error);
+    throw error;
+  }
 }
 
 async function calculateSchedArriveLate(stopHeader, timeZoneCode) {
-  const consolStopDate = stopHeader.ConsolStopDate;
-  const consolStopTimeEnd = stopHeader.ConsolStopTimeEnd;
-  const { timeZoneOffset, hoursAway } = await getConsolTimeZoneOffset(
-    stopHeader.FK_ConsolStopState,
-    consolStopDate,
-    timeZoneCode
-  );
-  // Format date
-  const formattedDate = moment(consolStopDate, 'YYYY-MM-DD').format('YYYYMMDD');
+  try {
+    const consolStopDate = stopHeader.ConsolStopDate;
+    const consolStopTimeEnd = stopHeader.ConsolStopTimeEnd;
+    const { timeZoneOffset, hoursAway } = await getConsolTimeZoneOffset(
+      stopHeader.FK_ConsolStopState,
+      consolStopDate,
+      timeZoneCode
+    );
+    // Formatted date
+    const formattedDate = moment(consolStopDate, 'YYYY-MM-DD').format('YYYYMMDD');
+    // Format time with offset and hours away
+    const formattedTime = moment(consolStopTimeEnd, 'HH:mm:ss.SSS')
+      .add(hoursAway, 'hours')
+      .utcOffset(timeZoneOffset, true)
+      .format('HHmmssZZ');
 
-  // Format time with offset and hours away
-  const formattedTime = moment(consolStopTimeEnd, 'HH:mm:ss.SSS')
-    .add(hoursAway, 'hours')
-    .utcOffset(timeZoneOffset, true)
-    .format('HHmmssZZ');
+    // Combine date and time
+    const formattedDateTime = formattedDate + formattedTime;
 
-  // Combine date and time
-  const formattedDateTime = formattedDate + formattedTime;
+    console.info('🚀 ~ file: test.js:652 ~ formattedDateTime:', formattedDateTime);
 
-  console.info('🚀 ~ file: test.js:652 ~ formattedDateTime:', formattedDateTime);
-
-  return formattedDateTime;
+    return formattedDateTime;
+  } catch (error) {
+    console.error('🚀 ~ file: helper.js:1097 ~ calculateSchedArriveLate ~ error:', error);
+    throw error;
+  }
 }
 
 async function getConsolTimeZoneOffset(fKConsolStopState, consolStopDate, timeZoneCode) {
-  let timeZoneOffset = 0;
-  let hoursAway = 0;
-  if (fKConsolStopState === 'AZ') {
-    timeZoneOffset = '-0600';
-  } else {
-    const weekOfYear = moment(consolStopDate).isoWeek();
-    timeZoneOffset = weekOfYear >= 11 && weekOfYear <= 44 ? '-0500' : '-0600';
-    hoursAway = await getHoursAwayFromTimeZone(timeZoneCode);
-  }
+  try {
+    let timeZoneOffset = 0;
+    let hoursAway = 0;
+    if (fKConsolStopState === 'AZ') {
+      timeZoneOffset = '-0600';
+    } else {
+      const weekOfYear = moment(consolStopDate).isoWeek();
+      timeZoneOffset = weekOfYear >= 11 && weekOfYear <= 44 ? '-0500' : '-0600';
+      hoursAway = await getHoursAwayFromTimeZone(timeZoneCode);
+    }
 
-  return { timeZoneOffset, hoursAway };
+    return { timeZoneOffset, hoursAway };
+  } catch (error) {
+    console.error('🚀 ~ file: helper.js:1116 ~ getConsolTimeZoneOffset ~ error:', error);
+    throw error;
+  }
 }
 
 function getUniqueObjects(array) {
@@ -1158,7 +1178,7 @@ function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
   if (Object.hasOwn(equipmentCodeMapping, uppercaseEquipmentCode)) {
     return equipmentCodeMapping[uppercaseEquipmentCode];
   }
-  return '';
+  return 'NA';
 }
 
 module.exports = {
