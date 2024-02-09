@@ -11,6 +11,8 @@ const {
   REFERENCES_TABLE,
   TRACKING_NOTES_TABLE,
   TRACKING_NOTES_CONSOLENO_INDEX_KEY,
+  CONSOL_STOP_HEADERS_CONSOL_INDEX,
+  CONSOL_STOP_HEADERS,
 } = process.env;
 
 const STATUSES = {
@@ -47,6 +49,7 @@ const CONSOLE_WISE_TABLES = {
     tbl_ShipmentDesc: STATUSES.PENDING,
     tbl_TrackingNotes: STATUSES.PENDING,
     tbl_References: STATUSES.PENDING,
+    tbl_ConsolStopHeaders: STATUSES.PENDING,
   },
 };
 
@@ -155,6 +158,14 @@ const TABLE_PARAMS = {
       TableName: TRACKING_NOTES_TABLE,
       IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
+      ExpressionAttributeValues: {
+        ':ConsolNo': String(consoleNo),
+      },
+    }),
+    tbl_ConsolStopHeaders: ({ consoleNo }) => ({
+      TableName: CONSOL_STOP_HEADERS,
+      IndexName: CONSOL_STOP_HEADERS_CONSOL_INDEX,
+      KeyConditionExpression: 'FK_ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
         ':ConsolNo': String(consoleNo),
       },
