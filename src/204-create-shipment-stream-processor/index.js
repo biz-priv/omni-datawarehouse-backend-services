@@ -69,7 +69,15 @@ module.exports.handler = async (event, context) => {
         ) {
           console.info('Multi Stop');
           type = TYPES.MULTI_STOP;
-          await insertConsoleStatusTable({ consolNo, status: STATUSES.PENDING });
+          const existingConsol = await fetchConsoleStatusTable({ consolNo });
+          if (Object.keys(existingConsol).length > 0) {
+            await updateConsolStatusTable({
+              consolNo,
+              resetCount: get(existingConsol, 'ResetCount', 0),
+            });
+          } else {
+            await insertConsoleStatusTable({ consolNo, status: STATUSES.PENDING });
+          }
         }
 
         if (type) {
@@ -200,9 +208,12 @@ async function updateStatusTable({ orderNo, resetCount }) {
   const updateParam = {
     TableName: STATUS_TABLE,
     Key: { FK_OrderNo: orderNo },
-    UpdateExpression: 'set ResetCount = :resetCount',
+    UpdateExpression:
+      'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
     ExpressionAttributeValues: {
       ':resetCount': resetCount + 1,
+      ':lastUpdateBy': functionName,
+      ':lastUpdatedAt': moment.tz('America/Chicago').format(),
     },
   };
   console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
@@ -247,4 +258,35 @@ async function fetchOrderData({ consolNo }) {
     console.info('🙂 -> file: index.js:237 -> fetchOrderData -> err:', err);
     throw err;
   }
+}
+
+async function fetchConsoleStatusTable({ consolNo }) {
+  const existingOrderParam = {
+    TableName: CONSOLE_STATUS_TABLE,
+    KeyConditionExpression: 'ConsolNo = :consolNo',
+    FilterExpression: '#Status <> :status',
+    ExpressionAttributeNames: { '#Status': 'Status' },
+    ExpressionAttributeValues: {
+      ':consolNo': String(consolNo),
+      ':status': STATUSES.SENT,
+    },
+  };
+
+  return await fetchItemFromTable({ params: existingOrderParam });
+}
+
+async function updateConsolStatusTable({ consolNo, resetCount }) {
+  const updateParam = {
+    TableName: CONSOLE_STATUS_TABLE,
+    Key: { ConsolNo: String(consolNo) },
+    UpdateExpression:
+      'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
+    ExpressionAttributeValues: {
+      ':resetCount': resetCount + 1,
+      ':lastUpdateBy': functionName,
+      ':lastUpdatedAt': moment.tz('America/Chicago').format(),
+    },
+  };
+  console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
+  return await dynamoDb.update(updateParam).promise();
 }
