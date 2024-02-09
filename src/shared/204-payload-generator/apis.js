@@ -53,8 +53,9 @@ async function createLocation(data) {
     const errorMessage = _.get(error, 'response.data', error.message);
     console.error('🙂 -> file: apis.js:58 -> createLocation -> error:', error);
     throw new Error(`Error in Create Location API.
-    \n Error Details:${errorMessage}
-    \n Payload: ${JSON.stringify(data)}`);
+    \n Error Details: ${errorMessage}
+    \n Payload:
+    \n ${JSON.stringify(data)}`);
   }
 }
 
@@ -80,8 +81,9 @@ async function sendPayload({ payload: data }) {
     console.info('🙂 -> file: apis.js:78 -> error:', error);
     const errorMessage = _.get(error, 'response.data', error.message);
     throw new Error(`Error in Create Orders API.
-    \n Error Details:${errorMessage}
-    \n Payload: ${JSON.stringify(data)}`);
+    \n Error Details: ${errorMessage}
+    \n Payload: 
+    \n ${JSON.stringify(data)}`);
   }
 }
 
@@ -107,8 +109,9 @@ async function updateOrders({ payload: data }) {
     console.info('🙂 -> file: apis.js:103 -> error:', error);
     const errorMessage = _.get(error, 'response.data', error.message);
     throw new Error(`Error in Update Orders API.
-    \n Error Details:${errorMessage}
-    \n Payload: ${JSON.stringify(data)}`);
+    \n Error Details: ${errorMessage}
+    \n Payload:
+    \n ${JSON.stringify(data)}`);
   }
 }
 

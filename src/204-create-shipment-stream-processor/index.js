@@ -270,7 +270,7 @@ async function fetchConsoleStatusTable({ consolNo }) {
     const existingOrderParam = {
       TableName: CONSOLE_STATUS_TABLE,
       KeyConditionExpression: 'ConsolNo = :consolNo',
-      FilterExpression: '#Status <> :status',
+      FilterExpression: '#Status = :status',
       ExpressionAttributeNames: { '#Status': 'Status' },
       ExpressionAttributeValues: {
         ':consolNo': String(consolNo),
