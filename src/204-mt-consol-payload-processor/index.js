@@ -98,6 +98,12 @@ module.exports.handler = async (event, context) => {
           payload,
           status: STATUSES.FAILED,
         });
+        await updateStatusTable({
+          response: error.message,
+          payload,
+          ConsolNo: String(consolNo),
+          status: STATUSES.FAILED,
+        });
         throw error;
       }
       return false;

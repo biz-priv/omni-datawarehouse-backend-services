@@ -184,6 +184,12 @@ module.exports.handler = async (event, context) => {
           payload,
           status: STATUSES.FAILED,
         });
+        await insertInOutputTable({
+          response: error.message,
+          payload,
+          orderNo: orderId,
+          status: STATUSES.FAILED,
+        });
         throw error;
       }
       return false;
