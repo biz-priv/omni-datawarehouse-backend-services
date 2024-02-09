@@ -18,6 +18,7 @@ const STATUSES = {
   READY: 'READY',
   SENT: 'SENT',
   FAILED: 'FAILED',
+  SKIPPED: 'SKIPPED',
 };
 
 const TYPES = {

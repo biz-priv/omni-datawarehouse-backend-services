@@ -118,7 +118,7 @@ async function insertShipmentStatus({ orderNo, status, type, tableStatuses, ship
     await dynamoDb.put(params).promise();
     console.info('Record created successfully.');
   } catch (error) {
-    console.info('🙂 -> file: index.js:78 -> error:', error);
+    console.error('🚀 ~ file: index.js:121 ~ insertShipmentStatus ~ error:', error);
     throw error;
   }
 }
@@ -141,7 +141,7 @@ async function checkAndUpdateOrderTable({ orderNo, type, shipmentAparData }) {
       ':orderNo': orderNo,
     },
   };
-
+  console.info('🚀 ~ file: index.js:144 ~ existingOrderParam:', existingOrderParam);
   const existingOrder = await fetchItemFromTable({ params: existingOrderParam });
   console.info(
     '🙂 -> file: index.js:65 -> module.exports.handler= -> existingOrder:',
@@ -199,25 +199,30 @@ async function insertConsoleStatusTable({ consolNo, status }) {
     await dynamoDb.put(params).promise();
     console.info('Record created successfully.');
   } catch (error) {
-    console.info('🙂 -> file: index.js:78 -> error:', error);
+    console.error('🚀 ~ file: index.js:202 ~ insertConsoleStatusTable ~ error:', error);
     throw error;
   }
 }
 
 async function updateStatusTable({ orderNo, resetCount }) {
-  const updateParam = {
-    TableName: STATUS_TABLE,
-    Key: { FK_OrderNo: orderNo },
-    UpdateExpression:
-      'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
-    ExpressionAttributeValues: {
-      ':resetCount': resetCount + 1,
-      ':lastUpdateBy': functionName,
-      ':lastUpdatedAt': moment.tz('America/Chicago').format(),
-    },
-  };
-  console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
-  return await dynamoDb.update(updateParam).promise();
+  try {
+    const updateParam = {
+      TableName: STATUS_TABLE,
+      Key: { FK_OrderNo: orderNo },
+      UpdateExpression:
+        'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
+      ExpressionAttributeValues: {
+        ':resetCount': resetCount + 1,
+        ':lastUpdateBy': functionName,
+        ':lastUpdatedAt': moment.tz('America/Chicago').format(),
+      },
+    };
+    console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
+    return await dynamoDb.update(updateParam).promise();
+  } catch (error) {
+    console.error('🚀 ~ file: index.js:223 ~ updateStatusTable ~ error:', error);
+    throw error;
+  }
 }
 
 async function fetchItemFromTable({ params }) {
@@ -227,7 +232,7 @@ async function fetchItemFromTable({ params }) {
     console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items.[0]', {});
   } catch (err) {
-    console.info('🙂 -> file: index.js:177 -> fetchItemFromTable -> err:', err);
+    console.error('🚀 ~ file: index.js:235 ~ fetchItemFromTable ~ err:', err);
     throw err;
   }
 }
@@ -255,38 +260,48 @@ async function fetchOrderData({ consolNo }) {
     console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items', []);
   } catch (err) {
-    console.info('🙂 -> file: index.js:237 -> fetchOrderData -> err:', err);
+    console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
     throw err;
   }
 }
 
 async function fetchConsoleStatusTable({ consolNo }) {
-  const existingOrderParam = {
-    TableName: CONSOLE_STATUS_TABLE,
-    KeyConditionExpression: 'ConsolNo = :consolNo',
-    FilterExpression: '#Status <> :status',
-    ExpressionAttributeNames: { '#Status': 'Status' },
-    ExpressionAttributeValues: {
-      ':consolNo': String(consolNo),
-      ':status': STATUSES.SENT,
-    },
-  };
+  try {
+    const existingOrderParam = {
+      TableName: CONSOLE_STATUS_TABLE,
+      KeyConditionExpression: 'ConsolNo = :consolNo',
+      FilterExpression: '#Status <> :status',
+      ExpressionAttributeNames: { '#Status': 'Status' },
+      ExpressionAttributeValues: {
+        ':consolNo': String(consolNo),
+        ':status': STATUSES.SENT,
+      },
+    };
 
-  return await fetchItemFromTable({ params: existingOrderParam });
+    return await fetchItemFromTable({ params: existingOrderParam });
+  } catch (error) {
+    console.error('🚀 ~ file: index.js:283 ~ fetchConsoleStatusTable ~ error:', error);
+    throw error;
+  }
 }
 
 async function updateConsolStatusTable({ consolNo, resetCount }) {
-  const updateParam = {
-    TableName: CONSOLE_STATUS_TABLE,
-    Key: { ConsolNo: String(consolNo) },
-    UpdateExpression:
-      'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
-    ExpressionAttributeValues: {
-      ':resetCount': resetCount + 1,
-      ':lastUpdateBy': functionName,
-      ':lastUpdatedAt': moment.tz('America/Chicago').format(),
-    },
-  };
-  console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
-  return await dynamoDb.update(updateParam).promise();
+  try {
+    const updateParam = {
+      TableName: CONSOLE_STATUS_TABLE,
+      Key: { ConsolNo: String(consolNo) },
+      UpdateExpression:
+        'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
+      ExpressionAttributeValues: {
+        ':resetCount': resetCount + 1,
+        ':lastUpdateBy': functionName,
+        ':lastUpdatedAt': moment.tz('America/Chicago').format(),
+      },
+    };
+    console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
+    return await dynamoDb.update(updateParam).promise();
+  } catch (error) {
+    console.error('🚀 ~ file: index.js:304 ~ updateConsolStatusTable ~ error:', error);
+    throw error;
+  }
 }

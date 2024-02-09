@@ -108,7 +108,7 @@ async function checkMultiStop(tableData) {
   console.info('🙂 -> file: index.js:149 -> originalTableStatuses:', originalTableStatuses);
 
   for (const key in originalTableStatuses) {
-    if (Object.hasOwnProperty.call(originalTableStatuses, key)) {
+    if (Object.hasOwn(originalTableStatuses, key)) {
       const tableStatuses = originalTableStatuses[key];
       if (Object.values(tableStatuses).includes(STATUSES.PENDING) && retryCount < 5) {
         return await updateConosleStatusTable({
@@ -120,9 +120,14 @@ async function checkMultiStop(tableData) {
       }
 
       if (Object.values(tableStatuses).includes(STATUSES.PENDING) && retryCount >= 5) {
+        const pendingTables = Object.keys(tableStatuses).filter((table) => {
+          return tableStatuses[table] === STATUSES.PENDING;
+        });
+
         await publishSNSTopic({
-          message: `All tables are not populated for order id: ${consolNo}. 
-              \n Please check ${STATUS_TABLE} to see which table does not have data. 
+          message: `All tables are not populated for consolNo: ${consolNo}.
+              \n Tables with no data: ${pendingTables}. 
+              \n Please check ${CONSOLE_STATUS_TABLE} to see which table does not have data. 
               \n Retrigger the process by changing Status to ${STATUSES.PENDING} and resetting the RetryCount to 0.`,
         });
         return await updateConosleStatusTable({
@@ -150,6 +155,7 @@ async function fetchItemFromTable({ params }) {
     console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items', []).length > 0 ? STATUSES.READY : STATUSES.PENDING;
   } catch (err) {
+    console.error('error infetchItemFromTable function - index.js 153:', err);
     if (err.code === 'ResourceNotFoundException') {
       return STATUSES.PENDING;
     }
@@ -158,74 +164,98 @@ async function fetchItemFromTable({ params }) {
 }
 
 async function updateConosleStatusTable({ consolNo, originalTableStatuses, retryCount, status }) {
-  const updateParam = {
-    TableName: CONSOLE_STATUS_TABLE,
-    Key: { ConsolNo: String(consolNo) },
-    UpdateExpression:
-      'set TableStatuses = :tableStatuses, RetryCount = :retryCount, #Status = :status, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
-    ExpressionAttributeNames: { '#Status': 'Status' },
-    ExpressionAttributeValues: {
-      ':tableStatuses': originalTableStatuses,
-      ':retryCount': retryCount + 1,
-      ':status': status,
-      ':lastUpdateBy': functionName,
-      ':lastUpdatedAt': moment.tz('America/Chicago').format(),
-    },
-  };
-  console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
-  return await dynamoDb.update(updateParam).promise();
+  try {
+    const updateParam = {
+      TableName: CONSOLE_STATUS_TABLE,
+      Key: { ConsolNo: String(consolNo) },
+      UpdateExpression:
+        'set TableStatuses = :tableStatuses, RetryCount = :retryCount, #Status = :status, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
+      ExpressionAttributeNames: { '#Status': 'Status' },
+      ExpressionAttributeValues: {
+        ':tableStatuses': originalTableStatuses,
+        ':retryCount': retryCount + 1,
+        ':status': status,
+        ':lastUpdateBy': functionName,
+        ':lastUpdatedAt': moment.tz('America/Chicago').format(),
+      },
+    };
+    console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
+    return await dynamoDb.update(updateParam).promise();
+  } catch (error) {
+    console.error('error in updateConosleStatusTable - index.js ~ 180: ', error);
+    throw error;
+  }
 }
 
 async function updateOrderStatusTable({ orderNo, originalTableStatuses }) {
-  const status = !includes(originalTableStatuses, STATUSES.PENDING)
-    ? STATUSES.READY
-    : STATUSES.PENDING;
+  try {
+    const status = !includes(originalTableStatuses, STATUSES.PENDING)
+      ? STATUSES.READY
+      : STATUSES.PENDING;
 
-  const updateParam = {
-    TableName: STATUS_TABLE,
-    Key: { FK_OrderNo: orderNo },
-    UpdateExpression:
-      'set TableStatuses = :tableStatuses, #Status = :status ,LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
-    ExpressionAttributeNames: { '#Status': 'Status' },
-    ExpressionAttributeValues: {
-      ':tableStatuses': originalTableStatuses,
-      ':status': status,
-      ':lastUpdateBy': functionName,
-      ':lastUpdatedAt': moment.tz('America/Chicago').format(),
-    },
-  };
-  console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
-  return await dynamoDb.update(updateParam).promise();
+    const updateParam = {
+      TableName: STATUS_TABLE,
+      Key: { FK_OrderNo: orderNo },
+      UpdateExpression:
+        'set TableStatuses = :tableStatuses, #Status = :status ,LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
+      ExpressionAttributeNames: { '#Status': 'Status' },
+      ExpressionAttributeValues: {
+        ':tableStatuses': originalTableStatuses,
+        ':status': status,
+        ':lastUpdateBy': functionName,
+        ':lastUpdatedAt': moment.tz('America/Chicago').format(),
+      },
+    };
+    console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
+    return await dynamoDb.update(updateParam).promise();
+  } catch (error) {
+    console.error('🚀 ~ file: index.js:207 ~ error in updateOrderStatusTable:', error);
+    throw error;
+  }
 }
 
 async function checkAndUpdateOrderTable({ orderNo, originalTableStatuses }) {
-  const existingOrderParam = {
-    TableName: STATUS_TABLE,
-    KeyConditionExpression: 'FK_OrderNo = :orderNo',
-    ExpressionAttributeValues: {
-      ':orderNo': orderNo,
-    },
-  };
+  try {
+    const existingOrderParam = {
+      TableName: STATUS_TABLE,
+      KeyConditionExpression: 'FK_OrderNo = :orderNo',
+      ExpressionAttributeValues: {
+        ':orderNo': orderNo,
+      },
+    };
+    console.info(
+      '🚀 ~ file: index.js:221 ~ checkAndUpdateOrderTable ~ existingOrderParam:',
+      existingOrderParam
+    );
 
-  const existingOrder = await fetchItemFromTable({ params: existingOrderParam });
-  console.info(
-    '🙂 -> file: index.js:65 -> module.exports.handler= -> existingOrder:',
-    existingOrder
-  );
+    const existingOrder = await fetchItemFromTable({ params: existingOrderParam });
+    console.info(
+      '🙂 -> file: index.js:65 -> module.exports.handler= -> existingOrder:',
+      existingOrder
+    );
 
-  if (existingOrder === STATUSES.PENDING) {
-    return false;
+    if (existingOrder === STATUSES.PENDING) {
+      return false;
+    }
+
+    if (existingOrder === STATUSES.READY) {
+      return await updateOrderStatusTable({
+        orderNo,
+        originalTableStatuses,
+      });
+    }
+    return true;
+  } catch (error) {
+    console.error('🚀 ~ file: index.js:240 ~ checkAndUpdateOrderTable ~ error:', error);
+    throw error;
   }
-
-  if (existingOrder === STATUSES.READY) {
-    return await updateOrderStatusTable({
-      orderNo,
-      originalTableStatuses,
-    });
-  }
-  return true;
 }
 
 async function sleep(seconds) {
-  return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+  try {
+    return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+  } catch (error) {
+    console.error('🚀 ~ file: index.js:249 ~ sleep ~ error:', error);
+    throw error;
+  }
 }

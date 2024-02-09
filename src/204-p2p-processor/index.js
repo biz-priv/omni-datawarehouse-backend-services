@@ -31,14 +31,18 @@ module.exports.handler = async (event, context) => {
 };
 
 async function publishSNSTopic({ message }) {
-  // return;
-  await sns
-    .publish({
-      TopicArn: SNS_TOPIC_ARN,
-      Subject: `Error on ${functionName} lambda.`,
-      Message: `An error occurred: ${message}`,
-    })
-    .promise();
+  try {
+    await sns
+      .publish({
+        TopicArn: SNS_TOPIC_ARN,
+        Subject: `Error on ${functionName} lambda.`,
+        Message: `An error occurred: ${message}`,
+      })
+      .promise();
+  } catch (error) {
+    console.error('🚀 ~ file: index.js:43 ~ publishSNSTopic ~ error:', error);
+    throw error;
+  }
 }
 
 async function queryTableStatusPending() {
@@ -51,7 +55,7 @@ async function queryTableStatusPending() {
       ':status': STATUSES.PENDING,
     },
   };
-
+  console.info('🚀 ~ file: index.js:58 ~ queryTableStatusPending ~ params:', params);
   try {
     const data = await dynamoDb.query(params).promise();
     console.info('Query succeeded:', data);
@@ -92,6 +96,9 @@ async function checkTable(tableData) {
   );
   console.info('🙂 -> file: index.js:79 -> originalTableStatuses:', originalTableStatuses);
   if (Object.values(originalTableStatuses).includes(STATUSES.PENDING) && retryCount >= 5) {
+    const pendingTables = Object.keys(originalTableStatuses).filter((table) => {
+      return originalTableStatuses[table] === STATUSES.PENDING;
+    });
     await updateStatusTable({
       orderNo,
       originalTableStatuses,
@@ -99,7 +106,8 @@ async function checkTable(tableData) {
       status: STATUSES.FAILED,
     });
     await publishSNSTopic({
-      message: `All tables are not populated for order id: ${orderNo}. 
+      message: `All tables are not populated for order id: ${orderNo}.
+      \n Tables with no data: ${pendingTables}. 
       \n Please check ${STATUS_TABLE} to see which table does not have data. 
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
     });
@@ -148,6 +156,7 @@ async function fetchItemFromTable({ params }) {
     console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items', []).length > 0 ? STATUSES.READY : STATUSES.PENDING;
   } catch (err) {
+    console.error('🚀 ~ file: index.js:159 ~ fetchItemFromTable ~ err:', err);
     if (err.code === 'ResourceNotFoundException') {
       return STATUSES.PENDING;
     }
@@ -156,18 +165,23 @@ async function fetchItemFromTable({ params }) {
 }
 
 async function updateStatusTable({ orderNo, originalTableStatuses, retryCount, status }) {
-  const updateParam = {
-    TableName: STATUS_TABLE,
-    Key: { FK_OrderNo: orderNo },
-    UpdateExpression:
-      'set TableStatuses = :tableStatuses, RetryCount = :retryCount, #Status = :status',
-    ExpressionAttributeNames: { '#Status': 'Status' },
-    ExpressionAttributeValues: {
-      ':tableStatuses': originalTableStatuses,
-      ':retryCount': retryCount + 1,
-      ':status': status,
-    },
-  };
-  console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
-  return await dynamoDb.update(updateParam).promise();
+  try {
+    const updateParam = {
+      TableName: STATUS_TABLE,
+      Key: { FK_OrderNo: orderNo },
+      UpdateExpression:
+        'set TableStatuses = :tableStatuses, RetryCount = :retryCount, #Status = :status',
+      ExpressionAttributeNames: { '#Status': 'Status' },
+      ExpressionAttributeValues: {
+        ':tableStatuses': originalTableStatuses,
+        ':retryCount': retryCount + 1,
+        ':status': status,
+      },
+    };
+    console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
+    return await dynamoDb.update(updateParam).promise();
+  } catch (error) {
+    console.error('🚀 ~ file: index.js:184 ~ updateStatusTable ~ error:', error);
+    throw error;
+  }
 }

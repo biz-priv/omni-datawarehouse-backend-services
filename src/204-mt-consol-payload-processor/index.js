@@ -7,14 +7,14 @@ const { v4: uuidv4 } = require('uuid');
 const { mtPayload } = require('../shared/204-payload-generator/payloads');
 const { fetchDataFromTablesList } = require('../shared/204-payload-generator/helper');
 const { sendPayload, updateOrders } = require('../shared/204-payload-generator/apis');
-const { STATUSES } = require('../shared/constants/204_create_shipment');
+const { STATUSES, TYPES } = require('../shared/constants/204_create_shipment');
 
 const { SNS_TOPIC_ARN, CONSOL_STATUS_TABLE, OUTPUT_TABLE } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
 let functionName;
-let type;
+const type = TYPES.MULTI_STOP;
 module.exports.handler = async (event, context) => {
   console.info(
     '🙂 -> file: index.js:8 -> module.exports.handler= -> event:',
@@ -22,56 +22,44 @@ module.exports.handler = async (event, context) => {
   );
   functionName = _.get(context, 'functionName');
   const dynamoEventRecords = event.Records;
+  let consolNo;
 
   try {
     const promises = dynamoEventRecords.map(async (record) => {
       let payload = '';
-      let consolNo;
 
       try {
         const newImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
-        const shipmentAparData = _.get(newImage, 'ShipmentAparData');
-        consolNo = _.get(shipmentAparData, 'ConsolNo', 0);
-        console.info('🙂 -> file: index.js:30 -> shipmentAparData:', shipmentAparData);
-        type = _.get(newImage, 'Type', '');
+        consolNo = _.get(newImage, 'ConsolNo', 0);
 
-        // MT Payload
-        if (
-          parseInt(_.get(shipmentAparData, 'ConsolNo', null), 10) !== null &&
-          _.get(shipmentAparData, 'Consolidation') === 'N' &&
-          _.includes(['MT'], _.get(shipmentAparData, 'FK_ServiceId'))
-        ) {
-          const { shipmentHeader, shipmentDesc, consolStopHeaders, customer, references, users } =
-            await fetchDataFromTablesList(_.get(shipmentAparData, 'ConsolNo', null));
+        const { shipmentHeader, shipmentDesc, consolStopHeaders, customer, references, users } =
+          await fetchDataFromTablesList(consolNo);
 
-          const mtPayloadData = await mtPayload(
-            shipmentHeader,
-            shipmentDesc,
-            consolStopHeaders,
-            customer,
-            references,
-            users
-          );
-          console.info('🙂 -> file: index.js:114 -> mtPayloadData:', JSON.stringify(mtPayloadData));
-          payload = mtPayloadData;
-          // Check if payload is not null
-          if (payload) {
-            const result = await fetch204TableDataForConsole({
-              consolNo,
-            });
-            console.info('🙂 -> file: index.js:114 -> result:', result);
+        const mtPayloadData = await mtPayload(
+          shipmentHeader,
+          shipmentDesc,
+          consolStopHeaders,
+          customer,
+          references,
+          users
+        );
+        console.info('🙂 -> file: index.js:114 -> mtPayloadData:', JSON.stringify(mtPayloadData));
+        payload = mtPayloadData;
+        // Check if payload is not null
+        if (payload) {
+          const result = await fetch204TableDataForConsole({
+            consolNo,
+          });
+          console.info('🙂 -> file: index.js:114 -> result:', result);
 
-            // Check if result has items and status is sent
-            if (result.Items.length > 0) {
-              const oldPayload = _.get(result, 'Items[0].Payload', null);
+          // Check if result has items and status is sent
+          if (result.Items.length > 0) {
+            const oldPayload = _.get(result, 'Items[0].Payload', null);
 
-              // Compare oldPayload with payload constructed now
-              if (_.isEqual(oldPayload, payload)) {
-                console.info(
-                  'Payload is the same as the old payload. Skipping further processing.'
-                );
-                return 'Payload is the same as the old payload. Skipping further processing.';
-              }
+            // Compare oldPayload with payload constructed now
+            if (_.isEqual(oldPayload, payload)) {
+              console.info('Payload is the same as the old payload. Skipping further processing.');
+              return 'Payload is the same as the old payload. Skipping further processing.';
             }
           }
         }
