@@ -63,27 +63,6 @@ const TABLE_PARAMS = {
         ':orderNo': orderNo,
       },
     }),
-    tbl_Shipper: ({ orderNo }) => ({
-      TableName: SHIPPER_TABLE,
-      KeyConditionExpression: 'FK_ShipOrderNo = :orderNo',
-      ExpressionAttributeValues: {
-        ':orderNo': orderNo,
-      },
-    }),
-    tbl_Consignee: ({ orderNo }) => ({
-      TableName: CONSIGNEE_TABLE,
-      KeyConditionExpression: 'FK_ConOrderNo = :orderNo',
-      ExpressionAttributeValues: {
-        ':orderNo': orderNo,
-      },
-    }),
-    tbl_ShipmentHeader: ({ orderNo }) => ({
-      TableName: SHIPMENT_HEADER_TABLE,
-      KeyConditionExpression: 'PK_OrderNo = :orderNo',
-      ExpressionAttributeValues: {
-        ':orderNo': orderNo,
-      },
-    }),
     tbl_TrackingNotes: ({ consoleNo }) => ({
       TableName: TRACKING_NOTES_TABLE,
       IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
