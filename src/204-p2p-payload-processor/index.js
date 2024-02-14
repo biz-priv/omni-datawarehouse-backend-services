@@ -221,11 +221,6 @@ async function consolNonConsolCommonData({ shipmentAparData }) {
     console.info('🙂 -> file: index.js:36 -> shipperData:', shipperData);
     console.info('🙂 -> file: index.js:37 -> confirmationCostData:', confirmationCostData);
 
-    if (!consigneeData || !shipperData) {
-      console.error('Shipper or Consignee tables are not populated.');
-      throw new Error('Shipper or Consignee tables are not populated.');
-    }
-
     const { finalConsigneeData, finalShipperData } = getFinalShipperAndConsigneeData({
       confirmationCostData,
       consigneeData,
