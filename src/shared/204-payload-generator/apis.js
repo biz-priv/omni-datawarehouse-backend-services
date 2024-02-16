@@ -147,7 +147,7 @@ async function liveSendUpdate(houseBill, shipmentId) {
           <HouseBill>${houseBill}</HouseBill>
           <TrackingNotes>
             <TrackingNotes>
-              <TrackingNoteMessage>Ivia shipment number ${shipmentId}</TrackingNoteMessage>
+              <TrackingNoteMessage>LiVe Logistics shipment number ${shipmentId}</TrackingNoteMessage>
             </TrackingNotes>
           </TrackingNotes>
         </WriteTrackingNote>
