@@ -210,13 +210,11 @@ async function updateStatusTable({ orderNo, resetCount }) {
       TableName: STATUS_TABLE,
       Key: { FK_OrderNo: orderNo },
       UpdateExpression:
-        'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt, #Status = :status',
-      ExpressionAttributeNames: { '#Status': 'Status' },
+        'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
       ExpressionAttributeValues: {
         ':resetCount': resetCount + 1,
         ':lastUpdateBy': functionName,
         ':lastUpdatedAt': moment.tz('America/Chicago').format(),
-        ':status': STATUSES.PENDING,
       },
     };
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
@@ -293,13 +291,11 @@ async function updateConsolStatusTable({ consolNo, resetCount }) {
       TableName: CONSOLE_STATUS_TABLE,
       Key: { ConsolNo: String(consolNo) },
       UpdateExpression:
-        'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt, #Status = :status',
-      ExpressionAttributeNames: { '#Status': 'Status' },
+        'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
       ExpressionAttributeValues: {
         ':resetCount': resetCount + 1,
         ':lastUpdateBy': functionName,
         ':lastUpdatedAt': moment.tz('America/Chicago').format(),
-        ':status': STATUSES.PENDING,
       },
     };
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
