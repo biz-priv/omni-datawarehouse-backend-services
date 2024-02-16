@@ -1,0 +1,2159 @@
+{
+  "Records": [
+    {
+      "eventID": "561ae5f534360b0170b04477a92ea5d6",
+      "eventName": "MODIFY",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1707849464,
+        "Keys": {
+          "ConsolNo": {
+            "S": "336178"
+          }
+        },
+        "NewImage": {
+          "ConsolNo": {
+            "S": "336211"
+          },
+          "CreatedAt": {
+            "S": "2024-02-13T12:23:58-06:00"
+          },
+          "LastUpdateBy": {
+            "S": "omni-204-mt-console-processor-dev"
+          },
+          "LastUpdatedAt": {
+            "S": "2024-02-13T12:24:05-06:00"
+          },
+          "Payload": {
+            "M": {
+              "allow_relay": {
+                "BOOL": true
+              },
+              "bill_distance_um": {
+                "S": "MI"
+              },
+              "blnum": {
+                "S": "336211"
+              },
+              "bol_received": {
+                "BOOL": false
+              },
+              "collection_method": {
+                "S": "P"
+              },
+              "commodity_id": {
+                "S": "TVS"
+              },
+              "company_id": {
+                "S": "TMS"
+              },
+              "customer_id": {
+                "S": "OMNICOT8"
+              },
+              "def_move_type": {
+                "S": "A"
+              },
+              "dispatch_opt": {
+                "BOOL": true
+              },
+              "entered_user_id": {
+                "S": "apiuser"
+              },
+              "equipment_type_id": {
+                "S": "NA"
+              },
+              "excise_disable_update": {
+                "BOOL": false
+              },
+              "excise_taxable": {
+                "BOOL": false
+              },
+              "force_assign": {
+                "BOOL": true
+              },
+              "hazmat": {
+                "BOOL": false
+              },
+              "high_value": {
+                "BOOL": false
+              },
+              "hold_reason": {
+                "S": "NEW API"
+              },
+              "include_split_point": {
+                "BOOL": false
+              },
+              "is_autorate_dist": {
+                "BOOL": false
+              },
+              "is_container": {
+                "BOOL": false
+              },
+              "is_dedicated": {
+                "BOOL": false
+              },
+              "lock_miles": {
+                "BOOL": false
+              },
+              "ltl": {
+                "BOOL": false
+              },
+              "on_hold": {
+                "BOOL": true
+              },
+              "operational_status": {
+                "S": "CLIN"
+              },
+              "ordered_date": {
+                "S": "20240212132953-0600"
+              },
+              "ordered_method": {
+                "S": "M"
+              },
+              "order_mode": {
+                "S": "T"
+              },
+              "order_value": {
+                "N": "0"
+              },
+              "pallets_required": {
+                "BOOL": false
+              },
+              "pieces": {
+                "N": "4"
+              },
+              "preloaded": {
+                "BOOL": false
+              },
+              "ready_to_bill": {
+                "BOOL": false
+              },
+              "reply_transmitted": {
+                "BOOL": false
+              },
+              "revenue_code_id": {
+                "S": "PRI"
+              },
+              "round_trip": {
+                "BOOL": false
+              },
+              "ship_status_to_edi": {
+                "BOOL": false
+              },
+              "status": {
+                "S": "A"
+              },
+              "stops": {
+                "L": [
+                  {
+                    "M": {
+                      "appt_required": {
+                        "BOOL": false
+                      },
+                      "company_id": {
+                        "S": "TMS"
+                      },
+                      "confirmed": {
+                        "BOOL": false
+                      },
+                      "driver_load_unload": {
+                        "S": "N"
+                      },
+                      "late_eta_colorcode": {
+                        "BOOL": false
+                      },
+                      "location_id": {
+                        "S": "TRANEAN1"
+                      },
+                      "order_sequence": {
+                        "N": "1"
+                      },
+                      "prior_uncleared_stops": {
+                        "BOOL": false
+                      },
+                      "referenceNumbers": {
+                        "L": [
+                          {
+                            "M": {
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "element_id": {
+                                "S": "128"
+                              },
+                              "partner_id": {
+                                "S": "TMS"
+                              },
+                              "reference_number": {
+                                "S": "B22182E05720"
+                              },
+                              "reference_qual": {
+                                "S": "2I"
+                              },
+                              "send_to_driver": {
+                                "BOOL": true
+                              },
+                              "version": {
+                                "S": "004010"
+                              },
+                              "__name": {
+                                "S": "referenceNumbers"
+                              },
+                              "__type": {
+                                "S": "reference_number"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "requested_service": {
+                        "BOOL": false
+                      },
+                      "sched_arrive_early": {
+                        "S": "20240213190000-0600"
+                      },
+                      "sched_arrive_late": {
+                        "S": "20240213190000-0600"
+                      },
+                      "status": {
+                        "S": "A"
+                      },
+                      "stopNotes": {
+                        "L": [
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "NA"
+                              },
+                              "comment_type": {
+                                "S": "DC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          },
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "kvallabhneni@omnilogistics.com"
+                              },
+                              "comment_type": {
+                                "S": "DC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "stop_type": {
+                        "S": "PU"
+                      },
+                      "__name": {
+                        "S": "stops"
+                      },
+                      "__type": {
+                        "S": "stop"
+                      }
+                    }
+                  },
+                  {
+                    "M": {
+                      "appt_required": {
+                        "BOOL": false
+                      },
+                      "company_id": {
+                        "S": "TMS"
+                      },
+                      "confirmed": {
+                        "BOOL": false
+                      },
+                      "driver_load_unload": {
+                        "S": "N"
+                      },
+                      "late_eta_colorcode": {
+                        "BOOL": false
+                      },
+                      "location_id": {
+                        "S": "COSTSPWA"
+                      },
+                      "order_sequence": {
+                        "N": "2"
+                      },
+                      "prior_uncleared_stops": {
+                        "BOOL": false
+                      },
+                      "requested_service": {
+                        "BOOL": false
+                      },
+                      "sched_arrive_early": {
+                        "S": "20240213190000-0600"
+                      },
+                      "sched_arrive_late": {
+                        "S": "20240213190000-0600"
+                      },
+                      "status": {
+                        "S": "A"
+                      },
+                      "stopNotes": {
+                        "L": [
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "NA"
+                              },
+                              "comment_type": {
+                                "S": "DC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          },
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "kvallabhneni@omnilogistics.com"
+                              },
+                              "comment_type": {
+                                "S": "DC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "stop_type": {
+                        "S": "SO"
+                      },
+                      "__name": {
+                        "S": "stops"
+                      },
+                      "__type": {
+                        "S": "stop"
+                      }
+                    }
+                  }
+                ]
+              },
+              "swap": {
+                "BOOL": true
+              },
+              "teams_required": {
+                "BOOL": false
+              },
+              "vessel": {
+                "S": "SONY C/O DHL SUPPLY CHAIN"
+              },
+              "weight": {
+                "N": "2800"
+              },
+              "weight_um": {
+                "S": "LB"
+              },
+              "__type": {
+                "S": "orders"
+              }
+            }
+          },
+          "Response": {
+            "M": {
+              "allow_relay": {
+                "BOOL": true
+              },
+              "billing_empty_distance": {
+                "N": "0"
+              },
+              "billing_loaded_distance": {
+                "N": "2573"
+              },
+              "bill_distance": {
+                "N": "2573"
+              },
+              "bill_distance_um": {
+                "S": "MI"
+              },
+              "blnum": {
+                "S": "336211"
+              },
+              "bol_received": {
+                "BOOL": false
+              },
+              "collection_method": {
+                "S": "P"
+              },
+              "commodity": {
+                "S": "Floor Loaded TVs"
+              },
+              "commodity_id": {
+                "S": "TVS"
+              },
+              "company_id": {
+                "S": "TMS"
+              },
+              "consignee_stop_id": {
+                "S": "zz1hmhrcj650bd8AppDB02"
+              },
+              "curr_movement_id": {
+                "S": "136753"
+              },
+              "customer": {
+                "M": {
+                  "activity_count": {
+                    "N": "0"
+                  },
+                  "address1": {
+                    "S": "921 West Bethel Rd"
+                  },
+                  "address2": {
+                    "S": "STE 201"
+                  },
+                  "add_empty_distance_occ": {
+                    "BOOL": false
+                  },
+                  "add_finance_charge": {
+                    "BOOL": false
+                  },
+                  "allow_inc_in_frt": {
+                    "BOOL": true
+                  },
+                  "average_bill": {
+                    "N": "2655.44"
+                  },
+                  "average_bill_c": {
+                    "S": "USD"
+                  },
+                  "average_bill_d": {
+                    "S": "20231219135900-0600"
+                  },
+                  "average_bill_n": {
+                    "N": "2655.44"
+                  },
+                  "average_bill_r": {
+                    "N": "1"
+                  },
+                  "average_pay_days": {
+                    "N": "44.72"
+                  },
+                  "balance": {
+                    "N": "396774.8"
+                  },
+                  "balance_c": {
+                    "S": "USD"
+                  },
+                  "balance_d": {
+                    "S": "20231219135900-0600"
+                  },
+                  "balance_n": {
+                    "N": "396774.8"
+                  },
+                  "balance_r": {
+                    "N": "1"
+                  },
+                  "billed_loads": {
+                    "N": "950"
+                  },
+                  "brokerage_filter": {
+                    "BOOL": false
+                  },
+                  "category": {
+                    "S": "OMN"
+                  },
+                  "charge_detention": {
+                    "BOOL": true
+                  },
+                  "city": {
+                    "S": "COPPELL"
+                  },
+                  "city_id": {
+                    "N": "149652"
+                  },
+                  "collections_ok": {
+                    "BOOL": false
+                  },
+                  "company_id": {
+                    "S": "TMS"
+                  },
+                  "contract_cbc": {
+                    "BOOL": false
+                  },
+                  "contract_ccc": {
+                    "BOOL": false
+                  },
+                  "contract_gbc": {
+                    "BOOL": false
+                  },
+                  "contract_gcc": {
+                    "BOOL": false
+                  },
+                  "contract_sbc": {
+                    "BOOL": false
+                  },
+                  "contract_scc": {
+                    "BOOL": false
+                  },
+                  "conversion_date": {
+                    "S": "20220707000000-0500"
+                  },
+                  "credit_application": {
+                    "BOOL": false
+                  },
+                  "credit_limit": {
+                    "N": "650000"
+                  },
+                  "credit_limit_c": {
+                    "S": "USD"
+                  },
+                  "credit_limit_d": {
+                    "S": "20220707073000-0500"
+                  },
+                  "credit_limit_n": {
+                    "N": "650000"
+                  },
+                  "credit_limit_r": {
+                    "N": "1"
+                  },
+                  "credit_status": {
+                    "S": "A"
+                  },
+                  "disable_automatic_tracking": {
+                    "BOOL": false
+                  },
+                  "enable_notifications": {
+                    "BOOL": true
+                  },
+                  "enforce_dep_dates": {
+                    "BOOL": false
+                  },
+                  "entered_date": {
+                    "S": "20220707000000-0500"
+                  },
+                  "extend_rates": {
+                    "S": "N"
+                  },
+                  "factor_receivables": {
+                    "BOOL": false
+                  },
+                  "global_detention": {
+                    "BOOL": false
+                  },
+                  "google_place_id": {
+                    "S": "ChIJu9WV6ucrTIYRoSxIa4gTRrM"
+                  },
+                  "gp_exclude": {
+                    "BOOL": false
+                  },
+                  "high_balance": {
+                    "N": "470554.32"
+                  },
+                  "high_balance_c": {
+                    "S": "USD"
+                  },
+                  "high_balance_d": {
+                    "S": "20231018120300-0500"
+                  },
+                  "high_balance_n": {
+                    "N": "470554.32"
+                  },
+                  "high_balance_r": {
+                    "N": "1"
+                  },
+                  "id": {
+                    "S": "OMNICOT8"
+                  },
+                  "include_empty_distance": {
+                    "BOOL": false
+                  },
+                  "include_fuel_surcharge": {
+                    "BOOL": false
+                  },
+                  "is_active": {
+                    "S": "Y"
+                  },
+                  "is_consignee": {
+                    "BOOL": false
+                  },
+                  "is_distribution_center": {
+                    "BOOL": false
+                  },
+                  "is_drop_yard": {
+                    "BOOL": false
+                  },
+                  "is_geocoded": {
+                    "BOOL": true
+                  },
+                  "is_pallets_required": {
+                    "BOOL": false
+                  },
+                  "is_shipper": {
+                    "BOOL": false
+                  },
+                  "is_trailer_pool_required": {
+                    "BOOL": false
+                  },
+                  "last_bill_date": {
+                    "S": "20231220000000-0600"
+                  },
+                  "last_pay_date": {
+                    "S": "20231219000000-0600"
+                  },
+                  "last_ship_date": {
+                    "S": "20231215000000-0600"
+                  },
+                  "latitude": {
+                    "N": "32.950752"
+                  },
+                  "longitude": {
+                    "N": "-97.016412"
+                  },
+                  "manual_exchange": {
+                    "BOOL": false
+                  },
+                  "name": {
+                    "S": "Omni - SLC"
+                  },
+                  "operations_rep": {
+                    "S": "bkops5"
+                  },
+                  "operations_rep2": {
+                    "S": "mayoale"
+                  },
+                  "order_count": {
+                    "N": "0"
+                  },
+                  "paid_loads": {
+                    "N": "808"
+                  },
+                  "pay_days_orders": {
+                    "N": "808"
+                  },
+                  "pd1_np_auto": {
+                    "BOOL": false
+                  },
+                  "pd1_sp_auto": {
+                    "BOOL": false
+                  },
+                  "pd2_np_auto": {
+                    "BOOL": false
+                  },
+                  "pd2_sp_auto": {
+                    "BOOL": false
+                  },
+                  "pd3_np_auto": {
+                    "BOOL": false
+                  },
+                  "pd3_sp_auto": {
+                    "BOOL": false
+                  },
+                  "pd4_np_auto": {
+                    "BOOL": false
+                  },
+                  "pd4_sp_auto": {
+                    "BOOL": false
+                  },
+                  "plc_uid": {
+                    "N": "380285"
+                  },
+                  "post_summary_dtl": {
+                    "BOOL": false
+                  },
+                  "primary_sort": {
+                    "S": "B"
+                  },
+                  "print_containers": {
+                    "BOOL": false
+                  },
+                  "revenue": {
+                    "N": "0"
+                  },
+                  "revenue_c": {
+                    "S": "USD"
+                  },
+                  "revenue_d": {
+                    "S": "20220707072800-0500"
+                  },
+                  "revenue_n": {
+                    "N": "0"
+                  },
+                  "revenue_r": {
+                    "N": "1"
+                  },
+                  "salesperson_id": {
+                    "S": "OMNISALE"
+                  },
+                  "search_city": {
+                    "S": "COPPELL"
+                  },
+                  "search_state_id": {
+                    "S": "TX"
+                  },
+                  "search_zip_code": {
+                    "S": "75019"
+                  },
+                  "service_failures_review": {
+                    "BOOL": false
+                  },
+                  "state_id": {
+                    "S": "TX"
+                  },
+                  "station": {
+                    "S": "SLC"
+                  },
+                  "summary_billing": {
+                    "S": "N"
+                  },
+                  "type_of": {
+                    "S": "C"
+                  },
+                  "use_local_mile": {
+                    "BOOL": false
+                  },
+                  "vm_part_update": {
+                    "BOOL": false
+                  },
+                  "zip_code": {
+                    "S": "75019"
+                  },
+                  "zone_id": {
+                    "S": "7"
+                  },
+                  "__name": {
+                    "S": "customer"
+                  },
+                  "__type": {
+                    "S": "customer"
+                  }
+                }
+              },
+              "customer_id": {
+                "S": "OMNICOT8"
+              },
+              "def_move_type": {
+                "S": "A"
+              },
+              "dispatch_opt": {
+                "BOOL": true
+              },
+              "enteredUser": {
+                "M": {
+                  "active_date": {
+                    "S": "20220715000000-0500"
+                  },
+                  "agent": {
+                    "BOOL": false
+                  },
+                  "all_contacts": {
+                    "BOOL": false
+                  },
+                  "available": {
+                    "BOOL": true
+                  },
+                  "company_id": {
+                    "S": "TMS"
+                  },
+                  "confirm_record": {
+                    "BOOL": true
+                  },
+                  "daily_advance_limits": {
+                    "S": "N"
+                  },
+                  "date_format": {
+                    "S": "MM/dd/yyyy"
+                  },
+                  "email_address": {
+                    "S": "apiuser@tmscorp.com"
+                  },
+                  "email_client": {
+                    "S": "M"
+                  },
+                  "email_override_company": {
+                    "BOOL": false
+                  },
+                  "enable_alerts": {
+                    "BOOL": true
+                  },
+                  "grid_insert_sort": {
+                    "BOOL": true
+                  },
+                  "id": {
+                    "S": "apiuser"
+                  },
+                  "issue_atm_cash": {
+                    "BOOL": false
+                  },
+                  "is_active": {
+                    "BOOL": true
+                  },
+                  "is_clearer": {
+                    "BOOL": false
+                  },
+                  "is_closer": {
+                    "BOOL": false
+                  },
+                  "is_dock_supervisor": {
+                    "BOOL": false
+                  },
+                  "is_dock_worker": {
+                    "BOOL": false
+                  },
+                  "move_dates": {
+                    "BOOL": false
+                  },
+                  "name": {
+                    "S": "apiuser"
+                  },
+                  "notify_occurance": {
+                    "S": "A"
+                  },
+                  "order_tran_request": {
+                    "BOOL": false
+                  },
+                  "planner": {
+                    "BOOL": false
+                  },
+                  "prompt_cont_moves": {
+                    "S": "C"
+                  },
+                  "quote_comp_act_create": {
+                    "BOOL": false
+                  },
+                  "quote_pend_act_create": {
+                    "BOOL": false
+                  },
+                  "receive_alerts": {
+                    "BOOL": false
+                  },
+                  "save_screen_sizes": {
+                    "BOOL": false
+                  },
+                  "sel_text_on_focus": {
+                    "BOOL": false
+                  },
+                  "system_tray": {
+                    "S": "P"
+                  },
+                  "time_format": {
+                    "S": "M"
+                  },
+                  "toolbar_multi_rows": {
+                    "BOOL": true
+                  },
+                  "toolbar_setting": {
+                    "S": "B"
+                  },
+                  "trailer_wash_user": {
+                    "BOOL": false
+                  },
+                  "type_agents": {
+                    "BOOL": false
+                  },
+                  "type_carrier": {
+                    "BOOL": true
+                  },
+                  "type_company_drs": {
+                    "BOOL": false
+                  },
+                  "type_owner_oper": {
+                    "BOOL": false
+                  },
+                  "waterfall_include_rates": {
+                    "BOOL": false
+                  },
+                  "web_acct_status": {
+                    "S": "E"
+                  },
+                  "web_agent": {
+                    "BOOL": false
+                  },
+                  "web_user_type": {
+                    "S": "U"
+                  },
+                  "__name": {
+                    "S": "enteredUser"
+                  },
+                  "__type": {
+                    "S": "users"
+                  }
+                }
+              },
+              "entered_user_id": {
+                "S": "apiuser"
+              },
+              "est_tolls": {
+                "N": "169.37"
+              },
+              "est_tolls_c": {
+                "S": "USD"
+              },
+              "est_tolls_d": {
+                "S": "20240213122400-0600"
+              },
+              "est_tolls_n": {
+                "N": "169.37"
+              },
+              "est_tolls_r": {
+                "N": "1"
+              },
+              "excisetax_total": {
+                "N": "0"
+              },
+              "excisetax_total_c": {
+                "S": "USD"
+              },
+              "excisetax_total_d": {
+                "S": "20240213122400-0600"
+              },
+              "excisetax_total_n": {
+                "N": "0"
+              },
+              "excisetax_total_r": {
+                "N": "1"
+              },
+              "excise_disable_update": {
+                "BOOL": false
+              },
+              "excise_taxable": {
+                "BOOL": false
+              },
+              "extra_deliveries": {
+                "N": "0"
+              },
+              "extra_pickups": {
+                "N": "0"
+              },
+              "force_assign": {
+                "BOOL": true
+              },
+              "freightGroup": {
+                "M": {
+                  "add_timestamp": {
+                    "S": "20240213122400-0600"
+                  },
+                  "add_userid": {
+                    "S": "loadmaster"
+                  },
+                  "bol_processed": {
+                    "BOOL": false
+                  },
+                  "company_id": {
+                    "S": "TMS"
+                  },
+                  "cons_plc_uid": {
+                    "N": "0"
+                  },
+                  "conveyance_owner_plc_uid": {
+                    "N": "0"
+                  },
+                  "dest_txl_uid": {
+                    "N": "899550"
+                  },
+                  "fgpXBfgs": {
+                    "L": [
+                      {
+                        "M": {
+                          "bfg_uid": {
+                            "N": "899546"
+                          },
+                          "company_id": {
+                            "S": "TMS"
+                          },
+                          "fgp_uid": {
+                            "N": "899545"
+                          },
+                          "fxb_uid": {
+                            "N": "899547"
+                          },
+                          "__name": {
+                            "S": "fgpXBfgs"
+                          },
+                          "__type": {
+                            "S": "fgp_x_bfg"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "fgp_status_code": {
+                    "S": "4"
+                  },
+                  "fgp_type_code": {
+                    "S": "DFLT"
+                  },
+                  "fgp_uid": {
+                    "N": "899545"
+                  },
+                  "lme_order_id": {
+                    "S": "0194046"
+                  },
+                  "mod_timestamp": {
+                    "S": "20240213122400-0600"
+                  },
+                  "mod_userid": {
+                    "S": "loadmaster"
+                  },
+                  "ord_uid": {
+                    "N": "0"
+                  },
+                  "orig_txl_uid": {
+                    "N": "899549"
+                  },
+                  "ship_plc_uid": {
+                    "N": "0"
+                  },
+                  "weight_uom_type_code": {
+                    "S": "LBS"
+                  },
+                  "__name": {
+                    "S": "freightGroup"
+                  },
+                  "__type": {
+                    "S": "freight_group"
+                  }
+                }
+              },
+              "freight_charge": {
+                "N": "0"
+              },
+              "freight_charge_c": {
+                "S": "USD"
+              },
+              "freight_charge_d": {
+                "S": "20240213122400-0600"
+              },
+              "freight_charge_n": {
+                "N": "0"
+              },
+              "freight_charge_r": {
+                "N": "1"
+              },
+              "hazmat": {
+                "BOOL": false
+              },
+              "high_value": {
+                "BOOL": false
+              },
+              "hold_reason": {
+                "S": "NEW API"
+              },
+              "id": {
+                "S": "0194046"
+              },
+              "include_split_point": {
+                "BOOL": false
+              },
+              "is_autorate_dist": {
+                "BOOL": false
+              },
+              "is_container": {
+                "BOOL": false
+              },
+              "is_dedicated": {
+                "BOOL": false
+              },
+              "is_local_mile": {
+                "BOOL": false
+              },
+              "loadboard": {
+                "BOOL": false
+              },
+              "lock_miles": {
+                "BOOL": false
+              },
+              "ltl": {
+                "BOOL": false
+              },
+              "movements": {
+                "L": [
+                  {
+                    "M": {
+                      "authorized": {
+                        "BOOL": true
+                      },
+                      "brokerage": {
+                        "BOOL": false
+                      },
+                      "brokerage_status": {
+                        "S": "NEWOMNI"
+                      },
+                      "company_id": {
+                        "S": "TMS"
+                      },
+                      "dest_stop_id": {
+                        "S": "zz1hmhrcj650bd8AppDB02"
+                      },
+                      "eform_rate_confirmation": {
+                        "BOOL": false
+                      },
+                      "est_tolls": {
+                        "N": "107.04"
+                      },
+                      "est_tolls_c": {
+                        "S": "USD"
+                      },
+                      "est_tolls_d": {
+                        "S": "20240213122400-0600"
+                      },
+                      "est_tolls_n": {
+                        "N": "107.04"
+                      },
+                      "est_tolls_r": {
+                        "N": "1"
+                      },
+                      "exclude_movement": {
+                        "BOOL": false
+                      },
+                      "freight_matching_override": {
+                        "BOOL": false
+                      },
+                      "fuel_distance": {
+                        "N": "2573.5"
+                      },
+                      "fuel_distance_um": {
+                        "S": "MI"
+                      },
+                      "id": {
+                        "S": "136753"
+                      },
+                      "integrated_carrier_search": {
+                        "BOOL": false
+                      },
+                      "is_container": {
+                        "BOOL": false
+                      },
+                      "is_dray": {
+                        "BOOL": false
+                      },
+                      "is_local_mile": {
+                        "BOOL": false
+                      },
+                      "loaded": {
+                        "S": "L"
+                      },
+                      "ltl": {
+                        "BOOL": false
+                      },
+                      "missed_call_sent": {
+                        "BOOL": false
+                      },
+                      "movement_type": {
+                        "S": "TKLD"
+                      },
+                      "move_distance": {
+                        "N": "2487"
+                      },
+                      "move_distance_um": {
+                        "S": "MI"
+                      },
+                      "origin_stop_id": {
+                        "S": "zz1hmhrcj5n0bd8AppDB02"
+                      },
+                      "priority": {
+                        "BOOL": false
+                      },
+                      "reminder_sent": {
+                        "BOOL": false
+                      },
+                      "require_tracking": {
+                        "BOOL": false
+                      },
+                      "reserved": {
+                        "BOOL": false
+                      },
+                      "status": {
+                        "S": "A"
+                      },
+                      "triumphpay_exclude": {
+                        "BOOL": false
+                      },
+                      "trp_uid": {
+                        "N": "899548"
+                      },
+                      "waterfall_in_progress": {
+                        "BOOL": false
+                      },
+                      "__brokerageStatusDescr": {
+                        "S": "New Omni Order"
+                      },
+                      "__name": {
+                        "S": "movements"
+                      },
+                      "__statusDescr": {
+                        "S": "Available"
+                      },
+                      "__type": {
+                        "S": "movement"
+                      }
+                    }
+                  }
+                ]
+              },
+              "on_hold": {
+                "BOOL": true
+              },
+              "operational_status": {
+                "S": "CLIN"
+              },
+              "ordered_date": {
+                "S": "20240212132900-0600"
+              },
+              "ordered_method": {
+                "S": "M"
+              },
+              "order_mode": {
+                "S": "T"
+              },
+              "order_value": {
+                "N": "0"
+              },
+              "order_value_c": {
+                "S": "USD"
+              },
+              "order_value_d": {
+                "S": "20240213122400-0600"
+              },
+              "order_value_n": {
+                "N": "0"
+              },
+              "order_value_r": {
+                "N": "1"
+              },
+              "otherchargetotal": {
+                "N": "0"
+              },
+              "otherchargetotal_c": {
+                "S": "USD"
+              },
+              "otherchargetotal_d": {
+                "S": "20240213122400-0600"
+              },
+              "otherchargetotal_n": {
+                "N": "0"
+              },
+              "otherchargetotal_r": {
+                "N": "1"
+              },
+              "pallets_required": {
+                "BOOL": false
+              },
+              "pieces": {
+                "N": "4"
+              },
+              "preloaded": {
+                "BOOL": false
+              },
+              "ready_to_bill": {
+                "BOOL": false
+              },
+              "reply_transmitted": {
+                "BOOL": false
+              },
+              "revenue_code_id": {
+                "S": "PRI"
+              },
+              "round_trip": {
+                "BOOL": false
+              },
+              "shipper_stop_id": {
+                "S": "zz1hmhrcj5n0bd8AppDB02"
+              },
+              "ship_status_to_edi": {
+                "BOOL": false
+              },
+              "status": {
+                "S": "A"
+              },
+              "stops": {
+                "L": [
+                  {
+                    "M": {
+                      "address": {
+                        "S": "360 MURRAY HILL PARKWAY"
+                      },
+                      "appt_required": {
+                        "BOOL": true
+                      },
+                      "city_id": {
+                        "N": "96787"
+                      },
+                      "city_name": {
+                        "S": "EAST RUTHERFORD"
+                      },
+                      "company_id": {
+                        "S": "TMS"
+                      },
+                      "confirmed": {
+                        "BOOL": false
+                      },
+                      "driver_load_unload": {
+                        "S": "N"
+                      },
+                      "id": {
+                        "S": "zz1hmhrcj5n0bd8AppDB02"
+                      },
+                      "late_eta_colorcode": {
+                        "BOOL": false
+                      },
+                      "latitude": {
+                        "N": "40.819585"
+                      },
+                      "location_id": {
+                        "S": "TRANEAN1"
+                      },
+                      "location_name": {
+                        "S": "TRANS WORLD MARKETING"
+                      },
+                      "longitude": {
+                        "N": "-74.091419"
+                      },
+                      "manifest_fgp_uid": {
+                        "N": "899545"
+                      },
+                      "movement_id": {
+                        "S": "136753"
+                      },
+                      "movement_sequence": {
+                        "N": "1"
+                      },
+                      "order_id": {
+                        "S": "0194046"
+                      },
+                      "order_sequence": {
+                        "N": "1"
+                      },
+                      "payment_code_reviewed": {
+                        "BOOL": false
+                      },
+                      "prior_uncleared_stops": {
+                        "BOOL": false
+                      },
+                      "referenceNumbers": {
+                        "L": [
+                          {
+                            "M": {
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "description": {
+                                "S": "Tracking Number"
+                              },
+                              "element_id": {
+                                "S": "128"
+                              },
+                              "id": {
+                                "S": "zz1hmhrcj5v0bd8AppDB02"
+                              },
+                              "partner_id": {
+                                "S": "TMS"
+                              },
+                              "reference_number": {
+                                "S": "B22182E05720"
+                              },
+                              "reference_qual": {
+                                "S": "2I"
+                              },
+                              "send_to_driver": {
+                                "BOOL": true
+                              },
+                              "stop_id": {
+                                "S": "zz1hmhrcj5n0bd8AppDB02"
+                              },
+                              "version": {
+                                "S": "004010"
+                              },
+                              "__name": {
+                                "S": "referenceNumbers"
+                              },
+                              "__type": {
+                                "S": "reference_number"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "requested_service": {
+                        "BOOL": false
+                      },
+                      "sched_arrive_early": {
+                        "S": "20240213190000-0600"
+                      },
+                      "sched_arrive_late": {
+                        "S": "20240213190000-0600"
+                      },
+                      "state": {
+                        "S": "NJ"
+                      },
+                      "status": {
+                        "S": "A"
+                      },
+                      "stopNotes": {
+                        "L": [
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "NA"
+                              },
+                              "comment_type": {
+                                "S": "DC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "entered_user_id": {
+                                "S": "loadmaster"
+                              },
+                              "id": {
+                                "S": "zz1hmhrcj5t0bd8AppDB02"
+                              },
+                              "sequence": {
+                                "N": "1"
+                              },
+                              "stop_id": {
+                                "S": "zz1hmhrcj5n0bd8AppDB02"
+                              },
+                              "system_added": {
+                                "BOOL": false
+                              },
+                              "__commentTypeDescr": {
+                                "S": "Dispatch comment"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          },
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "kvallabhneni@omnilogistics.com"
+                              },
+                              "comment_type": {
+                                "S": "DC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "entered_user_id": {
+                                "S": "loadmaster"
+                              },
+                              "id": {
+                                "S": "zz1hmhrcj5u0bd8AppDB02"
+                              },
+                              "sequence": {
+                                "N": "2"
+                              },
+                              "stop_id": {
+                                "S": "zz1hmhrcj5n0bd8AppDB02"
+                              },
+                              "system_added": {
+                                "BOOL": false
+                              },
+                              "__commentTypeDescr": {
+                                "S": "Dispatch comment"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          },
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "OMNICOT8: THIS IS A DEDICATED TRUCK LOAD- any tampering, braking of the seal, unauthorized stops will result in rate reductions."
+                              },
+                              "comment_type": {
+                                "S": "DC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "entered_user_id": {
+                                "S": "loadmaster"
+                              },
+                              "id": {
+                                "S": "zz1hmhrck550bd8AppDB02"
+                              },
+                              "order_id": {
+                                "S": "0194046"
+                              },
+                              "sequence": {
+                                "N": "3"
+                              },
+                              "stop_id": {
+                                "S": "zz1hmhrcj5n0bd8AppDB02"
+                              },
+                              "system_added": {
+                                "BOOL": true
+                              },
+                              "__commentTypeDescr": {
+                                "S": "Dispatch comment"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          },
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "OMNICOT8: MACROPOINT IS REQUIRED ON THIS SHIPMENT OR ELSE RATE REDUCTIONS WILL OCCUR."
+                              },
+                              "comment_type": {
+                                "S": "HC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "entered_user_id": {
+                                "S": "loadmaster"
+                              },
+                              "id": {
+                                "S": "zz1hmhrck570bd8AppDB02"
+                              },
+                              "order_id": {
+                                "S": "0194046"
+                              },
+                              "sequence": {
+                                "N": "4"
+                              },
+                              "stop_id": {
+                                "S": "zz1hmhrcj5n0bd8AppDB02"
+                              },
+                              "system_added": {
+                                "BOOL": true
+                              },
+                              "__commentTypeDescr": {
+                                "S": "Hot comment"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          },
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "OMNICOT8: FREIGHT NEEDS TO BE SEALED AT SHIPPER\n\nPICTURES NEEDED OF THE FOLLOWING BEFORE THE DRIVER DEPARTS\n\nPICTURE OF SEAL\n\nPICTURE OF SEAL # NOTED ON THE BOL.\n\nFOOD GRADE  DEDICATED TRUCK"
+                              },
+                              "comment_type": {
+                                "S": "HC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "entered_user_id": {
+                                "S": "loadmaster"
+                              },
+                              "id": {
+                                "S": "zz1hmhrck590bd8AppDB02"
+                              },
+                              "order_id": {
+                                "S": "0194046"
+                              },
+                              "sequence": {
+                                "N": "5"
+                              },
+                              "stop_id": {
+                                "S": "zz1hmhrcj5n0bd8AppDB02"
+                              },
+                              "system_added": {
+                                "BOOL": true
+                              },
+                              "__commentTypeDescr": {
+                                "S": "Hot comment"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          },
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "OMNICOT8: LOAD MUST BE SEALED IN TRANSIT. SEAL CAN ONLY BE REMOVED BY CONSIGNEE. FAILURE TO DO SO MAY RESULT IN CLAIM FOR PRODUCT, FREIGHT, AND ASSOCIATED DAMAGES."
+                              },
+                              "comment_type": {
+                                "S": "DC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "entered_user_id": {
+                                "S": "loadmaster"
+                              },
+                              "id": {
+                                "S": "zz1hmhrck5b0bd8AppDB02"
+                              },
+                              "order_id": {
+                                "S": "0194046"
+                              },
+                              "sequence": {
+                                "N": "6"
+                              },
+                              "stop_id": {
+                                "S": "zz1hmhrcj5n0bd8AppDB02"
+                              },
+                              "system_added": {
+                                "BOOL": true
+                              },
+                              "__commentTypeDescr": {
+                                "S": "Dispatch comment"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          },
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "OMNICOT8: POD & LUMPER RECEIPTS MUST BE SUBMITTED WITHIN 48 HOURS IN ORDER TO BE REIMBURSED. POD MUST INCLUDE SIGNATURE AND IN/OUT TIMES FROM THE RECEIVER FOR ACCESSORIAL CHARGES TO BE APPROVED. DRIVER MUST CONTACT LIVE LOGISTICS IF BEING DETAINED AT THE 1 HOUR AND 30 MINUTE MARK AFTER THE APPOINTMENT TIME TO HAVE DETENTION APPROVED. DRIVER MUST ACCEPT P44 OR MACROPOINT TRACKING."
+                              },
+                              "comment_type": {
+                                "S": "DC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "entered_user_id": {
+                                "S": "loadmaster"
+                              },
+                              "id": {
+                                "S": "zz1hmhrck5d0bd8AppDB02"
+                              },
+                              "order_id": {
+                                "S": "0194046"
+                              },
+                              "sequence": {
+                                "N": "7"
+                              },
+                              "stop_id": {
+                                "S": "zz1hmhrcj5n0bd8AppDB02"
+                              },
+                              "system_added": {
+                                "BOOL": true
+                              },
+                              "__commentTypeDescr": {
+                                "S": "Dispatch comment"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "stop_type": {
+                        "S": "PU"
+                      },
+                      "txl_uid": {
+                        "N": "899549"
+                      },
+                      "zip_code": {
+                        "S": "07073"
+                      },
+                      "zone_id": {
+                        "S": "0"
+                      },
+                      "__groupingKey": {
+                        "S": "PU360MURRAYHILLPARKWAYEASTRUTHERFORDNJ07073"
+                      },
+                      "__loadUnloadDescr": {
+                        "S": "No driver loading or unload"
+                      },
+                      "__name": {
+                        "S": "stops"
+                      },
+                      "__statusDescr": {
+                        "S": "Available"
+                      },
+                      "__type": {
+                        "S": "stop"
+                      },
+                      "__typeDescr": {
+                        "S": "Pickup"
+                      },
+                      "__zoneDescr": {
+                        "S": "Zone 0"
+                      }
+                    }
+                  },
+                  {
+                    "M": {
+                      "address": {
+                        "S": "12020 N NEWPORT HWY"
+                      },
+                      "appt_required": {
+                        "BOOL": false
+                      },
+                      "city_id": {
+                        "N": "173503"
+                      },
+                      "city_name": {
+                        "S": "SPOKANE"
+                      },
+                      "company_id": {
+                        "S": "TMS"
+                      },
+                      "confirmed": {
+                        "BOOL": false
+                      },
+                      "driver_load_unload": {
+                        "S": "N"
+                      },
+                      "id": {
+                        "S": "zz1hmhrcj650bd8AppDB02"
+                      },
+                      "late_eta_colorcode": {
+                        "BOOL": false
+                      },
+                      "location_id": {
+                        "S": "COSTSPWA"
+                      },
+                      "location_name": {
+                        "S": "COSTCO STORE# 1298"
+                      },
+                      "manifest_fgp_uid": {
+                        "N": "899545"
+                      },
+                      "movement_id": {
+                        "S": "136753"
+                      },
+                      "movement_sequence": {
+                        "N": "2"
+                      },
+                      "move_dist_from_previous": {
+                        "N": "2487"
+                      },
+                      "move_dist_from_previous_um": {
+                        "S": "MI"
+                      },
+                      "order_id": {
+                        "S": "0194046"
+                      },
+                      "order_sequence": {
+                        "N": "2"
+                      },
+                      "payment_code_reviewed": {
+                        "BOOL": false
+                      },
+                      "prior_uncleared_stops": {
+                        "BOOL": false
+                      },
+                      "rate_dist_from_previous": {
+                        "N": "2573"
+                      },
+                      "rate_dist_from_previous_um": {
+                        "S": "MI"
+                      },
+                      "requested_service": {
+                        "BOOL": false
+                      },
+                      "sched_arrive_early": {
+                        "S": "20240213190000-0600"
+                      },
+                      "sched_arrive_late": {
+                        "S": "20240213190000-0600"
+                      },
+                      "state": {
+                        "S": "WA"
+                      },
+                      "status": {
+                        "S": "A"
+                      },
+                      "stopNotes": {
+                        "L": [
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "NA"
+                              },
+                              "comment_type": {
+                                "S": "DC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "entered_user_id": {
+                                "S": "loadmaster"
+                              },
+                              "id": {
+                                "S": "zz1hmhrcj6a0bd8AppDB02"
+                              },
+                              "sequence": {
+                                "N": "1"
+                              },
+                              "stop_id": {
+                                "S": "zz1hmhrcj650bd8AppDB02"
+                              },
+                              "system_added": {
+                                "BOOL": false
+                              },
+                              "__commentTypeDescr": {
+                                "S": "Dispatch comment"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          },
+                          {
+                            "M": {
+                              "comments": {
+                                "S": "kvallabhneni@omnilogistics.com"
+                              },
+                              "comment_type": {
+                                "S": "DC"
+                              },
+                              "company_id": {
+                                "S": "TMS"
+                              },
+                              "entered_user_id": {
+                                "S": "loadmaster"
+                              },
+                              "id": {
+                                "S": "zz1hmhrcj6b0bd8AppDB02"
+                              },
+                              "sequence": {
+                                "N": "2"
+                              },
+                              "stop_id": {
+                                "S": "zz1hmhrcj650bd8AppDB02"
+                              },
+                              "system_added": {
+                                "BOOL": false
+                              },
+                              "__commentTypeDescr": {
+                                "S": "Dispatch comment"
+                              },
+                              "__name": {
+                                "S": "stopNotes"
+                              },
+                              "__type": {
+                                "S": "stop_note"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "stop_type": {
+                        "S": "SO"
+                      },
+                      "txl_uid": {
+                        "N": "899550"
+                      },
+                      "zip_code": {
+                        "S": "99218"
+                      },
+                      "zone_id": {
+                        "S": "9"
+                      },
+                      "__groupingKey": {
+                        "S": "SO12020NNEWPORTHWYSPOKANEWA99218"
+                      },
+                      "__loadUnloadDescr": {
+                        "S": "No driver loading or unload"
+                      },
+                      "__name": {
+                        "S": "stops"
+                      },
+                      "__statusDescr": {
+                        "S": "Available"
+                      },
+                      "__type": {
+                        "S": "stop"
+                      },
+                      "__typeDescr": {
+                        "S": "Delivery"
+                      },
+                      "__zoneDescr": {
+                        "S": "Zone 9"
+                      }
+                    }
+                  }
+                ]
+              },
+              "swap": {
+                "BOOL": true
+              },
+              "teams_required": {
+                "BOOL": false
+              },
+              "totalcharge_and_excisetax": {
+                "N": "0"
+              },
+              "totalcharge_and_excisetax_c": {
+                "S": "USD"
+              },
+              "totalcharge_and_excisetax_d": {
+                "S": "20240213122400-0600"
+              },
+              "totalcharge_and_excisetax_n": {
+                "N": "0"
+              },
+              "totalcharge_and_excisetax_r": {
+                "N": "1"
+              },
+              "total_charge": {
+                "N": "0"
+              },
+              "total_charge_c": {
+                "S": "USD"
+              },
+              "total_charge_d": {
+                "S": "20240213122400-0600"
+              },
+              "total_charge_n": {
+                "N": "0"
+              },
+              "total_charge_r": {
+                "N": "1"
+              },
+              "vessel": {
+                "S": "SONY C/O DHL SUPPLY"
+              },
+              "weight": {
+                "N": "2800"
+              },
+              "weight_um": {
+                "S": "LB"
+              },
+              "__collectionMethodDescr": {
+                "S": "Prepaid"
+              },
+              "__revenueTypeDescr": {
+                "S": "Primary Carrier"
+              },
+              "__statusDescr": {
+                "S": "Available"
+              },
+              "__type": {
+                "S": "orders"
+              }
+            }
+          },
+          "RetryCount": {
+            "N": "1"
+          },
+          "Status": {
+            "S": "SENT"
+          },
+          "TableStatuses": {
+            "M": {
+              "5346018": {
+                "M": {
+                  "tbl_ConsolStopHeaders": {
+                    "S": "READY"
+                  },
+                  "tbl_ConsolStopItems": {
+                    "S": "READY"
+                  },
+                  "tbl_References": {
+                    "S": "READY"
+                  },
+                  "tbl_ShipmentDesc": {
+                    "S": "READY"
+                  },
+                  "tbl_ShipmentHeader": {
+                    "S": "READY"
+                  },
+                  "tbl_TrackingNotes": {
+                    "S": "READY"
+                  }
+                }
+              },
+              "5346019": {
+                "M": {
+                  "tbl_ConsolStopHeaders": {
+                    "S": "READY"
+                  },
+                  "tbl_ConsolStopItems": {
+                    "S": "READY"
+                  },
+                  "tbl_References": {
+                    "S": "READY"
+                  },
+                  "tbl_ShipmentDesc": {
+                    "S": "READY"
+                  },
+                  "tbl_ShipmentHeader": {
+                    "S": "READY"
+                  },
+                  "tbl_TrackingNotes": {
+                    "S": "READY"
+                  }
+                }
+              },
+              "5346020": {
+                "M": {
+                  "tbl_ConsolStopHeaders": {
+                    "S": "READY"
+                  },
+                  "tbl_ConsolStopItems": {
+                    "S": "READY"
+                  },
+                  "tbl_References": {
+                    "S": "READY"
+                  },
+                  "tbl_ShipmentDesc": {
+                    "S": "READY"
+                  },
+                  "tbl_ShipmentHeader": {
+                    "S": "READY"
+                  },
+                  "tbl_TrackingNotes": {
+                    "S": "READY"
+                  }
+                }
+              },
+              "5346021": {
+                "M": {
+                  "tbl_ConsolStopHeaders": {
+                    "S": "READY"
+                  },
+                  "tbl_ConsolStopItems": {
+                    "S": "READY"
+                  },
+                  "tbl_References": {
+                    "S": "READY"
+                  },
+                  "tbl_ShipmentDesc": {
+                    "S": "READY"
+                  },
+                  "tbl_ShipmentHeader": {
+                    "S": "READY"
+                  },
+                  "tbl_TrackingNotes": {
+                    "S": "READY"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "OldImage": {
+          "Status": {
+            "S": "FAILED"
+          },
+          "LastUpdateBy": {
+            "S": "omni-204-mt-console-processor-dev"
+          },
+          "LastUpdatedAt": {
+            "S": "2024-02-09T06:34:05-06:00"
+          },
+          "RetryCount": {
+            "N": "6"
+          },
+          "CreatedAt": {
+            "S": "2024-02-09T06:28:44-06:00"
+          },
+          "TableStatuses": {
+            "M": {
+              "5345923": {
+                "M": {
+                  "tbl_ShipmentHeader": {
+                    "S": "READY"
+                  },
+                  "tbl_TrackingNotes": {
+                    "S": "READY"
+                  },
+                  "tbl_ShipmentDesc": {
+                    "S": "READY"
+                  },
+                  "tbl_ConsolStopItems": {
+                    "S": "READY"
+                  },
+                  "tbl_References": {
+                    "S": "PENDING"
+                  }
+                }
+              },
+              "5345925": {
+                "M": {
+                  "tbl_ShipmentHeader": {
+                    "S": "READY"
+                  },
+                  "tbl_TrackingNotes": {
+                    "S": "READY"
+                  },
+                  "tbl_ShipmentDesc": {
+                    "S": "READY"
+                  },
+                  "tbl_ConsolStopItems": {
+                    "S": "READY"
+                  },
+                  "tbl_References": {
+                    "S": "READY"
+                  }
+                }
+              }
+            }
+          },
+          "ResetCount": {
+            "N": "1"
+          },
+          "ConsolNo": {
+            "S": "336178"
+          }
+        },
+        "SequenceNumber": "38304600000000083136118969",
+        "SizeBytes": 883,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/live-204-consol-status-dev/stream/2024-02-05T15:31:44.672"
+    }
+  ]
+}

@@ -86,17 +86,19 @@ function getPowerBrokerCode(reftypeId) {
 }
 
 function generateReferenceNumbers({ references }) {
-  return _.map(references, (ref) => ({
-    __type: 'reference_number',
-    __name: 'referenceNumbers',
-    company_id: 'TMS',
-    element_id: '128',
-    partner_id: 'TMS',
-    reference_number: _.get(ref, 'ReferenceNo', 'NA'),
-    reference_qual: getPowerBrokerCode(_.get(ref, 'FK_RefTypeId', 'NA')),
-    send_to_driver: true,
-    version: '004010',
-  }));
+  return getUniqueObjects(
+    _.map(references, (ref) => ({
+      __type: 'reference_number',
+      __name: 'referenceNumbers',
+      company_id: 'TMS',
+      element_id: '128',
+      partner_id: 'TMS',
+      reference_number: _.get(ref, 'ReferenceNo', 'NA'),
+      reference_qual: getPowerBrokerCode(_.get(ref, 'FK_RefTypeId', 'NA')),
+      send_to_driver: true,
+      version: '004010',
+    }))
+  );
 }
 
 function formatTimestamp(eventdatetime) {
@@ -138,37 +140,125 @@ async function generateStop(
   stopType,
   locationId,
   stateData,
-  confirmationCostData,
   type,
-  userData
+  userData,
+  shipmentAparData
 ) {
+  const { schedArriveEarly, schedArriveLate, timeZone, state } = await processStopDataNonConsol(
+    stopType,
+    shipmentHeader,
+    stateData
+  );
+
+  const timeZoneMaster = await queryDynamoDB(
+    getParamsByTableName('', 'omni-wt-rt-timezone-master', timeZone)
+  );
+
+  const stopData = {
+    __type: 'stop',
+    __name: 'stops',
+    company_id: 'TMS',
+    appt_required: false,
+    confirmed: false,
+    driver_load_unload: 'N',
+    location_id: locationId,
+    sched_arrive_early: await getFormattedDateTime(schedArriveEarly, state, timeZoneMaster),
+    sched_arrive_late: await getFormattedDateTime(schedArriveLate, state, timeZoneMaster),
+    late_eta_colorcode: false,
+    status: 'A',
+    order_sequence: orderSequence,
+    stop_type: stopType,
+    requested_service: false,
+    prior_uncleared_stops: false,
+    stopNotes: [
+      {
+        __type: 'stop_note',
+        __name: 'stopNotes',
+        company_id: 'TMS',
+        comment_type: 'DC',
+        comments: getNote(stateData, type),
+      },
+    ],
+    referenceNumbers: type === 'shipper' ? generateReferenceNumbers({ references }) : [],
+  };
+
+  if (type === 'shipper') {
+    const userEmail = _.get(userData, 'UserEmail', '') || 'NA';
+    const equipmentCode = _.get(shipmentHeader, 'FK_EquipmentCode', '') || 'NA';
+    const total = _.get(shipmentAparData, 'Total', 0);
+
+    stopData.stopNotes.push(
+      {
+        __type: 'stop_note',
+        __name: 'stopNotes',
+        company_id: 'TMS',
+        comment_type: 'OC',
+        comments: userEmail,
+      },
+      {
+        __type: 'stop_note',
+        __name: 'stopNotes',
+        company_id: 'TMS',
+        comment_type: 'OC',
+        comments: equipmentCode,
+      },
+      {
+        __type: 'stop_note',
+        __name: 'stopNotes',
+        company_id: 'TMS',
+        comment_type: 'OC',
+        comments: total,
+      }
+    );
+  }
+
+  return stopData;
+}
+
+async function processStopDataNonConsol(stopType, shipmentHeader, stateData) {
+  let pickupZip = '';
+  let deliveryZip = '';
   let schedArriveEarly = '';
   let schedArriveLate = '';
   let timeZone = '';
   let state = '';
+
   if (stopType === 'PU') {
-    // For Pickup (PU)
-    const pickupZip = _.get(stateData, 'ShipZip', '');
-    console.info('🚀 ~ file: helper.js:131 ~ pickupZip:', pickupZip);
+    pickupZip = _.get(stateData, 'ShipZip', '');
     schedArriveEarly = _.get(shipmentHeader, 'ReadyDateTime', '');
     schedArriveLate = _.get(shipmentHeader, 'ReadyDateTimeRange', '');
     timeZone = await getTimeZoneCode(pickupZip);
     state = _.get(stateData, 'FK_ShipState', '');
   } else if (stopType === 'SO') {
-    // For Delivery (SO)
-    const deliveryZip = _.get(stateData, 'ConZip', '');
-    console.info('🚀 ~ file: helper.js:139 ~ deliveryZip:', deliveryZip);
+    deliveryZip = _.get(stateData, 'ConZip', '');
     schedArriveEarly = _.get(shipmentHeader, 'ScheduledDateTime', '');
-    console.info('🙂 -> file: helper.js:150 -> schedArriveEarly:', schedArriveEarly);
     schedArriveLate = _.get(shipmentHeader, 'ScheduledDateTimeRange', '');
-    console.info('🙂 -> file: helper.js:152 -> schedArriveLate:', schedArriveLate);
     timeZone = await getTimeZoneCode(deliveryZip);
     state = _.get(stateData, 'FK_ConState', '');
   }
 
-  const timezoneParams = getParamsByTableName('', 'omni-wt-rt-timezone-master', timeZone);
-  console.info('🙂 -> file: helper.js:161 -> timezoneParams:', timezoneParams);
-  const timeZoneMaster = await queryDynamoDB(timezoneParams);
+  return { schedArriveEarly, schedArriveLate, timeZone, state };
+}
+
+async function generateStopforConsole(
+  shipmentHeaderData,
+  references,
+  orderSequence,
+  stopType,
+  locationId,
+  confirmationCostData,
+  type,
+  userData,
+  shipmentAparConsoleData
+) {
+  const { schedArriveEarly, schedArriveLate, timeZone, state } = await processStopData(
+    stopType,
+    confirmationCostData
+  );
+
+  const timeZoneMaster = await queryDynamoDB(
+    getParamsByTableName('', 'omni-wt-rt-timezone-master', timeZone)
+  );
 
   const stopData = {
     __type: 'stop',
@@ -195,19 +285,65 @@ async function generateStop(
         comments: getNote(confirmationCostData, type),
       },
     ],
+    referenceNumbers: type === 'shipper' ? generateReferenceNumbers({ references }) : [],
   };
 
   if (type === 'shipper') {
-    _.set(stopData, 'stopNotes[1]', {
-      __type: 'stop_note',
-      __name: 'stopNotes',
-      company_id: 'TMS',
-      comment_type: 'OC',
-      comments: _.get(userData, 'UserEmail', '') === '' ? 'NA' : _.get(userData, 'UserEmail'),
-    });
-    _.set(stopData, 'referenceNumbers', generateReferenceNumbers({ references }));
+    const userEmail = _.get(userData, 'UserEmail', '') || 'NA';
+    const equipmentCode = _.get(shipmentHeaderData, 'equipmentCode', '') || 'NA';
+    const total = sumNumericValues(shipmentAparConsoleData, 'Total');
+
+    stopData.stopNotes.push(
+      {
+        __type: 'stop_note',
+        __name: 'stopNotes',
+        company_id: 'TMS',
+        comment_type: 'OC',
+        comments: userEmail,
+      },
+      {
+        __type: 'stop_note',
+        __name: 'stopNotes',
+        company_id: 'TMS',
+        comment_type: 'OC',
+        comments: equipmentCode,
+      },
+      {
+        __type: 'stop_note',
+        __name: 'stopNotes',
+        company_id: 'TMS',
+        comment_type: 'OC',
+        comments: total,
+      }
+    );
   }
+
   return stopData;
+}
+
+async function processStopData(stopType, confirmationCostData) {
+  let pickupZip = '';
+  let deliveryZip = '';
+  let schedArriveEarly = '';
+  let schedArriveLate = '';
+  let timeZone = '';
+  let state = '';
+
+  if (stopType === 'PU') {
+    pickupZip = _.get(confirmationCostData, 'ShipZip', '');
+    schedArriveEarly = _.get(confirmationCostData, 'PickupDateTime', '');
+    schedArriveLate = _.get(confirmationCostData, 'PickupTimeRange', '');
+    timeZone = await getTimeZoneCode(pickupZip);
+    state = _.get(confirmationCostData, 'FK_ShipState', '');
+  } else if (stopType === 'SO') {
+    deliveryZip = _.get(confirmationCostData, 'ConZip', '');
+    schedArriveEarly = _.get(confirmationCostData, 'DeliveryDateTime', '');
+    schedArriveLate = _.get(confirmationCostData, 'DeliveryTimeRange', '');
+    timeZone = await getTimeZoneCode(deliveryZip);
+    state = _.get(confirmationCostData, 'FK_ConState', '');
+  }
+
+  return { schedArriveEarly, schedArriveLate, timeZone, state };
 }
 
 function getNote(confirmationCostData, type) {
@@ -702,6 +838,30 @@ async function getHighValue({ shipmentAparConsoleData: aparData, type = 'high_va
   return sumByInsurance;
 }
 
+async function getShipmentHeaderData({ shipmentAparConsoleData: aparData }) {
+  const data = aparData[0];
+  const shipmentHeaderParams = {
+    TableName: SHIPMENT_HEADER_TABLE,
+    KeyConditionExpression: 'PK_OrderNo = :orderNo',
+    ExpressionAttributeValues: {
+      ':orderNo': _.get(data, 'FK_OrderNo'),
+    },
+  };
+  console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentHeaderParams);
+
+  const queryResult = await queryDynamoDB(shipmentHeaderParams);
+  const items = _.get(queryResult, 'Items', []);
+
+  // Extracting FK_EquipmentCode, FK_ServiceLevelId, and OrderDate from the first object
+  const firstItem = items.length > 0 ? items[0] : null;
+  const equipmentCode = _.get(firstItem, 'FK_EquipmentCode');
+  const serviceLevelId = _.get(firstItem, 'FK_ServiceLevelId');
+  const Housebill = _.get(firstItem, 'Housebill');
+
+  const headerData = { equipmentCode, serviceLevelId, Housebill };
+  return headerData;
+}
+
 function getPieces({ shipmentDesc }) {
   return _.sumBy(shipmentDesc, (data) => parseInt(_.get(data, 'Piece', 0), 10));
 }
@@ -894,30 +1054,64 @@ async function fetchDataFromTablesList(CONSOL_NO) {
   }
 }
 
-async function populateStops(consolStopHeaders, references, users) {
+async function populateStops(
+  consolStopHeaders,
+  references,
+  users,
+  shipmentHeader,
+  shipmentDesc,
+  shipmentApar
+) {
   const stops = [];
 
-  // Fetch location IDs for stops
   const locationIds = await fetchLocationIds(consolStopHeaders);
 
-  for (let i = 0; i < consolStopHeaders.length; i++) {
-    const stopHeader = consolStopHeaders[i];
-    const locationId = locationIds[i];
-
-    console.info('ConsolStopPickupOrDelivery', stopHeader.ConsolStopPickupOrDelivery);
-
-    let stoptype;
-
-    const isPickup = stopHeader.ConsolStopPickupOrDelivery;
-
-    if (isPickup === 'false') {
-      stoptype = 'PU';
-    } else {
-      stoptype = 'SO';
-    }
+  for (const [index, stopHeader] of consolStopHeaders.entries()) {
+    const locationId = locationIds[index];
+    const isPickup = stopHeader.ConsolStopPickupOrDelivery === 'false';
+    const stoptype = isPickup ? 'PU' : 'SO';
     const timeZoneCode = await getTimeZoneCode(stopHeader.ConsolStopZip);
-    console.info('🚀 ~ file: helper.js:919 ~ populateStops ~ timeZoneCode:', timeZoneCode);
-    console.info('🚀 ~ file: helper.js:786 ~ stoptype:', stoptype);
+
+    const referenceNumbersArray = [
+      generateReferenceNumbers({ references }),
+      populateHousebillNumbers(shipmentHeader, shipmentDesc),
+    ];
+
+    const stopNotes = [
+      {
+        __type: 'stop_note',
+        __name: 'stopNotes',
+        company_id: 'TMS',
+        comment_type: 'DC',
+        comments: stopHeader.ConsolStopNotes || 'NA',
+      },
+      {
+        __type: 'stop_note',
+        __name: 'stopNotes',
+        company_id: 'TMS',
+        comment_type: 'OC',
+        comments: users[0]?.UserEmail || 'NA',
+      },
+    ];
+
+    if (stoptype === 'PU') {
+      stopNotes.push(
+        {
+          __type: 'stop_note',
+          __name: 'stopNotes',
+          company_id: 'TMS',
+          comment_type: 'OC',
+          comments: shipmentHeader[0]?.FK_EquipmentCode || 'NA',
+        },
+        {
+          __type: 'stop_note',
+          __name: 'stopNotes',
+          company_id: 'TMS',
+          comment_type: 'OC',
+          comments: sumNumericValues(shipmentApar, 'Total'),
+        }
+      );
+    }
 
     const stop = {
       __type: 'stop',
@@ -931,37 +1125,38 @@ async function populateStops(consolStopHeaders, references, users) {
       sched_arrive_early: await calculateSchedArriveEarly(stopHeader, timeZoneCode),
       sched_arrive_late: await calculateSchedArriveLate(stopHeader, timeZoneCode),
       status: 'A',
-      order_sequence: parseInt(_.get(stopHeader, 'ConsolStopNumber', 0), 10) + 1,
+      order_sequence: parseInt(stopHeader.ConsolStopNumber || 0, 10) + 1,
       stop_type: stoptype,
       requested_service: false,
       prior_uncleared_stops: false,
-      stopNotes: [
-        {
-          __type: 'stop_note',
-          __name: 'stopNotes',
-          company_id: 'TMS',
-          comment_type: 'DC',
-          comments:
-            _.get(stopHeader, 'ConsolStopNotes', '') === ''
-              ? 'NA'
-              : _.get(stopHeader, 'ConsolStopNotes'),
-        },
-        {
-          __type: 'stop_note',
-          __name: 'stopNotes',
-          company_id: 'TMS',
-          comment_type: 'DC',
-          comments: _.get(users, '[0].UserEmail', '') === '' ? 'NA' : _.get(users, '[0].UserEmail'),
-        },
-      ],
+      stopNotes,
     };
+
     if (stoptype === 'PU') {
-      _.set(stop, 'referenceNumbers', generateReferenceNumbers({ references }));
+      stop.referenceNumbers = [].concat(...referenceNumbersArray);
     }
+
     stops.push(stop);
   }
 
-  return stops.sort((a, b) => _.get(a, 'order_sequence') - _.get(b, 'order_sequence'));
+  return stops.sort((a, b) => a.order_sequence - b.order_sequence);
+}
+
+function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
+  return _.map(shipmentHeader, (header) => {
+    const matchingDesc = _.find(shipmentDesc, (desc) => desc.FK_OrderNo === header.PK_OrderNo);
+    return {
+      __type: 'reference_number',
+      __name: 'referenceNumbers',
+      company_id: 'TMS',
+      element_id: '128',
+      pieces: _.get(matchingDesc, 'Pieces', 0),
+      weight: _.get(matchingDesc, 'Weight', 0),
+      reference_number: _.get(header, 'Housebill', 0),
+      reference_qual: 'MB',
+      send_to_driver: false,
+    };
+  });
 }
 
 async function fetchLocationIds(stopsData) {
@@ -1123,6 +1318,94 @@ function getUniqueObjects(array) {
   return Array.from(uniqueSet, JSON.parse);
 }
 
+// Define the mapping function
+function mapOrderTypeToMcLeod(fkEquipmentCode) {
+  const orderTypeMapping = {
+    '22 BOX': 'BOX',
+    '24 BOX': 'BOX',
+    '26 BOX': 'BOX',
+    '2M BOX': 'BOX',
+    '48': 'V',
+    '48 FT AIR': 'V',
+    '53': 'V',
+    '53 FT AIR': 'V',
+    'CARGO VAN': 'V',
+    'CN': 'FB',
+    'DD': 'FB',
+    'F2': 'FB',
+    'FA': 'FB',
+    'FC': 'FB',
+    'FD': 'FB',
+    'FH': 'FB',
+    'FM': 'FB',
+    'FN': 'FB',
+    'FO': 'FB',
+    'FR': 'FB',
+    'FS': 'FB',
+    'FT': 'FB',
+    'FZ': 'FB',
+    'HB': 'PO',
+    'HVD': 'V',
+    'HVDF': 'FB',
+    'HVDR': 'R',
+    'LA': 'FB',
+    'LB': 'FB',
+    'LG SPRINT': 'SPNTR',
+    'LO': 'FB',
+    'LR': 'FB',
+    'MV': 'V',
+    'MX': 'FB',
+    'OT': 'FB',
+    'PO': 'PO',
+    'R': 'R',
+    'R2': 'R',
+    'RA': 'R',
+    'RG': 'R',
+    'RL': 'R',
+    'RM': 'R',
+    'RN': 'R',
+    'RP': 'R',
+    'RV': 'R',
+    'RZ': 'R',
+    'SB': 'BOX',
+    'SD': 'FB',
+    'SM SPRINT': 'SPNTR',
+    'SN': 'FB',
+    'SR': 'FB',
+    'STRAIGHT': 'BOX',
+    'TM CARGO': 'V',
+    'TM SPINT': 'SPNTR',
+    'TN': 'IMDL',
+    'V': 'V',
+    'V2': 'V',
+    'V3': 'V',
+    'VA': 'V',
+    'VB': 'V',
+    'VC': 'V',
+    'VF': 'V',
+    'VG': 'V',
+    'VH': 'V',
+    'VI': 'V',
+    'VL': 'V',
+    'VM': 'V',
+    'VN': 'V',
+    'VP': 'V',
+    'VR': 'VR',
+    'VS': 'V',
+    'VT': 'V',
+    'VV': 'V',
+    'VW': 'V',
+    'VZ': 'V',
+  };
+  // Convert the input to uppercase for case-insensitive comparison
+  const upperCaseOrderCode = fkEquipmentCode.toUpperCase();
+
+  if (Object.hasOwn(orderTypeMapping, upperCaseOrderCode)) {
+    return orderTypeMapping[upperCaseOrderCode];
+  }
+  return 'NA';
+}
+
 function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
   const equipmentCodeMapping = {
     '22 BOX': 'SBT',
@@ -1205,4 +1488,7 @@ module.exports = {
   populateStops,
   mapEquipmentCodeToFkPowerbrokerCode,
   getPieces,
+  mapOrderTypeToMcLeod,
+  getShipmentHeaderData,
+  generateStopforConsole,
 };
