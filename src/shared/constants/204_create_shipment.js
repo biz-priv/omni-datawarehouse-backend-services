@@ -32,9 +32,6 @@ const TYPES = {
 const CONSOLE_WISE_TABLES = {
   [TYPES.CONSOLE]: {
     tbl_ConfirmationCost: STATUSES.PENDING,
-    tbl_Shipper: STATUSES.PENDING,
-    tbl_Consignee: STATUSES.PENDING,
-    tbl_ShipmentHeader: STATUSES.PENDING,
     tbl_TrackingNotes: STATUSES.PENDING,
   },
   [TYPES.NON_CONSOLE]: {
