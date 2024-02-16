@@ -863,7 +863,7 @@ async function getShipmentHeaderData({ shipmentAparConsoleData: aparData }) {
 }
 
 function getPieces({ shipmentDesc }) {
-  return _.sumBy(shipmentDesc, (data) => parseInt(_.get(data, 'Piece', 0), 10));
+  return _.sumBy(shipmentDesc, (data) => parseInt(_.get(data, 'Pieces', 0), 10));
 }
 
 // Reusable function to convert string values to numbers and sum them
