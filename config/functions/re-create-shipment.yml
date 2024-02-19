@@ -1,0 +1,28 @@
+---
+function:
+  name: omni-re-create-shipment-${self:provider.stage}
+  handler: src/re-create-shipment/index.handler
+  runtime: nodejs18.x
+  timeout: 900
+  layers:
+    - { Ref: DWBackendLambdaLayer }
+  package:
+    include:
+      - 'src/re-create-shipment/**'
+      - 'src/shared/**'
+    exclude:
+      - '**/*'
+  # events:
+  #   - s3:
+  #       bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+  #       event: s3:ObjectCreated:*
+  # rules:
+  #   - prefix: ${ssm:/wms-shipengine/${self:provider.stage}/file/prefix}
+  #   - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+  # existing: true
+  environment:
+    WT_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipment/wt/url}
+    LOGS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/re-create-shipment-logs/ddb.tableName}
+    ERROR_SNS_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
+    wt_soap_username: ${ssm:/omni-dw/${self:provider.stage}/wt/soap/username~true}
+    wt_soap_password: ${ssm:/omni-dw/${self:provider.stage}/wt/soap/password~true}
