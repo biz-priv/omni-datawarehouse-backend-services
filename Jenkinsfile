@@ -42,7 +42,7 @@ pipeline {
                 anyOf {
                     branch 'master';
                     branch 'develop';
-                    branch 'feature/*';
+                    branch 'feature/37237';
                 }
                 expression {
                     return true;
