@@ -151,7 +151,11 @@ async function prepareShipmentListData(xmlObj, s3folderName) {
       {}
     );
 
-    if (s3folderName === 'RoyalEnfield') {
+    if (
+      s3folderName === 'RoyalEnfield' ||
+      s3folderName === 'CumminsAllison' ||
+      s3folderName === 'FederalSignal'
+    ) {
       if (Array.isArray(orderLineArray)) {
         ShipmentLineList.NewShipmentDimLineV3 = [];
         await Promise.all(
@@ -222,6 +226,7 @@ async function prepareShipmentListData(xmlObj, s3folderName) {
         ],
       };
     }
+    return ShipmentLineList;
   } catch (error) {
     console.error('Error while preparing shipment list: ', error);
     throw error;

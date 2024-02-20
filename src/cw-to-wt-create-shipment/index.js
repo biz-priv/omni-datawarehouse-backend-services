@@ -31,7 +31,7 @@ module.exports.handler = async (event, context) => {
     const xmlObj = await xmlToJson(s3Data);
     dynamoData.xmlObj = xmlObj;
 
-    const xmlWTPayload = await prepareWTpayload(xmlObj);
+    const xmlWTPayload = await prepareWTpayload(get(xmlObj, 'UniversalInterchange.Body', ''));
     dynamoData.xmlWTPayload = xmlWTPayload;
 
     const xmlWTResponse = await sendToWT(xmlWTPayload);
