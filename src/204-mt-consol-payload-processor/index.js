@@ -6,7 +6,11 @@ const { v4: uuidv4 } = require('uuid');
 
 const { mtPayload } = require('../shared/204-payload-generator/payloads');
 const { fetchDataFromTablesList } = require('../shared/204-payload-generator/helper');
-const { sendPayload, updateOrders } = require('../shared/204-payload-generator/apis');
+const {
+  sendPayload,
+  updateOrders,
+  liveSendUpdate,
+} = require('../shared/204-payload-generator/apis');
 const { STATUSES, TYPES } = require('../shared/constants/204_create_shipment');
 
 const { SNS_TOPIC_ARN, CONSOL_STATUS_TABLE, OUTPUT_TABLE } = process.env;
@@ -32,10 +36,18 @@ module.exports.handler = async (event, context) => {
         const newImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
         consolNo = _.get(newImage, 'ConsolNo', 0);
 
-        const { shipmentHeader, shipmentDesc, consolStopHeaders, customer, references, users } =
-          await fetchDataFromTablesList(consolNo);
+        const {
+          shipmentApar,
+          shipmentHeader,
+          shipmentDesc,
+          consolStopHeaders,
+          customer,
+          references,
+          users,
+        } = await fetchDataFromTablesList(consolNo);
 
         const mtPayloadData = await mtPayload(
+          shipmentApar,
           shipmentHeader,
           shipmentDesc,
           consolStopHeaders,
@@ -66,7 +78,16 @@ module.exports.handler = async (event, context) => {
 
         const createPayloadResponse = await sendPayload({ payload });
         console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
+        const shipmentId = _.get(createPayloadResponse, 'id', 0);
+        // Get an array of Housebills
+        const houseBills = _.map(shipmentHeader, 'Housebill');
 
+        // Call liveSendUpdate for each Housebill
+        await Promise.all(
+          houseBills.map(async (houseBill) => {
+            await liveSendUpdate(houseBill, shipmentId);
+          })
+        );
         const movements = _.get(createPayloadResponse, 'movements', []);
         // Add "brokerage_status" to each movement
         const updatedMovements = movements.map((movement) => ({
@@ -96,6 +117,12 @@ module.exports.handler = async (event, context) => {
           ConsolNo: String(consolNo),
           response: error.message,
           payload,
+          status: STATUSES.FAILED,
+        });
+        await updateStatusTable({
+          response: error.message,
+          payload,
+          ConsolNo: String(consolNo),
           status: STATUSES.FAILED,
         });
         throw error;

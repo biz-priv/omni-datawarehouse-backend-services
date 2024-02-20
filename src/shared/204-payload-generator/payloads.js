@@ -12,6 +12,9 @@ const {
   populateStops,
   mapEquipmentCodeToFkPowerbrokerCode,
   getPieces,
+  mapOrderTypeToMcLeod,
+  getShipmentHeaderData,
+  generateStopforConsole,
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -24,6 +27,7 @@ async function nonConsolPayload({
   finalConsigneeData,
   customersData,
   userData,
+  shipmentAparData,
 }) {
   let hazmat = _.get(shipmentDesc, 'Hazmat', false);
   // Check if Hazmat is equal to 'Y'
@@ -34,6 +38,17 @@ async function nonConsolPayload({
     // Set hazmat to false for null or other values
     hazmat = false;
   }
+  const deliveryStop = await generateStop(
+    shipmentHeader,
+    referencesData,
+    2,
+    'SO',
+    consigneeLocationId,
+    finalConsigneeData,
+    'consignee',
+    shipmentAparData
+  );
+
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
@@ -49,6 +64,7 @@ async function nonConsolPayload({
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
       _.get(shipmentHeader, 'FK_EquipmentCode', '')
     ),
+    order_type_id: mapOrderTypeToMcLeod(_.get(shipmentHeader, 'FK_EquipmentCode', '')),
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -60,8 +76,9 @@ async function nonConsolPayload({
     is_container: false,
     is_dedicated: false,
     ltl: _.includes(['FT', 'HS'], _.get(shipmentHeader, 'FK_ServiceLevelId')),
-    on_hold: true,
+    on_hold: false,
     ordered_date: formatTimestamp(_.get(shipmentHeader, 'OrderDate', '')),
+    rad_date: deliveryStop.sched_arrive_late,
     ordered_method: 'M',
     order_value: _.get(shipmentHeader, 'Insurance', 0),
     pallets_required: false,
@@ -93,25 +110,17 @@ async function nonConsolPayload({
       'PU',
       shipperLocationId,
       finalShipperData,
-      '',
       'shipper',
-      userData
+      userData,
+      shipmentAparData
     ),
-    await generateStop(
-      shipmentHeader,
-      referencesData,
-      2,
-      'SO',
-      consigneeLocationId,
-      finalConsigneeData
-    )
+    deliveryStop
   );
 
   return payload;
 }
 
 async function consolPayload({
-  shipmentHeader,
   shipmentDesc,
   referencesData,
   shipperLocationId,
@@ -120,10 +129,23 @@ async function consolPayload({
   finalConsigneeData,
   // customersData,
   shipmentAparData,
-  confirmationCostData,
   userData,
 }) {
   const shipmentAparConsoleData = await getAparDataByConsole({ shipmentAparData });
+  const shipmentHeaderData = await getShipmentHeaderData({ shipmentAparConsoleData });
+
+  const deliveryStop = await generateStopforConsole(
+    shipmentHeaderData,
+    referencesData,
+    2,
+    'SO',
+    consigneeLocationId,
+    finalConsigneeData,
+    'consignee',
+    '',
+    shipmentAparConsoleData
+  );
+
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
@@ -136,7 +158,10 @@ async function consolPayload({
     customer_id: 'OMNICOT8',
     blnum: _.get(shipmentAparData, 'ConsolNo', ''),
     entered_user_id: 'apiuser',
-    equipment_type_id: '',
+    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
+      _.get(shipmentHeaderData, 'equipmentCode', '')
+    ),
+    order_type_id: mapOrderTypeToMcLeod(_.get(shipmentHeaderData, 'equipmentCode', '')),
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -147,9 +172,10 @@ async function consolPayload({
     is_autorate_dist: false,
     is_container: false,
     is_dedicated: false,
-    ltl: _.includes(['FT', 'HS'], _.get(shipmentHeader, 'FK_ServiceLevelId')),
-    on_hold: true,
-    ordered_date: formatTimestamp(_.get(shipmentHeader, 'OrderDate', '')),
+    ltl: _.includes(['FT', 'HS'], _.get(shipmentHeaderData, 'serviceLevelId', '')),
+    on_hold: false,
+    ordered_date: formatTimestamp(_.get(shipmentAparData, 'CreateDateTime', '')),
+    rad_date: deliveryStop.sched_arrive_late, // Set rad_date to scheduled arrival late of SO stop
     ordered_method: 'M',
     order_value: await getHighValue({ shipmentAparConsoleData, type: 'order_value' }),
     pallets_required: false,
@@ -174,33 +200,25 @@ async function consolPayload({
   };
 
   payload.stops.push(
-    await generateStop(
-      shipmentHeader,
+    await generateStopforConsole(
+      shipmentHeaderData,
       referencesData,
       1,
       'PU',
       shipperLocationId,
       finalShipperData,
-      confirmationCostData,
       'shipper',
-      userData
+      userData,
+      shipmentAparConsoleData
     ),
-    await generateStop(
-      shipmentHeader,
-      referencesData,
-      2,
-      'SO',
-      consigneeLocationId,
-      finalConsigneeData,
-      confirmationCostData,
-      'consignee'
-    )
+    deliveryStop
   );
 
   return payload;
 }
 
 async function mtPayload(
+  shipmentApar,
   shipmentHeader,
   shipmentDesc,
   consolStopHeaders,
@@ -219,6 +237,19 @@ async function mtPayload(
     // Set hazmat to false for null or other values
     hazmat = false;
   }
+
+  // Populate stops
+  const stops = await populateStops(
+    consolStopHeaders,
+    references,
+    users,
+    shipmentHeader,
+    shipmentDesc,
+    shipmentApar
+  );
+  // Get the last stop
+  const lastStop = stops[stops.length - 1];
+
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
@@ -234,6 +265,7 @@ async function mtPayload(
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
       _.get(shipmentHeader, '[0]FK_EquipmentCode', '')
     ),
+    order_type_id: mapOrderTypeToMcLeod(_.get(shipmentHeader, '[0]FK_EquipmentCode', '')),
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -245,8 +277,9 @@ async function mtPayload(
     is_container: false,
     is_dedicated: false,
     ltl: _.includes(['FT', 'HS'], _.get(shipmentHeader, '[0]FK_ServiceLevelId')),
-    on_hold: true,
+    on_hold: false,
     ordered_date: formatTimestamp(_.get(shipmentHeader, '[0]OrderDate', '')),
+    rad_date: lastStop.sched_arrive_late,
     ordered_method: 'M',
     order_value: sumNumericValues(shipmentHeader, 'Insurance'),
     pallets_required: false,
@@ -267,7 +300,7 @@ async function mtPayload(
     operational_status: 'CLIN',
     lock_miles: false,
     def_move_type: 'A',
-    stops: await populateStops(consolStopHeaders, references, users),
+    stops,
   };
 
   return payload;

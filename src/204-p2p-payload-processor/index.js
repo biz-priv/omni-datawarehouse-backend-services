@@ -11,8 +11,14 @@ const {
   fetchCommonTableData,
   fetchNonConsoleTableData,
   fetchConsoleTableData,
+  getShipmentHeaderData,
+  getAparDataByConsole,
 } = require('../shared/204-payload-generator/helper');
-const { sendPayload, updateOrders } = require('../shared/204-payload-generator/apis');
+const {
+  sendPayload,
+  updateOrders,
+  liveSendUpdate,
+} = require('../shared/204-payload-generator/apis');
 const { STATUSES, TYPES } = require('../shared/constants/204_create_shipment');
 
 const { STATUS_TABLE, SNS_TOPIC_ARN, OUTPUT_TABLE } = process.env;
@@ -21,6 +27,7 @@ const sns = new AWS.SNS();
 
 let functionName;
 let type;
+
 module.exports.handler = async (event, context) => {
   console.info(
     '🙂 -> file: index.js:8 -> module.exports.handler= -> event:',
@@ -33,6 +40,7 @@ module.exports.handler = async (event, context) => {
     const promises = dynamoEventRecords.map(async (record) => {
       let payload = '';
       let orderId;
+      let houseBill;
 
       try {
         const newImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
@@ -59,6 +67,8 @@ module.exports.handler = async (event, context) => {
           if (!shipmentHeaderData) {
             return 'Shipment header data is missing.';
           }
+          houseBill = _.get(shipmentHeaderData, 'Housebill', 0);
+          console.info('🚀 ~ file: index.js:71 ~ promises ~ houseBill:', houseBill);
           const nonConsolPayloadData = await nonConsolPayload({
             referencesData,
             customersData,
@@ -69,6 +79,7 @@ module.exports.handler = async (event, context) => {
             shipmentHeader: shipmentHeaderData,
             shipperLocationId,
             userData,
+            shipmentAparData,
           });
           console.info(
             '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
@@ -106,7 +117,10 @@ module.exports.handler = async (event, context) => {
           console.info('🙂 -> file: index.js:121 -> shipmentDescData:', shipmentDescData);
           console.info('🙂 -> file: index.js:122 -> referencesData:', referencesData);
           console.info('🙂 -> file: index.js:123 -> shipmentHeaderData:', shipmentHeaderData);
-
+          const shipmentAparConsoleData = await getAparDataByConsole({ shipmentAparData });
+          const shipmentHeader = await getShipmentHeaderData({ shipmentAparConsoleData });
+          houseBill = _.get(shipmentHeader, 'Housebill', 0);
+          console.info('🚀 ~ file: index.js:121 ~ promises ~ houseBill:', houseBill);
           const ConsolPayloadData = await consolPayload({
             referencesData,
             customersData,
@@ -126,7 +140,6 @@ module.exports.handler = async (event, context) => {
           );
           payload = ConsolPayloadData;
         }
-
         if (payload) {
           const result = await fetch204TableDataForConsole({
             orderNo: orderId,
@@ -152,7 +165,8 @@ module.exports.handler = async (event, context) => {
 
         const createPayloadResponse = await sendPayload({ payload });
         console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
-
+        const shipmentId = _.get(createPayloadResponse, 'id', 0);
+        await liveSendUpdate(houseBill, shipmentId);
         const movements = _.get(createPayloadResponse, 'movements', []);
         // Add "brokerage_status" to each movement
         const updatedMovements = movements.map((movement) => ({
@@ -182,6 +196,12 @@ module.exports.handler = async (event, context) => {
           orderNo: orderId,
           response: error.message,
           payload,
+          status: STATUSES.FAILED,
+        });
+        await insertInOutputTable({
+          response: error.message,
+          payload,
+          orderNo: orderId,
           status: STATUSES.FAILED,
         });
         throw error;
@@ -214,11 +234,6 @@ async function consolNonConsolCommonData({ shipmentAparData }) {
     console.info('🙂 -> file: index.js:35 -> consigneeData:', consigneeData);
     console.info('🙂 -> file: index.js:36 -> shipperData:', shipperData);
     console.info('🙂 -> file: index.js:37 -> confirmationCostData:', confirmationCostData);
-
-    if (!consigneeData || !shipperData) {
-      console.error('Shipper or Consignee tables are not populated.');
-      throw new Error('Shipper or Consignee tables are not populated.');
-    }
 
     const { finalConsigneeData, finalShipperData } = getFinalShipperAndConsigneeData({
       confirmationCostData,

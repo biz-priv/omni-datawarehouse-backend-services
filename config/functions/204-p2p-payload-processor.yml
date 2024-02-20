@@ -42,6 +42,9 @@ function:
     STATUS_TABLE_CONSOLE_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.ConsolNoIndex}
     CONSOL_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
     OUTPUT_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/output/ddb.tableName}
+    TRACKING_NOTES_API_URL: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/url}
+    API_USER_ID: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/userId}
+    API_PASS: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/password}
 
   events:
     - stream:

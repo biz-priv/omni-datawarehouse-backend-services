@@ -115,7 +115,7 @@ async function checkTable(tableData) {
   }
 
   if (
-    (type === TYPES.CONSOLE || type === TYPES.NON_CONSOLE) &&
+    type === TYPES.NON_CONSOLE &&
     get(originalTableStatuses, 'tbl_ConfirmationCost') === STATUSES.PENDING &&
     get(originalTableStatuses, 'tbl_Shipper') === STATUSES.READY &&
     get(originalTableStatuses, 'tbl_Consignee') === STATUSES.READY &&
