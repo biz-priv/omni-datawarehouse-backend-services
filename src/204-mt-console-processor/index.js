@@ -5,12 +5,20 @@ const AWS = require('aws-sdk');
 const { STATUSES, TABLE_PARAMS, TYPES } = require('../shared/constants/204_create_shipment');
 const moment = require('moment-timezone');
 
-const { SNS_TOPIC_ARN, STATUS_TABLE, CONSOLE_STATUS_TABLE } = process.env;
+const {
+  SNS_TOPIC_ARN,
+  STATUS_TABLE,
+  CONSOLE_STATUS_TABLE,
+  CONSOL_STOP_ITEMS,
+  CONSOL_STOP_HEADERS,
+} = process.env;
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
 let functionName;
+let uniqueFkConsolStopIds = new Set();
+
 module.exports.handler = async (event, context) => {
   console.info('🙂 -> file: index.js:14 -> module.exports.handler= -> event:', event);
   try {
@@ -19,6 +27,7 @@ module.exports.handler = async (event, context) => {
     await sleep(20); // delay for 30 seconds to let other order for that console to process
     const pendingStatus = await queryTableStatusPending();
     await Promise.all([...pendingStatus.map(checkMultiStop)]);
+    uniqueFkConsolStopIds = new Set();
     return 'success';
   } catch (e) {
     console.error('🚀 ~ file: 204 table status:32 = ~ e:', e);
@@ -27,6 +36,7 @@ module.exports.handler = async (event, context) => {
       \n Please check details on ${CONSOLE_STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
     });
+    uniqueFkConsolStopIds = new Set();
     return false;
   }
 };
@@ -151,11 +161,35 @@ async function checkMultiStop(tableData) {
 async function fetchItemFromTable({ params }) {
   try {
     console.info('🙂 -> file: index.js:135 -> params:', params);
+    if (get(params, 'TableName', '') === CONSOL_STOP_ITEMS) {
+      const data = await dynamoDb.query(params).promise();
+      console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+      const stopItems = get(data, 'Items', []);
+      uniqueFkConsolStopIds = new Set(
+        ...uniqueFkConsolStopIds,
+        ...stopItems.map((item) => item.FK_ConsolStopId)
+      );
+      console.info(
+        '🚀 ~ file: index.js:165 ~ fetchItemFromTable ~ uniqueFkConsolStopIds:',
+        uniqueFkConsolStopIds
+      );
+    }
+    if (get(params, 'TableName', '') === CONSOL_STOP_HEADERS) {
+      const data = await dynamoDb.query(params).promise();
+      console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+      const stopHeaders = get(data, 'Items', []);
+      const stopIds = new Set(stopHeaders.map((item) => item.PK_ConsolStopId));
+      if (uniqueFkConsolStopIds.size === stopIds.size) {
+        return STATUSES.READY;
+      }
+      return STATUSES.PENDING;
+    }
+    // For other tables, proceed with regular logic
     const data = await dynamoDb.query(params).promise();
     console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items', []).length > 0 ? STATUSES.READY : STATUSES.PENDING;
   } catch (err) {
-    console.error('error infetchItemFromTable function - index.js 153:', err);
+    console.error('error in fetchItemFromTable function - index.js 153:', err);
     if (err.code === 'ResourceNotFoundException') {
       return STATUSES.PENDING;
     }
