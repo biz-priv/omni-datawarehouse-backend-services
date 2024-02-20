@@ -12,17 +12,20 @@ function:
       - 'src/shared/**'
     exclude:
       - '**/*'
-  # events:
-  #   - s3:
-  #       bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-  #       event: s3:ObjectCreated:*
-  # rules:
-  #   - prefix: ${ssm:/wms-shipengine/${self:provider.stage}/file/prefix}
-  #   - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-  # existing: true
+  events:
+    - s3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        event: s3:ObjectCreated:*
+  rules:
+    - prefix: CargoWiseOutbound/RoyalEnfield/
+    - prefix: CargoWiseOutbound/CumminsAllison/
+    - prefix: CargoWiseOutbound/FederalSignal/
+    - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+  existing: true
   environment:
     WT_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipment/wt/url}
     LOGS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/re-create-shipment-logs/ddb.tableName}
+    CUSTOMERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customers/ddb.tableName}
     ERROR_SNS_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
     wt_soap_username: ${ssm:/omni-dw/${self:provider.stage}/wt/soap/username~true}
     wt_soap_password: ${ssm:/omni-dw/${self:provider.stage}/wt/soap/password~true}

@@ -53,11 +53,7 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, s3folderName) {
       ServiceLevel: 'EC',
       ShipmentType: 'Shipment',
       Mode: 'Domestic',
-      Station: get(
-        CONSTANTS,
-        `Station.${get(xmlObj, 'UniversalShipment.Shipment.Order.Warehouse.Code', '')}`,
-        ''
-      ),
+      Station: await getStationId(s3folderName),
       ConsigneeAddress1: get(consigneeData, '[0].Address1', ''),
       ConsigneeAddress2: get(consigneeData, '[0].Address2', ''),
       ConsigneeCity: get(consigneeData, '[0].City', ''),
@@ -230,6 +226,25 @@ async function prepareShipmentListData(xmlObj, s3folderName) {
   } catch (error) {
     console.error('Error while preparing shipment list: ', error);
     throw error;
+  }
+}
+
+async function getStationId(s3folderName) {
+  const params = {
+    TableName: process.env.CUSTOMERS_TABLE,
+    KeyConditionExpression: 'PK_CustNo = :Value',
+    ExpressionAttributeValues: {
+      ':Value': get(CONSTANTS, `billToAcc.${s3folderName}`, ''),
+    },
+  };
+
+  try {
+    const data = await dynamoDb.query(params).promise();
+    console.info('Query succeeded:', data);
+    return get(data, 'Items[0].FK_StationId', '');
+  } catch (err) {
+    console.info('Query error:', err);
+    throw err;
   }
 }
 
