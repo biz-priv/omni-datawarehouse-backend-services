@@ -1148,6 +1148,8 @@ function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
     return {
       __type: 'reference_number',
       __name: 'referenceNumbers',
+      partner_id: 'TMS',
+      version: '004010',
       company_id: 'TMS',
       element_id: '128',
       pieces: _.get(matchingDesc, 'Pieces', 0),
