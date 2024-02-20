@@ -27,14 +27,13 @@ function:
         rules:
           - prefix: CargoWiseOutbound/CumminsAllison/
           - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-  # events:
-  #   - s3:
-  #       bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-  #       event: s3:ObjectCreated:*
-  #       rules:
-  #         - prefix: CargoWiseOutbound/FederalSignal/
-  #         - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-  #       existing: true
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: CargoWiseOutbound/RoyalEnfield/
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
   environment:
     WT_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipment/wt/url}
     LOGS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/re-create-shipment-logs/ddb.tableName}
