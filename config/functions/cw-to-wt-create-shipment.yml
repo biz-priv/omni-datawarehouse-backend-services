@@ -13,13 +13,21 @@ function:
     exclude:
       - '**/*'
   events:
-    - s3:
+    - existingS3:
         bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-        event: s3:ObjectCreated:*
+        events:
+          - s3:ObjectCreated:*
         rules:
-          - prefix: CargoWiseOutbound/FederalSignal
+          - prefix: CargoWiseOutbound/FederalSignal/
           - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-        existing: true
+  # events:
+  #   - s3:
+  #       bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+  #       event: s3:ObjectCreated:*
+  #       rules:
+  #         - prefix: CargoWiseOutbound/FederalSignal/
+  #         - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+  #       existing: true
   environment:
     WT_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipment/wt/url}
     LOGS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/re-create-shipment-logs/ddb.tableName}
