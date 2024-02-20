@@ -19,7 +19,12 @@ function:
           - s3:ObjectCreated:*
         rules:
           - prefix: CargoWiseOutbound/FederalSignal/
-          - prefix: CargoWiseOutbound/RoyalEnfield/
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
           - prefix: CargoWiseOutbound/CumminsAllison/
           - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
   # events:
