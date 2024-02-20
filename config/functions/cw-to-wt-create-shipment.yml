@@ -17,8 +17,6 @@ function:
         bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
         event: s3:ObjectCreated:*
         rules:
-          - prefix: CargoWiseOutbound/RoyalEnfield/
-          - prefix: CargoWiseOutbound/CumminsAllison/
           - prefix: CargoWiseOutbound/FederalSignal/
           - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
         existing: true
