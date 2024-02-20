@@ -154,6 +154,12 @@ async function generateStop(
     getParamsByTableName('', 'omni-wt-rt-timezone-master', timeZone)
   );
 
+  const instructions = await queryDynamoDB(
+    getParamsByTableName(_.get(shipmentHeader, 'PK_OrderNo', ''), 'omni-wt-rt-instructions', timeZone)
+  );
+
+  const specialInstruction = _.filter(_.get(instructions, 'Items'), { 'Type': 'S' })
+
   const stopData = {
     __type: 'stop',
     __name: 'stops',
@@ -182,6 +188,14 @@ async function generateStop(
     referenceNumbers: type === 'shipper' ? generateReferenceNumbers({ references }) : [],
   };
 
+  stopData.stopNotes.push(
+    {
+      __type: 'stop_note',
+      __name: 'stopNotes',
+      company_id: 'TMS',
+      comment_type: 'OC',
+      comments: _.get(specialInstruction, 'Note', ''),
+    })
   if (type === 'shipper') {
     const userEmail = _.get(userData, 'UserEmail', '') || 'NA';
     const equipmentCode = _.get(shipmentHeader, 'FK_EquipmentCode', '') || 'NA';
@@ -475,6 +489,15 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
           ':ConsolNo': String(consoleNo),
         },
       };
+    case 'omni-wt-rt-instructions':
+      return {
+        TableName: "omni-wt-rt-instructions-dev",
+        IndexName: "omni-wt-instructions-orderNo-index-dev",
+        KeyConditionExpression: 'FK_OrderNo = :orderNo',
+        ExpressionAttributeValues: {
+          ':orderNo': orderNo,
+        },
+      }
     default:
       return false;
   }
