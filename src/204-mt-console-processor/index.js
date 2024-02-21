@@ -17,7 +17,6 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
 let functionName;
-let uniqueFkConsolStopIds = new Set();
 
 module.exports.handler = async (event, context) => {
   console.info('🙂 -> file: index.js:14 -> module.exports.handler= -> event:', event);
@@ -27,7 +26,6 @@ module.exports.handler = async (event, context) => {
     await sleep(20); // delay for 30 seconds to let other order for that console to process
     const pendingStatus = await queryTableStatusPending();
     await Promise.all([...pendingStatus.map(checkMultiStop)]);
-    uniqueFkConsolStopIds = new Set();
     return 'success';
   } catch (e) {
     console.error('🚀 ~ file: 204 table status:32 = ~ e:', e);
@@ -36,7 +34,6 @@ module.exports.handler = async (event, context) => {
       \n Please check details on ${CONSOLE_STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
     });
-    uniqueFkConsolStopIds = new Set();
     return false;
   }
 };
@@ -82,6 +79,7 @@ async function checkMultiStop(tableData) {
   const retryCount = get(tableData, 'RetryCount', 0);
   console.info('🙂 -> file: index.js:90 -> retryCount:', retryCount);
   const orderNumbersForConsol = Object.keys(get(tableData, 'TableStatuses'));
+  const stopIdSize = await fetchStopIds({ orderNumbersForConsol });
   await Promise.all(
     orderNumbersForConsol.map(async (orderNoForConsol) => {
       console.info('🙂 -> file: index.js:160 -> orderNoForConsol:', orderNoForConsol);
@@ -102,6 +100,7 @@ async function checkMultiStop(tableData) {
             });
             originalTableStatuses[`${orderNoForConsol}`][tableName] = await fetchItemFromTable({
               params: param,
+              stopIdSize,
             });
           } catch (error) {
             console.info('🙂 -> file: index.js:182 -> error:', error);
@@ -158,28 +157,15 @@ async function checkMultiStop(tableData) {
   });
 }
 
-async function fetchItemFromTable({ params }) {
+async function fetchItemFromTable({ params, stopIdSize }) {
   try {
     console.info('🙂 -> file: index.js:135 -> params:', params);
-    if (get(params, 'TableName', '') === CONSOL_STOP_ITEMS) {
-      const data = await dynamoDb.query(params).promise();
-      console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
-      const stopItems = get(data, 'Items', []);
-      uniqueFkConsolStopIds = new Set(
-        ...uniqueFkConsolStopIds,
-        ...stopItems.map((item) => item.FK_ConsolStopId)
-      );
-      console.info(
-        '🚀 ~ file: index.js:165 ~ fetchItemFromTable ~ uniqueFkConsolStopIds:',
-        uniqueFkConsolStopIds
-      );
-    }
     if (get(params, 'TableName', '') === CONSOL_STOP_HEADERS) {
       const data = await dynamoDb.query(params).promise();
       console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
       const stopHeaders = get(data, 'Items', []);
       const stopIds = new Set(stopHeaders.map((item) => item.PK_ConsolStopId));
-      if (uniqueFkConsolStopIds.size === stopIds.size) {
+      if (stopIdSize === stopIds.size) {
         return STATUSES.READY;
       }
       return STATUSES.PENDING;
@@ -290,6 +276,37 @@ async function sleep(seconds) {
     return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
   } catch (error) {
     console.error('🚀 ~ file: index.js:249 ~ sleep ~ error:', error);
+    throw error;
+  }
+}
+
+async function fetchStopIds({ orderNumbersForConsol }) {
+  const uniqueFkConsolStopIds = new Set();
+
+  try {
+    // Fetching unique stop IDs for all order numbers
+    for (const orderNoForConsol of orderNumbersForConsol) {
+      const consolStopItemsParams = {
+        TableName: CONSOL_STOP_ITEMS,
+        KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
+        ExpressionAttributeValues: {
+          ':FK_OrderNo': orderNoForConsol,
+        },
+      };
+      const consolStopItemsData = await dynamoDb.query(consolStopItemsParams).promise();
+      console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', consolStopItemsData);
+      const stopItems = get(consolStopItemsData, 'Items', []);
+      stopItems.forEach((item) => uniqueFkConsolStopIds.add(item.FK_ConsolStopId));
+      console.info(
+        '🚀 ~ file: index.js:165 ~ fetchItemFromTable ~ uniqueFkConsolStopIds:',
+        uniqueFkConsolStopIds
+      );
+    }
+
+    return uniqueFkConsolStopIds.size;
+  } catch (error) {
+    console.error('Error fetching stop IDs:', error);
+    // Handle error appropriately, throw or return an error message
     throw error;
   }
 }

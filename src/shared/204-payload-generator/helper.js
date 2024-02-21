@@ -155,10 +155,14 @@ async function generateStop(
   );
 
   const instructions = await queryDynamoDB(
-    getParamsByTableName(_.get(shipmentHeader, 'PK_OrderNo', ''), 'omni-wt-rt-instructions', timeZone)
+    getParamsByTableName(
+      _.get(shipmentHeader, 'PK_OrderNo', ''),
+      'omni-wt-rt-instructions',
+      timeZone
+    )
   );
 
-  const specialInstruction = _.filter(_.get(instructions, 'Items'), { 'Type': 'S' })
+  const specialInstruction = _.filter(_.get(instructions, 'Items'), { Type: 'S' });
 
   const stopData = {
     __type: 'stop',
@@ -188,14 +192,13 @@ async function generateStop(
     referenceNumbers: type === 'shipper' ? generateReferenceNumbers({ references }) : [],
   };
 
-  stopData.stopNotes.push(
-    {
-      __type: 'stop_note',
-      __name: 'stopNotes',
-      company_id: 'TMS',
-      comment_type: 'OC',
-      comments: _.get(specialInstruction, 'Note', ''),
-    })
+  stopData.stopNotes.push({
+    __type: 'stop_note',
+    __name: 'stopNotes',
+    company_id: 'TMS',
+    comment_type: 'OC',
+    comments: _.get(specialInstruction, 'Note', ''),
+  });
   if (type === 'shipper') {
     const userEmail = _.get(userData, 'UserEmail', '') || 'NA';
     const equipmentCode = _.get(shipmentHeader, 'FK_EquipmentCode', '') || 'NA';
@@ -263,7 +266,9 @@ async function generateStopforConsole(
   confirmationCostData,
   type,
   userData,
-  shipmentAparConsoleData
+  shipmentAparConsoleData,
+  housebillData,
+  descData
 ) {
   const { schedArriveEarly, schedArriveLate, timeZone, state } = await processStopData(
     stopType,
@@ -273,6 +278,15 @@ async function generateStopforConsole(
   const timeZoneMaster = await queryDynamoDB(
     getParamsByTableName('', 'omni-wt-rt-timezone-master', timeZone)
   );
+  const instructions = await queryDynamoDB(
+    getParamsByTableName(
+      _.get(shipmentHeaderData, 'orderNo', ''),
+      'omni-wt-rt-instructions',
+      timeZone
+    )
+  );
+
+  const specialInstruction = _.filter(_.get(instructions, 'Items'), { Type: 'S' });
 
   const stopData = {
     __type: 'stop',
@@ -299,9 +313,21 @@ async function generateStopforConsole(
         comments: getNote(confirmationCostData, type),
       },
     ],
-    referenceNumbers: type === 'shipper' ? generateReferenceNumbers({ references }) : [],
+    referenceNumbers:
+      type === 'shipper'
+        ? [
+            ...generateReferenceNumbers({ references }),
+            ...populateHousebillNumbers(housebillData, descData),
+          ]
+        : [],
   };
-
+  stopData.stopNotes.push({
+    __type: 'stop_note',
+    __name: 'stopNotes',
+    company_id: 'TMS',
+    comment_type: 'OC',
+    comments: _.get(specialInstruction, 'Note', 'NA'),
+  });
   if (type === 'shipper') {
     const userEmail = _.get(userData, 'UserEmail', '') || 'NA';
     const equipmentCode = _.get(shipmentHeaderData, 'equipmentCode', '') || 'NA';
@@ -491,13 +517,13 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
       };
     case 'omni-wt-rt-instructions':
       return {
-        TableName: "omni-wt-rt-instructions-dev",
-        IndexName: "omni-wt-instructions-orderNo-index-dev",
+        TableName: 'omni-wt-rt-instructions-dev',
+        IndexName: 'omni-wt-instructions-orderNo-index-dev',
         KeyConditionExpression: 'FK_OrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
         },
-      }
+      };
     default:
       return false;
   }
@@ -810,6 +836,25 @@ async function getWeightForConsole({ shipmentAparConsoleData: aparData }) {
   return totalWeight;
 }
 
+async function descDataForConsole({ shipmentAparConsoleData: aparData }) {
+  const descData = await Promise.all(
+    aparData.map(async (data) => {
+      const shipmentDescParams = {
+        TableName: SHIPMENT_DESC_TABLE,
+        KeyConditionExpression: 'FK_OrderNo = :orderNo',
+        ExpressionAttributeValues: {
+          ':orderNo': _.get(data, 'FK_OrderNo'),
+        },
+      };
+      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentDescParams);
+
+      return _.get(await queryDynamoDB(shipmentDescParams), 'Items', []);
+    })
+  );
+  console.info('🙂 -> file: test.js:36 -> descData:', descData);
+  return descData;
+}
+
 async function getHazmat({ shipmentAparConsoleData: aparData }) {
   const descData = await Promise.all(
     aparData.map(async (data) => {
@@ -880,9 +925,36 @@ async function getShipmentHeaderData({ shipmentAparConsoleData: aparData }) {
   const equipmentCode = _.get(firstItem, 'FK_EquipmentCode');
   const serviceLevelId = _.get(firstItem, 'FK_ServiceLevelId');
   const Housebill = _.get(firstItem, 'Housebill');
+  const orderNo = _.get(firstItem, 'PK_OrderNo');
 
-  const headerData = { equipmentCode, serviceLevelId, Housebill };
+  const headerData = { equipmentCode, serviceLevelId, Housebill, orderNo };
   return headerData;
+}
+
+async function getHousebillData({ shipmentAparConsoleData: aparData }) {
+  const housebillData = [];
+
+  // Use Promise.all to concurrently execute queries for each PK_OrderNo
+  await Promise.all(
+    aparData.map(async (dataItem) => {
+      const shipmentHeaderParams = {
+        TableName: SHIPMENT_HEADER_TABLE,
+        KeyConditionExpression: 'PK_OrderNo = :orderNo',
+        ExpressionAttributeValues: {
+          ':orderNo': _.get(dataItem, 'FK_OrderNo'),
+        },
+      };
+
+      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentHeaderParams);
+
+      const queryResult = await queryDynamoDB(shipmentHeaderParams);
+      const headerData = _.get(queryResult, 'Items', []);
+
+      housebillData.push(headerData);
+    })
+  );
+
+  return housebillData;
 }
 
 function getPieces({ shipmentDesc }) {
@@ -1100,7 +1172,7 @@ async function populateStops(
       populateHousebillNumbers(shipmentHeader, shipmentDesc),
     ];
 
-    const stopNotes = [
+    let stopNotes = [
       {
         __type: 'stop_note',
         __name: 'stopNotes',
@@ -1136,6 +1208,10 @@ async function populateStops(
       );
     }
 
+    // Populate special instructions
+    const specialInstructions = await populateSpecialInstructions(shipmentHeader);
+    stopNotes = [...stopNotes, ...specialInstructions.flat()];
+
     const stop = {
       __type: 'stop',
       __name: 'stops',
@@ -1163,6 +1239,28 @@ async function populateStops(
   }
 
   return stops.sort((a, b) => a.order_sequence - b.order_sequence);
+}
+
+async function populateSpecialInstructions(shipmentHeader) {
+  const specialInstructions = await Promise.all(
+    shipmentHeader.map(async (header) => {
+      const instructions = await queryDynamoDB(
+        getParamsByTableName(_.get(header, 'PK_OrderNo', ''), 'omni-wt-rt-instructions')
+      );
+
+      const specialInstruction = _.filter(_.get(instructions, 'Items'), { Type: 'S' });
+
+      return specialInstruction.map((instruction) => ({
+        __type: 'stop_note',
+        __name: 'stopNotes',
+        company_id: 'TMS',
+        comment_type: 'OC',
+        comments: _.get(instruction, 'Note', ''),
+      }));
+    })
+  );
+
+  return specialInstructions;
 }
 
 function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
@@ -1516,4 +1614,6 @@ module.exports = {
   mapOrderTypeToMcLeod,
   getShipmentHeaderData,
   generateStopforConsole,
+  getHousebillData,
+  descDataForConsole,
 };
