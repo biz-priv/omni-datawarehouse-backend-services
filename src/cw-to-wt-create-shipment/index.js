@@ -15,15 +15,13 @@ const {
 } = require('./helper');
 
 let dynamoData = {};
-let s3folderName = '';
 
 module.exports.handler = async (event, context) => {
-  console.info('event: ', event);
+  console.info(event);
   try {
     const s3Bucket = get(event, 'Records[0].s3.bucket.name', '');
     const s3Key = get(event, 'Records[0].s3.object.key', '');
     dynamoData = { s3Bucket, id: uuid.v4().replace(/[^a-zA-Z0-9]/g, '') };
-    s3folderName = s3Key.split('/')[1];
     console.info('Id :', get(dynamoData, 'id', ''));
 
     const s3Data = await getS3Data(s3Bucket, s3Key);
@@ -121,11 +119,8 @@ async function sendToCW(postData) {
 
 async function prepareWTpayload(xmlObj) {
   try {
-    const headerAndReferenceListData = await prepareHeaderLevelAndReferenceListData(
-      xmlObj,
-      s3folderName
-    );
-    const shipmentListData = await prepareShipmentListData(xmlObj, s3folderName);
+    const headerAndReferenceListData = await prepareHeaderLevelAndReferenceListData(xmlObj);
+    const shipmentListData = await prepareShipmentListData(xmlObj);
     console.info(headerAndReferenceListData);
     console.info(shipmentListData);
 

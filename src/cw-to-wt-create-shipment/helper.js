@@ -35,7 +35,7 @@ async function putItem(item) {
   }
 }
 
-async function prepareHeaderLevelAndReferenceListData(xmlObj, s3folderName) {
+async function prepareHeaderLevelAndReferenceListData(xmlObj) {
   try {
     const consigneeData = get(
       xmlObj,
@@ -47,13 +47,22 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, s3folderName) {
       'UniversalShipment.Shipment.OrganizationAddressCollection.OrganizationAddress',
       []
     ).filter((obj) => obj.AddressType === 'ConsignorPickupDeliveryAddress');
+    const orgCodeData = get(
+      xmlObj,
+      'UniversalShipment.Shipment.OrganizationAddressCollection.OrganizationAddress',
+      []
+    ).filter((obj) => obj.AddressType === 'SendersLocalClient');
+    const orgCode = get(orgCodeData, 'OrganizationCode', '');
+    if (orgCode === '') {
+      throw new Error('Organization code doesnt exist in the source file');
+    }
 
     const headerData = {
       DeclaredType: 'LL',
       ServiceLevel: 'EC',
       ShipmentType: 'Shipment',
       Mode: 'Domestic',
-      Station: await getStationId(s3folderName),
+      Station: await getStationId(orgCode),
       ConsigneeAddress1: get(consigneeData, '[0].Address1', ''),
       ConsigneeAddress2: get(consigneeData, '[0].Address2', ''),
       ConsigneeCity: get(consigneeData, '[0].City', ''),
@@ -63,8 +72,8 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, s3folderName) {
       ConsigneePhone: get(consigneeData, '[0].Phone', ''),
       ConsigneeZip: get(consigneeData, '[0].Postcode', ''),
       ConsigneeState: get(consigneeData, '[0].State._', ''),
-      CustomerNo: get(CONSTANTS, `billToAcc.${s3folderName}`, ''),
-      BillToAcct: get(CONSTANTS, `billToAcc.${s3folderName}`, ''),
+      CustomerNo: get(CONSTANTS, `billToAcc.${orgCode}`, ''),
+      BillToAcct: get(CONSTANTS, `billToAcc.${orgCode}`, ''),
       ReferenceList: {
         NewShipmentRefsV3: [
           {
@@ -85,7 +94,7 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, s3folderName) {
       },
     };
 
-    if (s3folderName === 'RoyalEnfield') {
+    if (get(orgCodeData, 'OrganizationCode', '') === 'ROYENFMKE') {
       headerData.ShipperAddress1 = '1010 S INDUSTRIAL BLVD BLDG B';
       headerData.ShipperAddress2 = '';
       headerData.ShipperCity = 'EULESS';
@@ -127,18 +136,21 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, s3folderName) {
 }
 
 const CONSTANTS = {
-  Station: {
-    DF1: 'DFW',
-  },
   billToAcc: {
-    RoyalEnfield: '53241',
-  },
-  shipperFlag: {
-    RoyalEnfield: true,
+    ROYENFMKE: 53241,
+    FEDSIGORD: 9058,
+    SCIATLELP: 9606,
+    OMNICEORD: 9269,
+    ARJOHUORD: 8899,
+    CUMALLORD: 8988,
+    RTCINDRLM: 9660,
+    WATERBECP: 23131,
+    CIRKLIPHX: 52664,
+    ARXIUMORD: 8907,
   },
 };
 
-async function prepareShipmentListData(xmlObj, s3folderName) {
+async function prepareShipmentListData(xmlObj) {
   try {
     let ShipmentLineList = {};
     const orderLineArray = get(
@@ -147,60 +159,20 @@ async function prepareShipmentListData(xmlObj, s3folderName) {
       {}
     );
 
-    if (
-      s3folderName === 'RoyalEnfield' ||
-      s3folderName === 'CumminsAllison' ||
-      s3folderName === 'FederalSignal'
-    ) {
-      if (Array.isArray(orderLineArray)) {
-        ShipmentLineList.NewShipmentDimLineV3 = [];
-        await Promise.all(
-          orderLineArray.map(async (line) => {
-            const data = {
-              WeightUOMV3: 'lb',
-              Description: get(line, 'PartAttribute1', ''),
-              DimUOMV3: 'in',
-              PieceType: 'UNT',
-              Pieces: Number(get(line, 'QuantityMet', 0)),
-              Weigth: 600,
-              Length: 89,
-              Width: 48,
-              Height: 31,
-            };
-            ShipmentLineList.NewShipmentDimLineV3.push(data);
-          })
-        );
-      } else {
-        ShipmentLineList = {
-          NewShipmentDimLineV3: [
-            {
-              WeightUOMV3: 'lb',
-              Description: get(orderLineArray, 'PartAttribute1', ''),
-              DimUOMV3: 'in',
-              PieceType: 'UNT',
-              Pieces: Number(get(orderLineArray, 'QuantityMet', 0)),
-              Weigth: 600,
-              Length: 89,
-              Width: 48,
-              Height: 31,
-            },
-          ],
-        };
-      }
-    } else if (Array.isArray(orderLineArray)) {
+    if (Array.isArray(orderLineArray)) {
       ShipmentLineList.NewShipmentDimLineV3 = [];
       await Promise.all(
         orderLineArray.map(async (line) => {
           const data = {
-            WeightUOMV3: get(line, 'Weight', ''),
+            WeightUOMV3: 'lb',
             Description: get(line, 'PartAttribute1', ''),
-            DimUOMV3: get(line, 'Dim', ''),
-            PieceType: get(line, 'Peice', ''),
+            DimUOMV3: 'in',
+            PieceType: 'UNT',
             Pieces: Number(get(line, 'QuantityMet', 0)),
-            Weigth: Number(get(line, 'Weigth', '')),
-            Length: Number(get(line, 'Length', '')),
-            Width: Number(get(line, 'Width', '')),
-            Height: Number(get(line, 'Height', '')),
+            Weigth: 600,
+            Length: 89,
+            Width: 48,
+            Height: 31,
           };
           ShipmentLineList.NewShipmentDimLineV3.push(data);
         })
@@ -209,15 +181,15 @@ async function prepareShipmentListData(xmlObj, s3folderName) {
       ShipmentLineList = {
         NewShipmentDimLineV3: [
           {
-            WeightUOMV3: get(orderLineArray, 'Weight', ''),
+            WeightUOMV3: 'lb',
             Description: get(orderLineArray, 'PartAttribute1', ''),
-            DimUOMV3: get(orderLineArray, 'Dim', ''),
-            PieceType: get(orderLineArray, 'Peice', ''),
+            DimUOMV3: 'in',
+            PieceType: 'UNT',
             Pieces: Number(get(orderLineArray, 'QuantityMet', 0)),
-            Weigth: Number(get(orderLineArray, 'Weigth', '')),
-            Length: Number(get(orderLineArray, 'Length', '')),
-            Width: Number(get(orderLineArray, 'Width', '')),
-            Height: Number(get(orderLineArray, 'Height', '')),
+            Weigth: 600,
+            Length: 89,
+            Width: 48,
+            Height: 31,
           },
         ],
       };
@@ -229,12 +201,12 @@ async function prepareShipmentListData(xmlObj, s3folderName) {
   }
 }
 
-async function getStationId(s3folderName) {
+async function getStationId(orgCode) {
   const params = {
     TableName: process.env.CUSTOMERS_TABLE,
     KeyConditionExpression: 'PK_CustNo = :Value',
     ExpressionAttributeValues: {
-      ':Value': get(CONSTANTS, `billToAcc.${s3folderName}`, ''),
+      ':Value': get(CONSTANTS, `billToAcc.${orgCode}`, ''),
     },
   };
 
