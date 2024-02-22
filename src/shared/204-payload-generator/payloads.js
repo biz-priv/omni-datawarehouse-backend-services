@@ -15,6 +15,8 @@ const {
   mapOrderTypeToMcLeod,
   getShipmentHeaderData,
   generateStopforConsole,
+  getHousebillData,
+  descDataForConsole,
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -133,7 +135,8 @@ async function consolPayload({
 }) {
   const shipmentAparConsoleData = await getAparDataByConsole({ shipmentAparData });
   const shipmentHeaderData = await getShipmentHeaderData({ shipmentAparConsoleData });
-
+  const housebillData = await getHousebillData({ shipmentAparConsoleData });
+  const descData = await descDataForConsole({ shipmentAparConsoleData });
   const deliveryStop = await generateStopforConsole(
     shipmentHeaderData,
     referencesData,
@@ -209,7 +212,9 @@ async function consolPayload({
       finalShipperData,
       'shipper',
       userData,
-      shipmentAparConsoleData
+      shipmentAparConsoleData,
+      housebillData,
+      descData
     ),
     deliveryStop
   );
