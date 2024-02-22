@@ -17,7 +17,7 @@ const {
 let dynamoData = {};
 
 module.exports.handler = async (event, context) => {
-  console.info(event);
+  console.info(JSON.stringify(event));
   try {
     const s3Bucket = get(event, 'Records[0].s3.bucket.name', '');
     const s3Key = get(event, 'Records[0].s3.object.key', '');
