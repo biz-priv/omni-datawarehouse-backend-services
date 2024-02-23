@@ -16,6 +16,8 @@ const {
   CONSOLE_STATUS_TABLE,
   SHIPMENT_APAR_INDEX_KEY_NAME,
   SHIPMENT_APAR_TABLE,
+  SHIPMENT_HEADER_TABLE,
+  ACCEPTED_BILLNOS,
 } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
@@ -46,16 +48,39 @@ module.exports.handler = async (event, context) => {
 
         const consolidation = get(shipmentAparData, 'Consolidation');
 
+        const controlStation = get(shipmentAparData, 'FK_ConsolStationId');
+
         if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
           console.info('Non Console');
           type = TYPES.NON_CONSOLE;
+          const shipmentHeaderResult = await fetchBillNos({ orderNo: orderId });
+          // Check if there are any items in the result
+          if (shipmentHeaderResult.length === 0) {
+            console.info('No shipment header data found. Skipping process.');
+            return true; // Skip further processing
+          }
+
+          // Extract bill numbers from the result
+          const billNumbers = shipmentHeaderResult.map((item) => item.BillNo);
+
+          // Check if any of the bill numbers are in the accepted list
+          const commonBillNos = ACCEPTED_BILLNOS.filter((billNo) => billNumbers.includes(billNo));
+
+          // If there are no common bill numbers, skip further processing
+          if (commonBillNos.length === 0) {
+            console.info(
+              'BillNo does not include any of the accepted bill numbers. Skipping process.'
+            );
+            return true;
+          }
         }
 
         if (
           consolNo > 0 &&
           consolidation === 'Y' &&
           includes(['HS', 'TL'], serviceLevelId) &&
-          vendorId === VENDOR
+          vendorId === VENDOR &&
+          controlStation === 'OTR'
         ) {
           console.info('Console');
           type = TYPES.CONSOLE;
@@ -65,7 +90,8 @@ module.exports.handler = async (event, context) => {
           !isNaN(consolNo) &&
           consolNo !== null &&
           consolidation === 'N' &&
-          serviceLevelId === 'MT'
+          serviceLevelId === 'MT' &&
+          controlStation === 'OTR'
         ) {
           console.info('Multi Stop');
           type = TYPES.MULTI_STOP;
@@ -90,7 +116,7 @@ module.exports.handler = async (event, context) => {
     return `Successfully processed ${get(event, 'Records', []).length} records.`;
   } catch (e) {
     console.error(
-      '🚀 ~ file: shipment_header_table_stream_processor.js:117 ~ module.exports.handler= ~ e:',
+      '🚀 ~ file: shipment_apar_table_stream_processor.js:117 ~ module.exports.handler= ~ e:',
       e
     );
     return await publishSNSTopic({
@@ -253,6 +279,27 @@ async function fetchOrderData({ consolNo }) {
         ':FK_ServiceId': 'MT',
         ':SeqNo': '9999',
         ':FK_OrderNo': String(consolNo),
+      },
+    };
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
+    const data = await dynamoDb.query(params).promise();
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+    return get(data, 'Items', []);
+  } catch (err) {
+    console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
+    throw err;
+  }
+}
+
+async function fetchBillNos({ orderNo }) {
+  try {
+    const params = {
+      TableName: SHIPMENT_HEADER_TABLE,
+      KeyConditionExpression: 'PK_OrderNo = :orderNo',
+      FilterExpression: 'ShipQuote = :shipquote',
+      ExpressionAttributeValues: {
+        ':orderNo': orderNo,
+        ':shipquote': 'S',
       },
     };
     console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);

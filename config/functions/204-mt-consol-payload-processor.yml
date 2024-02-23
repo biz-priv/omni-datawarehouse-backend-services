@@ -11,6 +11,7 @@ function:
       - 'src/204-mt-consol-payload-processor/index.js'
       - 'src/shared/constants/204_create_shipment.js'
       - 'src/shared/204-payload-generator/**'
+      - 'src/shared/timezoneInfo/**'
     exclude:
       - '**/*'
   environment:
@@ -45,6 +46,10 @@ function:
     TRACKING_NOTES_API_URL: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/url}
     API_USER_ID: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/userId}
     API_PASS: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/password}
+    ADDRESS_MAPPING_G_API_KEY: ${ssm:/omni-ivia/${self:provider.stage}/google/api.Key~true}
+    INSTRUCTIONS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.tableName~true}
+    INSTRUCTIONS_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.orderNoIndex}
+
   events:
     - stream:
         arn: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.streamArn~true}

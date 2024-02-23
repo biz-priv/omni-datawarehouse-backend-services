@@ -33,12 +33,14 @@ const CONSOLE_WISE_TABLES = {
   [TYPES.CONSOLE]: {
     tbl_ConfirmationCost: STATUSES.PENDING,
     tbl_TrackingNotes: STATUSES.PENDING,
+    tbl_ShipmentDesc: STATUSES.PENDING,
   },
   [TYPES.NON_CONSOLE]: {
     tbl_ConfirmationCost: STATUSES.PENDING,
     tbl_Shipper: STATUSES.PENDING,
     tbl_Consignee: STATUSES.PENDING,
     tbl_ShipmentHeader: STATUSES.PENDING,
+    tbl_ShipmentDesc: STATUSES.PENDING,
   },
   [TYPES.MULTI_STOP]: {
     tbl_ShipmentHeader: STATUSES.PENDING,
@@ -66,6 +68,13 @@ const TABLE_PARAMS = {
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
         ':ConsolNo': String(consoleNo),
+      },
+    }),
+    tbl_ShipmentDesc: ({ orderNo }) => ({
+      TableName: SHIPMENT_DESC_TABLE,
+      KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
+      ExpressionAttributeValues: {
+        ':FK_OrderNo': orderNo,
       },
     }),
   },
@@ -97,6 +106,13 @@ const TABLE_PARAMS = {
       KeyConditionExpression: 'PK_OrderNo = :orderNo',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
+      },
+    }),
+    tbl_ShipmentDesc: ({ orderNo }) => ({
+      TableName: SHIPMENT_DESC_TABLE,
+      KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
+      ExpressionAttributeValues: {
+        ':FK_OrderNo': orderNo,
       },
     }),
   },
@@ -149,6 +165,88 @@ const TABLE_PARAMS = {
   },
 };
 
+const CONSOLE_WISE_REQUIRED_FIELDS = {
+  [TYPES.CONSOLE]: {
+    tbl_ConfirmationCost: [
+      'Consignee Name',
+      'Consignee Address1',
+      'Consignee City',
+      'Consignee State',
+      'Consignee Country',
+      'Shipper Address1',
+      'Shipper City',
+      'Shipper Name',
+      'Shipper State',
+      'Shipper Country',
+    ],
+    tbl_TrackingNotes: ['UserId'],
+    tbl_ShipmentDesc: ['Hazmat', 'Pieces', 'Weight'],
+  },
+  [TYPES.NON_CONSOLE]: {
+    tbl_ConfirmationCost: [
+      'Consignee Name',
+      'Consignee Address1',
+      'Consignee City',
+      'Consignee State',
+      'Consignee Country',
+      'Shipper Address1',
+      'Shipper City',
+      'Shipper Name',
+      'Shipper State',
+      'Shipper Country',
+    ],
+    tbl_Shipper: [
+      'Shipper Address1',
+      'Shipper City',
+      'Shipper Name',
+      'Shipper State',
+      'Shipper Country',
+    ],
+    tbl_Consignee: [
+      'Consignee Name',
+      'Consignee Address1',
+      'Consignee City',
+      'Consignee State',
+      'Consignee Country',
+    ],
+    tbl_ShipmentHeader: [
+      'EquipmentCode',
+      'Insurance',
+      'ServiceLevelId',
+      'OrderDate',
+      'ReadyDateTime',
+      'ReadyDateTimeRange',
+      'ScheduledDateTime',
+      'ScheduledDateTimeRange',
+    ],
+    tbl_ShipmentDesc: ['Hazmat', 'Pieces', 'Weight'],
+  },
+  [TYPES.MULTI_STOP]: {
+    tbl_ShipmentHeader: ['EquipmentCode', 'Insurance', 'ServiceLevelId', 'Housebill'],
+    tbl_ShipmentDesc: ['Hazmat', 'Pieces', 'Weight'],
+    tbl_TrackingNotes: ['UserId'],
+    tbl_References: ['Reference', 'Reference type'],
+    tbl_ConsolStopHeaders: [
+      'Consol Number',
+      'ConsolStop Name',
+      'ConsolStop Address1',
+      'ConsolStop Address2',
+      'ConsolStop City',
+      'ConsolStop State',
+      'ConsolStop TimeBegin',
+      'ConsolStop TimeEnd',
+      'ConsolStop Date',
+    ],
+  },
+};
+
 const VENDOR = 'LIVELOGI';
 
-module.exports = { STATUSES, TYPES, CONSOLE_WISE_TABLES, VENDOR, TABLE_PARAMS };
+module.exports = {
+  STATUSES,
+  TYPES,
+  CONSOLE_WISE_TABLES,
+  VENDOR,
+  TABLE_PARAMS,
+  CONSOLE_WISE_REQUIRED_FIELDS,
+};

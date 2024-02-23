@@ -2,7 +2,13 @@
 const _ = require('lodash');
 const AWS = require('aws-sdk');
 const moment = require('moment-timezone');
-const { getLocationId, createLocation } = require('./apis');
+const {
+  getLocationId,
+  createLocation,
+  checkAddressByGoogleApi,
+  getTimezoneByGoogleApi,
+} = require('./apis');
+const timezoneInfo = require('../timezoneInfo/canadaUSTimezoneGroupBy.json');
 
 const {
   SHIPMENT_APAR_TABLE,
@@ -15,14 +21,15 @@ const {
   CONFIRMATION_COST_INDEX_KEY_NAME,
   CONSIGNEE_TABLE,
   SHIPPER_TABLE,
-  TIMEZONE_MASTER,
-  TIMEZONE_ZIP_CR,
+
   REFERENCES_TABLE,
   USERS_TABLE,
   TRACKING_NOTES_TABLE,
   REFERENCES_INDEX_KEY_NAME,
   TRACKING_NOTES_CONSOLENO_INDEX_KEY,
   SHIPMENT_APAR_INDEX_KEY_NAME,
+  INSTRUCTIONS_INDEX_KEY_NAME,
+  INSTRUCTIONS_TABLE,
 } = process.env;
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
@@ -101,38 +108,6 @@ function generateReferenceNumbers({ references }) {
   );
 }
 
-function formatTimestamp(eventdatetime) {
-  const date = moment(eventdatetime);
-  const week = date.week();
-  const offset = week >= 11 && week <= 44 ? '-0500' : '-0600';
-  return date.format('YYYYMMDDHHmmss') + offset;
-}
-
-async function getFormattedDateTime(dateTime, state, tblTimeZoneMaster) {
-  if (!dateTime) {
-    return '';
-  }
-
-  let offset;
-  if (state === 'AZ') {
-    offset = '-0600';
-  } else if (moment(dateTime).isoWeek() >= 11 && moment(dateTime).isoWeek() <= 44) {
-    offset = '-0500';
-  } else {
-    offset = '-0600';
-  }
-  console.info('🙂 -> file: helper.js:112 -> getFormattedDateTime -> offset:', offset);
-  const hoursAway = _.get(tblTimeZoneMaster, 'Items[0].HoursAway', 0) || 0;
-  console.info('🙂 -> file: helper.js:106 -> getFormattedDateTime -> hoursAway:', hoursAway);
-  const formattedDateTime = moment(dateTime).add({ hours: hoursAway }).format('YYYYMMDDHHmmss');
-  console.info(
-    '🙂 -> file: helper.js:109 -> getFormattedDateTime -> formattedDateTime:',
-    formattedDateTime
-  );
-
-  return formattedDateTime + offset;
-}
-
 async function generateStop(
   shipmentHeader,
   references,
@@ -144,22 +119,14 @@ async function generateStop(
   userData,
   shipmentAparData
 ) {
-  const { schedArriveEarly, schedArriveLate, timeZone, state } = await processStopDataNonConsol(
+  const { schedArriveEarly, schedArriveLate, timeZone } = await processStopDataNonConsol(
     stopType,
     shipmentHeader,
     stateData
   );
 
-  const timeZoneMaster = await queryDynamoDB(
-    getParamsByTableName('', 'omni-wt-rt-timezone-master', timeZone)
-  );
-
   const instructions = await queryDynamoDB(
-    getParamsByTableName(
-      _.get(shipmentHeader, 'PK_OrderNo', ''),
-      'omni-wt-rt-instructions',
-      timeZone
-    )
+    getParamsByTableName(_.get(shipmentHeader, 'PK_OrderNo', ''), 'omni-wt-rt-instructions')
   );
 
   const specialInstruction = _.filter(_.get(instructions, 'Items'), { Type: 'S' });
@@ -172,8 +139,8 @@ async function generateStop(
     confirmed: false,
     driver_load_unload: 'N',
     location_id: locationId,
-    sched_arrive_early: await getFormattedDateTime(schedArriveEarly, state, timeZoneMaster),
-    sched_arrive_late: await getFormattedDateTime(schedArriveLate, state, timeZoneMaster),
+    sched_arrive_early: getFormattedDateTime(schedArriveEarly, timeZone),
+    sched_arrive_late: getFormattedDateTime(schedArriveLate, timeZone),
     late_eta_colorcode: false,
     status: 'A',
     order_sequence: orderSequence,
@@ -233,28 +200,31 @@ async function generateStop(
 }
 
 async function processStopDataNonConsol(stopType, shipmentHeader, stateData) {
-  let pickupZip = '';
-  let deliveryZip = '';
   let schedArriveEarly = '';
   let schedArriveLate = '';
   let timeZone = '';
-  let state = '';
 
   if (stopType === 'PU') {
-    pickupZip = _.get(stateData, 'ShipZip', '');
     schedArriveEarly = _.get(shipmentHeader, 'ReadyDateTime', '');
     schedArriveLate = _.get(shipmentHeader, 'ReadyDateTimeRange', '');
-    timeZone = await getTimeZoneCode(pickupZip);
-    state = _.get(stateData, 'FK_ShipState', '');
+    timeZone = await getTimezone({
+      stopCity: _.get(stateData, 'ShipCity', ''),
+      state: _.get(stateData, 'FK_ShipState', ''),
+      country: _.get(stateData, 'FK_ShipCountry', ''),
+      address1: _.get(stateData, 'ShipAddress1', ''),
+    });
   } else if (stopType === 'SO') {
-    deliveryZip = _.get(stateData, 'ConZip', '');
     schedArriveEarly = _.get(shipmentHeader, 'ScheduledDateTime', '');
     schedArriveLate = _.get(shipmentHeader, 'ScheduledDateTimeRange', '');
-    timeZone = await getTimeZoneCode(deliveryZip);
-    state = _.get(stateData, 'FK_ConState', '');
+    timeZone = await getTimezone({
+      stopCity: _.get(stateData, 'ConCity', ''),
+      state: _.get(stateData, 'FK_ConState', ''),
+      country: _.get(stateData, 'FK_ConCountry', ''),
+      address1: _.get(stateData, 'ConAddress1', ''),
+    });
   }
 
-  return { schedArriveEarly, schedArriveLate, timeZone, state };
+  return { schedArriveEarly, schedArriveLate, timeZone };
 }
 
 async function generateStopforConsole(
@@ -270,14 +240,11 @@ async function generateStopforConsole(
   housebillData,
   descData
 ) {
-  const { schedArriveEarly, schedArriveLate, timeZone, state } = await processStopData(
+  const { schedArriveEarly, schedArriveLate, timeZone } = await processStopData(
     stopType,
     confirmationCostData
   );
 
-  const timeZoneMaster = await queryDynamoDB(
-    getParamsByTableName('', 'omni-wt-rt-timezone-master', timeZone)
-  );
   const instructions = await queryDynamoDB(
     getParamsByTableName(
       _.get(shipmentHeaderData, 'orderNo', ''),
@@ -296,8 +263,8 @@ async function generateStopforConsole(
     confirmed: false,
     driver_load_unload: 'N',
     location_id: locationId,
-    sched_arrive_early: await getFormattedDateTime(schedArriveEarly, state, timeZoneMaster),
-    sched_arrive_late: await getFormattedDateTime(schedArriveLate, state, timeZoneMaster),
+    sched_arrive_early: getFormattedDateTime(schedArriveEarly, timeZone),
+    sched_arrive_late: getFormattedDateTime(schedArriveLate, timeZone),
     late_eta_colorcode: false,
     status: 'A',
     order_sequence: orderSequence,
@@ -362,28 +329,31 @@ async function generateStopforConsole(
 }
 
 async function processStopData(stopType, confirmationCostData) {
-  let pickupZip = '';
-  let deliveryZip = '';
   let schedArriveEarly = '';
   let schedArriveLate = '';
   let timeZone = '';
-  let state = '';
 
   if (stopType === 'PU') {
-    pickupZip = _.get(confirmationCostData, 'ShipZip', '');
     schedArriveEarly = _.get(confirmationCostData, 'PickupDateTime', '');
     schedArriveLate = _.get(confirmationCostData, 'PickupTimeRange', '');
-    timeZone = await getTimeZoneCode(pickupZip);
-    state = _.get(confirmationCostData, 'FK_ShipState', '');
+    timeZone = await getTimezone({
+      stopCity: _.get(confirmationCostData, 'ShipCity', ''),
+      state: _.get(confirmationCostData, 'FK_ShipState', ''),
+      country: _.get(confirmationCostData, 'FK_ShipCountry', ''),
+      address1: _.get(confirmationCostData, 'ShipAddress1', ''),
+    });
   } else if (stopType === 'SO') {
-    deliveryZip = _.get(confirmationCostData, 'ConZip', '');
     schedArriveEarly = _.get(confirmationCostData, 'DeliveryDateTime', '');
     schedArriveLate = _.get(confirmationCostData, 'DeliveryTimeRange', '');
-    timeZone = await getTimeZoneCode(deliveryZip);
-    state = _.get(confirmationCostData, 'FK_ConState', '');
+    timeZone = await getTimezone({
+      stopCity: _.get(confirmationCostData, 'ConCity', ''),
+      state: _.get(confirmationCostData, 'FK_ConState', ''),
+      country: _.get(confirmationCostData, 'FK_ConCountry', ''),
+      address1: _.get(confirmationCostData, 'ConAddress1', ''),
+    });
   }
 
-  return { schedArriveEarly, schedArriveLate, timeZone, state };
+  return { schedArriveEarly, schedArriveLate, timeZone };
 }
 
 function getNote(confirmationCostData, type) {
@@ -415,7 +385,7 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
       };
     case 'omni-wt-rt-shipment-header-non-console':
       return {
-        TableName: 'omni-wt-rt-shipment-header-dev',
+        TableName: SHIPMENT_HEADER_TABLE,
         KeyConditionExpression: 'PK_OrderNo = :orderNo',
         FilterExpression: 'ShipQuote = :shipquote',
         ExpressionAttributeValues: {
@@ -482,14 +452,7 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
           ':orderNo': orderNo,
         },
       };
-    case 'omni-wt-rt-timezone-master':
-      return {
-        TableName: TIMEZONE_MASTER,
-        KeyConditionExpression: 'PK_TimeZoneCode = :code',
-        ExpressionAttributeValues: {
-          ':code': timezone,
-        },
-      };
+
     case 'omni-wt-rt-customers':
       return {
         TableName: CUSTOMER_TABLE,
@@ -517,8 +480,8 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
       };
     case 'omni-wt-rt-instructions':
       return {
-        TableName: 'omni-wt-rt-instructions-dev',
-        IndexName: 'omni-wt-instructions-orderNo-index-dev',
+        TableName: INSTRUCTIONS_TABLE,
+        IndexName: INSTRUCTIONS_INDEX_KEY_NAME,
         KeyConditionExpression: 'FK_OrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
@@ -814,7 +777,7 @@ async function getVesselForConsole({ shipmentAparConsoleData }) {
   return _.get(await queryDynamoDB(customersParams), 'Items.[0].CustName', '');
 }
 
-async function getWeightForConsole({ shipmentAparConsoleData: aparData }) {
+async function getWeightPiecesForConsole({ shipmentAparConsoleData: aparData }) {
   const descData = await Promise.all(
     aparData.map(async (data) => {
       const shipmentDescParams = {
@@ -829,11 +792,7 @@ async function getWeightForConsole({ shipmentAparConsoleData: aparData }) {
       return _.get(await queryDynamoDB(shipmentDescParams), 'Items', []);
     })
   );
-  console.info('🙂 -> file: test.js:36 -> descData:', descData);
-  const descDataFlatten = _.flatten(descData);
-  const totalWeight = _.sumBy(descDataFlatten, (item) => parseFloat(_.get(item, 'Weight', 0)));
-  console.info('🙂 -> file: test.js:38 -> totalWeight:', totalWeight);
-  return totalWeight;
+  return descData;
 }
 
 async function descDataForConsole({ shipmentAparConsoleData: aparData }) {
@@ -1165,7 +1124,12 @@ async function populateStops(
     const locationId = locationIds[index];
     const isPickup = stopHeader.ConsolStopPickupOrDelivery === 'false';
     const stoptype = isPickup ? 'PU' : 'SO';
-    const timeZoneCode = await getTimeZoneCode(stopHeader.ConsolStopZip);
+    const timeZoneCode = await getTimezone({
+      stopCity: _.get(stopHeader, 'ConsolStopCity', ''),
+      state: _.get(stopHeader, 'FK_ConsolStopState', ''),
+      country: _.get(stopHeader, 'FK_ConsolStopCountry', ''),
+      address1: _.get(stopHeader, 'ConsolStopAddress1', ''),
+    });
 
     const referenceNumbersArray = [
       generateReferenceNumbers({ references }),
@@ -1221,8 +1185,16 @@ async function populateStops(
       driver_load_unload: 'N',
       late_eta_colorcode: false,
       location_id: locationId,
-      sched_arrive_early: await calculateSchedArriveEarly(stopHeader, timeZoneCode),
-      sched_arrive_late: await calculateSchedArriveLate(stopHeader, timeZoneCode),
+      sched_arrive_early: await getCstTime({
+        date: stopHeader.ConsolStopDate,
+        time: stopHeader.ConsolStopTimeBegin,
+        timeZoneCode,
+      }),
+      sched_arrive_late: await getCstTime({
+        date: stopHeader.ConsolStopDate,
+        time: stopHeader.ConsolStopTimeEnd,
+        timeZoneCode,
+      }),
       status: 'A',
       order_sequence: parseInt(stopHeader.ConsolStopNumber || 0, 10) + 1,
       stop_type: stoptype,
@@ -1315,72 +1287,26 @@ async function fetchLocationIds(stopsData) {
   return locationIds;
 }
 
-async function getTimeZoneCode(zipcode) {
-  try {
-    const params = {
-      TableName: TIMEZONE_ZIP_CR,
-      KeyConditionExpression: 'ZipCode = :code',
-      ExpressionAttributeValues: {
-        ':code': zipcode,
-      },
-    };
-    console.info('🚀 ~ file: helper.js:998 ~ getTimeZoneCode ~ params:', params);
-    const result = await dynamoDB.query(params).promise();
-    const timezoncode = _.get(result, 'Items[0].FK_TimeZoneCode');
-    console.info('🚀 ~ file: test.js:603 ~ timezoncode:', timezoncode);
-    if (timezoncode) {
-      return timezoncode;
-    }
-    console.error(`Timezone code not found for zipcode: ${zipcode}`);
-    return null;
-  } catch (error) {
-    console.error('Error querying timezone code:', error);
-    throw error;
-  }
+function getUniqueObjects(array) {
+  const uniqueSet = new Set(array.map(JSON.stringify));
+  return Array.from(uniqueSet, JSON.parse);
 }
 
-async function getHoursAwayFromTimeZone(timeZoneCode) {
+async function getCstTime({ date, time, timezone }) {
   try {
-    const params = {
-      TableName: TIMEZONE_MASTER,
-      KeyConditionExpression: 'PK_TimeZoneCode = :code',
-      ExpressionAttributeValues: {
-        ':code': timeZoneCode,
-      },
-    };
-    console.info('🚀 ~ file: helper.js:1033 ~ getHoursAwayFromTimeZone ~ params:', params);
-    const result = await dynamoDB.query(params).promise();
-    const hoursAway = _.get(result, 'Items[0].HoursAway.S');
-    // Check if hoursAway is defined and convert to integer
-    return hoursAway ? null : parseInt(hoursAway, 10);
-  } catch (error) {
-    console.error('Error querying hours away:', error);
-    throw error;
-  }
-}
-
-async function calculateSchedArriveEarly(stopHeader, timeZoneCode) {
-  try {
-    const consolStopDate = stopHeader.ConsolStopDate;
-    const consolStopTimeBegin = stopHeader.ConsolStopTimeBegin;
-    const { timeZoneOffset, hoursAway } = await getConsolTimeZoneOffset(
-      stopHeader.FK_ConsolStopState,
-      consolStopDate,
-      timeZoneCode
-    );
-
     // Formatted date
-    const formattedDate = moment(consolStopDate, 'YYYY-MM-DD').format('YYYYMMDD');
+    const formattedDate = moment(date, 'YYYY-MM-DD').format('YYYYMMDD');
 
-    // Format time with offset and hours away
-    const formattedTime = moment(consolStopTimeBegin, 'HH:mm:ss.SSS')
-      .add(hoursAway, 'hours')
-      .utcOffset(timeZoneOffset, true)
-      .format('HHmmssZZ');
+    // Calculate UTC offset (including DST) for the timezone
+    const utcOffset = moment.tz(timezone).utcOffset();
+
+    // Format time with offset
+    const formattedTime = moment(time, 'HH:mm:ss.SSS').utcOffset(utcOffset).format('HHmmssZZ');
 
     // Combine date and time
     const formattedDateTime = formattedDate + formattedTime;
-    console.info('🚀 ~ file: test.js:652 ~ formattedDateTime:', formattedDateTime);
+    console.info('🚀 ~ file: helper.js:1315 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
+
     return formattedDateTime;
   } catch (error) {
     console.error('🚀 ~ file: helper.js:1068 ~ calculateSchedArriveEarly ~ error:', error);
@@ -1388,57 +1314,29 @@ async function calculateSchedArriveEarly(stopHeader, timeZoneCode) {
   }
 }
 
-async function calculateSchedArriveLate(stopHeader, timeZoneCode) {
+function getFormattedDateTime(datetime, timezone) {
   try {
-    const consolStopDate = stopHeader.ConsolStopDate;
-    const consolStopTimeEnd = stopHeader.ConsolStopTimeEnd;
-    const { timeZoneOffset, hoursAway } = await getConsolTimeZoneOffset(
-      stopHeader.FK_ConsolStopState,
-      consolStopDate,
-      timeZoneCode
+    // Parse the input datetime string
+    const parsedDatetime = moment(datetime, 'YYYY-MM-DD HH:mm:ss.SSS');
+
+    // Get the UTC offset for the specified timezone
+    const utcOffset = moment.tz(timezone).utcOffset();
+
+    // Apply the offset to the parsed datetime
+    const adjustedDatetime = parsedDatetime.utcOffset(utcOffset);
+
+    // Format the adjusted datetime
+    const formattedDateTime = adjustedDatetime.format('YYYYMMDDHHmmssZZ');
+    console.info(
+      '🚀 ~ file: helper.js:1337 ~ getFormattedDateTime ~ formattedDateTime:',
+      formattedDateTime
     );
-    // Formatted date
-    const formattedDate = moment(consolStopDate, 'YYYY-MM-DD').format('YYYYMMDD');
-    // Format time with offset and hours away
-    const formattedTime = moment(consolStopTimeEnd, 'HH:mm:ss.SSS')
-      .add(hoursAway, 'hours')
-      .utcOffset(timeZoneOffset, true)
-      .format('HHmmssZZ');
-
-    // Combine date and time
-    const formattedDateTime = formattedDate + formattedTime;
-
-    console.info('🚀 ~ file: test.js:652 ~ formattedDateTime:', formattedDateTime);
 
     return formattedDateTime;
   } catch (error) {
-    console.error('🚀 ~ file: helper.js:1097 ~ calculateSchedArriveLate ~ error:', error);
+    console.error(error);
     throw error;
   }
-}
-
-async function getConsolTimeZoneOffset(fKConsolStopState, consolStopDate, timeZoneCode) {
-  try {
-    let timeZoneOffset = 0;
-    let hoursAway = 0;
-    if (fKConsolStopState === 'AZ') {
-      timeZoneOffset = '-0600';
-    } else {
-      const weekOfYear = moment(consolStopDate).isoWeek();
-      timeZoneOffset = weekOfYear >= 11 && weekOfYear <= 44 ? '-0500' : '-0600';
-      hoursAway = await getHoursAwayFromTimeZone(timeZoneCode);
-    }
-
-    return { timeZoneOffset, hoursAway };
-  } catch (error) {
-    console.error('🚀 ~ file: helper.js:1116 ~ getConsolTimeZoneOffset ~ error:', error);
-    throw error;
-  }
-}
-
-function getUniqueObjects(array) {
-  const uniqueSet = new Set(array.map(JSON.stringify));
-  return Array.from(uniqueSet, JSON.parse);
 }
 
 // Define the mapping function
@@ -1587,10 +1485,46 @@ function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
   return 'NA';
 }
 
+async function getTimezoneFormGoogleApi({ address }) {
+  const { lat, lng } = await checkAddressByGoogleApi(address);
+  const googleRes = await getTimezoneByGoogleApi(lat, lng);
+  return googleRes;
+}
+
+async function getTimezone({ stopCity, state, country, address1 }) {
+  const address = `${address1}, ${stopCity}, ${state}, ${country}`;
+
+  const cityListForState = timezoneInfo[state];
+  let timezone = null;
+
+  if (cityListForState && cityListForState.length > 1) {
+    timezone = _.find(cityListForState, (timezone1) => {
+      return _.isEqual(
+        _.toUpper(_.replace(timezone1.city, /[^a-zA-Z]/g, '')),
+        _.toUpper(_.replace(stopCity, /[^a-zA-Z]/g, ''))
+      );
+    })?.timezone;
+  } else {
+    timezone = _.get(cityListForState[0], 'timezone', null);
+  }
+
+  if (!timezone) {
+    try {
+      // Call Google API to fetch timezone based on address
+      const googleRes = await getTimezoneFormGoogleApi({ address });
+      timezone = googleRes;
+    } catch (error) {
+      console.error('Error fetching timezone from Google API:', error);
+      throw error;
+    }
+  }
+
+  return timezone;
+}
+
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
-  formatTimestamp,
   getFormattedDateTime,
   generateStop,
   getParamsByTableName,
@@ -1602,7 +1536,7 @@ module.exports = {
   fetchNonConsoleTableData,
   fetchConsoleTableData,
   getVesselForConsole,
-  getWeightForConsole,
+  getWeightPiecesForConsole,
   getHazmat,
   getHighValue,
   getAparDataByConsole,
@@ -1616,4 +1550,5 @@ module.exports = {
   generateStopforConsole,
   getHousebillData,
   descDataForConsole,
+  getTimezone,
 };

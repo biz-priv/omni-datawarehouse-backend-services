@@ -12,7 +12,10 @@ const {
   TRACKING_NOTES_API_URL,
   API_PASS,
   API_USER_ID,
+  ADDRESS_MAPPING_G_API_KEY,
 } = process.env;
+
+const apiKey = ADDRESS_MAPPING_G_API_KEY;
 
 async function getLocationId(name, address1, address2, cityName, state, zipCode) {
   const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${
@@ -182,4 +185,49 @@ async function liveSendUpdate(houseBill, shipmentId) {
   }
 }
 
-module.exports = { getLocationId, createLocation, sendPayload, updateOrders, liveSendUpdate };
+async function checkAddressByGoogleApi(address) {
+  try {
+    const geocodeResponse = await axios.get(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
+    );
+
+    if (geocodeResponse.data.status !== 'OK') {
+      throw new Error(`Unable to geocode ${address}`);
+    }
+
+    const { lat, lng } = _.get(geocodeResponse, 'data.results[0].geometry.location', {});
+    return { lat, lng };
+  } catch (error) {
+    console.error(`Error geocoding address "${address}":`, error.message);
+    throw error;
+  }
+}
+
+async function getTimezoneByGoogleApi(lat, long) {
+  try {
+    const timestamp = Date.now() / 1000;
+    const timezoneResponse = await axios.get(
+      `https://maps.googleapis.com/maps/api/timezone/json?location=${lat}%2C${long}&timestamp=${timestamp}&key=${apiKey}`
+    );
+
+    if (timezoneResponse.data.status !== 'OK') {
+      throw new Error(`Unable to fetch timezone for coordinates (${lat}, ${long})`);
+    }
+
+    const timeZoneId = _.get(timezoneResponse, 'data.timeZoneId');
+    return timeZoneId;
+  } catch (error) {
+    console.error(`Error fetching timezone for coordinates (${lat}, ${long}):`, error.message);
+    throw error;
+  }
+}
+
+module.exports = {
+  getLocationId,
+  createLocation,
+  sendPayload,
+  updateOrders,
+  liveSendUpdate,
+  checkAddressByGoogleApi,
+  getTimezoneByGoogleApi,
+};

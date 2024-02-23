@@ -5,13 +5,7 @@ const AWS = require('aws-sdk');
 const { STATUSES, TABLE_PARAMS, TYPES } = require('../shared/constants/204_create_shipment');
 const moment = require('moment-timezone');
 
-const {
-  SNS_TOPIC_ARN,
-  STATUS_TABLE,
-  CONSOLE_STATUS_TABLE,
-  CONSOL_STOP_ITEMS,
-  CONSOL_STOP_HEADERS,
-} = process.env;
+const { SNS_TOPIC_ARN, STATUS_TABLE, CONSOLE_STATUS_TABLE, CONSOL_STOP_HEADERS } = process.env;
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
@@ -79,7 +73,6 @@ async function checkMultiStop(tableData) {
   const retryCount = get(tableData, 'RetryCount', 0);
   console.info('🙂 -> file: index.js:90 -> retryCount:', retryCount);
   const orderNumbersForConsol = Object.keys(get(tableData, 'TableStatuses'));
-  const stopIdSize = await fetchStopIds({ orderNumbersForConsol });
   await Promise.all(
     orderNumbersForConsol.map(async (orderNoForConsol) => {
       console.info('🙂 -> file: index.js:160 -> orderNoForConsol:', orderNoForConsol);
@@ -100,7 +93,6 @@ async function checkMultiStop(tableData) {
             });
             originalTableStatuses[`${orderNoForConsol}`][tableName] = await fetchItemFromTable({
               params: param,
-              stopIdSize,
             });
           } catch (error) {
             console.info('🙂 -> file: index.js:182 -> error:', error);
@@ -157,15 +149,25 @@ async function checkMultiStop(tableData) {
   });
 }
 
-async function fetchItemFromTable({ params, stopIdSize }) {
+async function fetchItemFromTable({ params }) {
   try {
     console.info('🙂 -> file: index.js:135 -> params:', params);
     if (get(params, 'TableName', '') === CONSOL_STOP_HEADERS) {
       const data = await dynamoDb.query(params).promise();
       console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
       const stopHeaders = get(data, 'Items', []);
-      const stopIds = new Set(stopHeaders.map((item) => item.PK_ConsolStopId));
-      if (stopIdSize === stopIds.size) {
+      if (
+        stopHeaders.every(
+          (item) =>
+            item.FK_ConsolStopState &&
+            item.ConsolStopTimeEnd &&
+            item.ConsolStopTimeBegin &&
+            item.ConsolStopName &&
+            item.ConsolStopDate &&
+            item.ConsolStopCity &&
+            item.ConsolStopAddress1
+        )
+      ) {
         return STATUSES.READY;
       }
       return STATUSES.PENDING;
@@ -276,37 +278,6 @@ async function sleep(seconds) {
     return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
   } catch (error) {
     console.error('🚀 ~ file: index.js:249 ~ sleep ~ error:', error);
-    throw error;
-  }
-}
-
-async function fetchStopIds({ orderNumbersForConsol }) {
-  const uniqueFkConsolStopIds = new Set();
-
-  try {
-    // Fetching unique stop IDs for all order numbers
-    for (const orderNoForConsol of orderNumbersForConsol) {
-      const consolStopItemsParams = {
-        TableName: CONSOL_STOP_ITEMS,
-        KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
-        ExpressionAttributeValues: {
-          ':FK_OrderNo': orderNoForConsol,
-        },
-      };
-      const consolStopItemsData = await dynamoDb.query(consolStopItemsParams).promise();
-      console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', consolStopItemsData);
-      const stopItems = get(consolStopItemsData, 'Items', []);
-      stopItems.forEach((item) => uniqueFkConsolStopIds.add(item.FK_ConsolStopId));
-      console.info(
-        '🚀 ~ file: index.js:165 ~ fetchItemFromTable ~ uniqueFkConsolStopIds:',
-        uniqueFkConsolStopIds
-      );
-    }
-
-    return uniqueFkConsolStopIds.size;
-  } catch (error) {
-    console.error('Error fetching stop IDs:', error);
-    // Handle error appropriately, throw or return an error message
     throw error;
   }
 }

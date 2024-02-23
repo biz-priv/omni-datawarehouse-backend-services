@@ -2,21 +2,21 @@
 const _ = require('lodash');
 const {
   generateStop,
-  formatTimestamp,
   getVesselForConsole,
-  getWeightForConsole,
+  getWeightPiecesForConsole,
   getHazmat,
   getHighValue,
   getAparDataByConsole,
   sumNumericValues,
   populateStops,
   mapEquipmentCodeToFkPowerbrokerCode,
-  getPieces,
   mapOrderTypeToMcLeod,
   getShipmentHeaderData,
   generateStopforConsole,
   getHousebillData,
   descDataForConsole,
+  getFormattedDateTime,
+  getTimezone,
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -51,6 +51,12 @@ async function nonConsolPayload({
     shipmentAparData
   );
 
+  const timezone = await getTimezone({
+    stopCity: _.get(finalShipperData, 'ShipCity', ''),
+    state: _.get(finalShipperData, 'FK_ShipState', ''),
+    country: _.get(finalShipperData, 'FK_ShipCountry', ''),
+    address1: _.get(finalShipperData, 'ShipAddress1', ''),
+  });
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
@@ -71,7 +77,7 @@ async function nonConsolPayload({
     excise_taxable: false,
     force_assign: true,
     hazmat,
-    high_value: _.get(shipmentHeader, 'Insurance', 0) > 100000, // TODO: validate this filed
+    high_value: _.get(shipmentHeader, 'Insurance', 0) > 100000,
     hold_reason: 'NEW API',
     include_split_point: false,
     is_autorate_dist: false,
@@ -79,7 +85,7 @@ async function nonConsolPayload({
     is_dedicated: false,
     ltl: _.includes(['FT', 'HS'], _.get(shipmentHeader, 'FK_ServiceLevelId')),
     on_hold: false,
-    ordered_date: formatTimestamp(_.get(shipmentHeader, 'OrderDate', '')),
+    ordered_date: getFormattedDateTime(_.get(shipmentHeader, 'OrderDate', ''), timezone),
     rad_date: deliveryStop.sched_arrive_late,
     ordered_method: 'M',
     order_value: _.get(shipmentHeader, 'Insurance', 0),
@@ -123,7 +129,6 @@ async function nonConsolPayload({
 }
 
 async function consolPayload({
-  shipmentDesc,
   referencesData,
   shipperLocationId,
   consigneeLocationId,
@@ -148,7 +153,12 @@ async function consolPayload({
     '',
     shipmentAparConsoleData
   );
-
+  const timezone = await getTimezone({
+    stopCity: _.get(finalShipperData, 'ShipCity', ''),
+    state: _.get(finalShipperData, 'FK_ShipState', ''),
+    country: _.get(finalShipperData, 'FK_ShipCountry', ''),
+    address1: _.get(finalShipperData, 'ShipAddress1', ''),
+  });
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
@@ -177,12 +187,15 @@ async function consolPayload({
     is_dedicated: false,
     ltl: _.includes(['FT', 'HS'], _.get(shipmentHeaderData, 'serviceLevelId', '')),
     on_hold: false,
-    ordered_date: formatTimestamp(_.get(shipmentAparData, 'CreateDateTime', '')),
+    ordered_date: getFormattedDateTime(_.get(shipmentAparData, 'CreateDateTime', ''), timezone),
     rad_date: deliveryStop.sched_arrive_late, // Set rad_date to scheduled arrival late of SO stop
     ordered_method: 'M',
     order_value: await getHighValue({ shipmentAparConsoleData, type: 'order_value' }),
     pallets_required: false,
-    pieces: getPieces({ shipmentDesc }),
+    pieces: sumNumericValues(
+      await getWeightPiecesForConsole({ shipmentAparConsoleData }),
+      'Pieces'
+    ),
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
@@ -193,7 +206,10 @@ async function consolPayload({
     swap: true,
     teams_required: false,
     vessel: await getVesselForConsole({ shipmentAparConsoleData }),
-    weight: await getWeightForConsole({ shipmentAparConsoleData }),
+    weight: sumNumericValues(
+      await getWeightPiecesForConsole({ shipmentAparConsoleData }),
+      'Weight'
+    ),
     weight_um: 'LB',
     order_mode: 'T',
     operational_status: 'CLIN',
@@ -283,7 +299,7 @@ async function mtPayload(
     is_dedicated: false,
     ltl: _.includes(['FT', 'HS'], _.get(shipmentHeader, '[0]FK_ServiceLevelId')),
     on_hold: false,
-    ordered_date: formatTimestamp(_.get(shipmentHeader, '[0]OrderDate', '')),
+    ordered_date: getFormattedDateTime(_.get(shipmentApar, '[0]CreateDateTime', '')),
     rad_date: lastStop.sched_arrive_late,
     ordered_method: 'M',
     order_value: sumNumericValues(shipmentHeader, 'Insurance'),

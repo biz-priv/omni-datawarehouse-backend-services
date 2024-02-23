@@ -2,7 +2,12 @@
 
 const { get, pickBy } = require('lodash');
 const AWS = require('aws-sdk');
-const { STATUSES, TABLE_PARAMS, TYPES } = require('../shared/constants/204_create_shipment');
+const {
+  STATUSES,
+  TABLE_PARAMS,
+  TYPES,
+  CONSOLE_WISE_REQUIRED_FIELDS,
+} = require('../shared/constants/204_create_shipment');
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
@@ -105,9 +110,13 @@ async function checkTable(tableData) {
       retryCount,
       status: STATUSES.FAILED,
     });
+    let missingFields = pendingTables.map(
+      (pendingTable) => CONSOLE_WISE_REQUIRED_FIELDS[type][pendingTable]
+    );
+    missingFields = missingFields.flat().join('\n');
     await publishSNSTopic({
       message: `All tables are not populated for order id: ${orderNo}.
-      \n Tables with no data: ${pendingTables}. 
+      \n Please check if all the below feilds are populated: ${missingFields}. 
       \n Please check ${STATUS_TABLE} to see which table does not have data. 
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
     });
