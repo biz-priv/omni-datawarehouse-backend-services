@@ -25,7 +25,7 @@ module.exports.handler = async (event, context) => {
     s3Bucket = get(event, 'Records[0].s3.bucket.name', '');
     s3Key = get(event, 'Records[0].s3.object.key', '');
     dynamoData = { S3Bucket: s3Bucket, S3Key: s3Key, Id: uuid.v4().replace(/[^a-zA-Z0-9]/g, '') };
-    console.info('Id :', get(dynamoData, 'id', ''));
+    console.info('Id :', get(dynamoData, 'Id', ''));
 
     // Set the time zone to CST
     const cstDate = moment().tz('America/Chicago');

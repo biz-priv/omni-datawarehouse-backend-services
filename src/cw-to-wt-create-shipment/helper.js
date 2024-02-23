@@ -219,7 +219,7 @@ async function getStationId(orgCode) {
   try {
     const data = await dynamoDb.query(params).promise();
     console.info('Query succeeded:', data);
-    return get(data, 'Items[0].FK_StationId', '');
+    return get(data, 'Items[0].FK_CtrlStationId', '');
   } catch (err) {
     console.info('getStationId:', err);
     throw err;
