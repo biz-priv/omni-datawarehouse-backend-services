@@ -52,7 +52,7 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
       'UniversalShipment.Shipment.OrganizationAddressCollection.OrganizationAddress',
       []
     ).filter((obj) => obj.AddressType === 'SendersLocalClient');
-    const orgCode = get(orgCodeData, 'OrganizationCode', '');
+    const orgCode = get(orgCodeData, '[0].OrganizationCode', '');
     if (orgCode === '') {
       throw new Error('Organization code doesnt exist in the source file');
     }
@@ -137,16 +137,16 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
 
 const CONSTANTS = {
   billToAcc: {
-    ROYENFMKE: 53241,
-    FEDSIGORD: 9058,
-    SCIATLELP: 9606,
-    OMNICEORD: 9269,
-    ARJOHUORD: 8899,
-    CUMALLORD: 8988,
-    RTCINDRLM: 9660,
-    WATERBECP: 23131,
-    CIRKLIPHX: 52664,
-    ARXIUMORD: 8907,
+    ROYENFMKE: '53241',
+    FEDSIGORD: '9058',
+    SCIATLELP: '9606',
+    OMNICEORD: '9269',
+    ARJOHUORD: '8899',
+    CUMALLORD: '8988',
+    RTCINDRLM: '9660',
+    WATERBECP: '23131',
+    CIRKLIPHX: '52664',
+    ARXIUMORD: '8907',
   },
 };
 
@@ -202,11 +202,17 @@ async function prepareShipmentListData(xmlObj) {
 }
 
 async function getStationId(orgCode) {
+  const billToAcc = get(CONSTANTS, `billToAcc.${orgCode}`, '');
+  if (billToAcc === '') {
+    throw new Error(
+      `Please provide a valid Organization Code, The organization code that we receieve: ${orgCode}`
+    );
+  }
   const params = {
     TableName: process.env.CUSTOMERS_TABLE,
     KeyConditionExpression: 'PK_CustNo = :Value',
     ExpressionAttributeValues: {
-      ':Value': get(CONSTANTS, `billToAcc.${orgCode}`, ''),
+      ':Value': billToAcc,
     },
   };
 
@@ -215,7 +221,7 @@ async function getStationId(orgCode) {
     console.info('Query succeeded:', data);
     return get(data, 'Items[0].FK_StationId', '');
   } catch (err) {
-    console.info('Query error:', err);
+    console.info('getStationId:', err);
     throw err;
   }
 }

@@ -4,21 +4,21 @@
       "eventVersion": "2.1",
       "eventSource": "aws:s3",
       "awsRegion": "us-east-1",
-      "eventTime": "2024-02-14T10:20:09.418Z",
+      "eventTime": "2024-02-22T11:23:13.707Z",
       "eventName": "ObjectCreated:Put",
       "userIdentity": {
         "principalId": "AWS:AROAU2XMJTS2T67LQAZTF:madhava.matta@bizcloudexperts.com"
       },
       "requestParameters": {
-        "sourceIPAddress": "122.164.167.212"
+        "sourceIPAddress": "122.178.62.133"
       },
       "responseElements": {
-        "x-amz-request-id": "JCNE3A9ZBGTJ7AER",
-        "x-amz-id-2": "7WTIj53pdphCLpbJVBqInlrmr5glP0bbvpdsXNHwkNendBLiv7tT2IUqcXPNV6QrPINtiG2MMHWyVPRfgn8OaU+fnGvBCSk5sx3V22wnZoQ="
+        "x-amz-request-id": "AXWQ4D7TK47WAR54",
+        "x-amz-id-2": "aINLeUYij3McxVbx3DYD2ZoRYqPmdPS2C4iA3tQmYidXFPEsKDMz6jaIz5mxWqxkvvLmCRHbiF6LAblrOrknQVTrVVHRkaBisXZrGraUxiw="
       },
       "s3": {
         "s3SchemaVersion": "1.0",
-        "configurationId": "omni-wms-shipengine-updates-dev-73da995c70d8b434b0d12737797f4bce",
+        "configurationId": "exS3-v2--1f6e8938705134971c081e7f431a892e",
         "bucket": {
           "name": "dev-cargowise-to-datawarehouse",
           "ownerIdentity": {
@@ -27,10 +27,10 @@
           "arn": "arn:aws:s3:::dev-cargowise-to-datawarehouse"
         },
         "object": {
-          "key": "ShipEngine/TRXELPTS2_WOU_PKC_W00229596_SHIPENSJC_SHIPENSJCT_202312212021580401.xml",
-          "size": 18564,
-          "eTag": "061d321c8887a1aab1036dad7e401256",
-          "sequencer": "0065CC93D95FFDA947"
+          "key": "CargoWiseOutbound/FederalSignal/TRXELPTS2_WOU_RLS_W00229668_FEDSIGORDT_FEDSIGORDT_202402191216061870.xml",
+          "size": 23645,
+          "eTag": "03b6700ad9a44ca868810aefc6ae1cf3",
+          "sequencer": "0065D72EA1A55B79F9"
         }
       }
     }
