@@ -153,8 +153,8 @@ async function publishSNSTopic({ message }) {
   await sns
     .publish({
       TopicArn: SNS_TOPIC_ARN,
-      Subject: `Error on ${functionName} lambda.`,
-      Message: `An error occurred: ${message}`,
+      Subject: `POWERBROKER ERROR NOTIFIACATION - ${STAGE}}`,
+      Message: `An error occurred in ${functionName}: ${message}`,
     })
     .promise();
 }
