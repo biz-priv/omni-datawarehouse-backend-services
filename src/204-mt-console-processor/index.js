@@ -2,7 +2,12 @@
 
 const { get, pickBy, includes } = require('lodash');
 const AWS = require('aws-sdk');
-const { STATUSES, TABLE_PARAMS, TYPES } = require('../shared/constants/204_create_shipment');
+const {
+  STATUSES,
+  TABLE_PARAMS,
+  TYPES,
+  CONSOLE_WISE_REQUIRED_FIELDS,
+} = require('../shared/constants/204_create_shipment');
 const moment = require('moment-timezone');
 
 const { SNS_TOPIC_ARN, STATUS_TABLE, CONSOLE_STATUS_TABLE, CONSOL_STOP_HEADERS } = process.env;
@@ -124,10 +129,13 @@ async function checkMultiStop(tableData) {
         const pendingTables = Object.keys(tableStatuses).filter((table) => {
           return tableStatuses[table] === STATUSES.PENDING;
         });
-
+        let missingFields = pendingTables.map(
+          (pendingTable) => CONSOLE_WISE_REQUIRED_FIELDS[type][pendingTable]
+        );
+        missingFields = missingFields.flat().join('\n');
         await publishSNSTopic({
           message: `All tables are not populated for consolNo: ${consolNo}.
-              \n Tables with no data: ${pendingTables}. 
+              \n Please check if all the below feilds are populated: ${missingFields}. 
               \n Please check ${CONSOLE_STATUS_TABLE} to see which table does not have data. 
               \n Retrigger the process by changing Status to ${STATUSES.PENDING} and resetting the RetryCount to 0.`,
         });
