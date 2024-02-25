@@ -40,8 +40,9 @@ async function publishSNSTopic({ message }) {
     await sns
       .publish({
         TopicArn: SNS_TOPIC_ARN,
-        Subject: `POWERBROKER ERROR NOTIFIACATION - ${STAGE}}`,
-        Message: `An error occurred in ${functionName}: ${message}`,
+        Subject: `POWERBROKER ERROR NOTIFIACATION - ${STAGE}`,
+        Message: `An error occurred in ${functionName}: 
+        \n${message}`,
       })
       .promise();
   } catch (error) {
@@ -116,7 +117,8 @@ async function checkTable(tableData) {
     missingFields = missingFields.flat().join('\n');
     await publishSNSTopic({
       message: `All tables are not populated for order id: ${orderNo}.
-      \n Please check if all the below feilds are populated: ${missingFields}. 
+      \n Please check if all the below feilds are populated: 
+      \n${missingFields}. 
       \n Please check ${STATUS_TABLE} to see which table does not have data. 
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
     });

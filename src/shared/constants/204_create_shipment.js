@@ -33,14 +33,12 @@ const CONSOLE_WISE_TABLES = {
   [TYPES.CONSOLE]: {
     tbl_ConfirmationCost: STATUSES.PENDING,
     tbl_TrackingNotes: STATUSES.PENDING,
-    tbl_ShipmentDesc: STATUSES.PENDING,
   },
   [TYPES.NON_CONSOLE]: {
     tbl_ConfirmationCost: STATUSES.PENDING,
     tbl_Shipper: STATUSES.PENDING,
     tbl_Consignee: STATUSES.PENDING,
     tbl_ShipmentHeader: STATUSES.PENDING,
-    tbl_ShipmentDesc: STATUSES.PENDING,
   },
   [TYPES.MULTI_STOP]: {
     tbl_ShipmentHeader: STATUSES.PENDING,
@@ -68,13 +66,6 @@ const TABLE_PARAMS = {
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
         ':ConsolNo': String(consoleNo),
-      },
-    }),
-    tbl_ShipmentDesc: ({ orderNo }) => ({
-      TableName: SHIPMENT_DESC_TABLE,
-      KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
-      ExpressionAttributeValues: {
-        ':FK_OrderNo': orderNo,
       },
     }),
   },
@@ -106,13 +97,6 @@ const TABLE_PARAMS = {
       KeyConditionExpression: 'PK_OrderNo = :orderNo',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
-      },
-    }),
-    tbl_ShipmentDesc: ({ orderNo }) => ({
-      TableName: SHIPMENT_DESC_TABLE,
-      KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
-      ExpressionAttributeValues: {
-        ':FK_OrderNo': orderNo,
       },
     }),
   },
@@ -180,7 +164,6 @@ const CONSOLE_WISE_REQUIRED_FIELDS = {
       'Shipper Country',
     ],
     tbl_TrackingNotes: ['UserId'],
-    tbl_ShipmentDesc: ['Hazmat', 'Pieces', 'Weight'],
   },
   [TYPES.NON_CONSOLE]: {
     tbl_ConfirmationCost: [
@@ -219,7 +202,6 @@ const CONSOLE_WISE_REQUIRED_FIELDS = {
       'ScheduledDateTime',
       'ScheduledDateTimeRange',
     ],
-    tbl_ShipmentDesc: ['Hazmat', 'Pieces', 'Weight'],
   },
   [TYPES.MULTI_STOP]: {
     tbl_ShipmentHeader: ['EquipmentCode', 'Insurance', 'ServiceLevelId', 'Housebill'],
