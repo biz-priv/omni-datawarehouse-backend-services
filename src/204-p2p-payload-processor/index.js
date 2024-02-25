@@ -119,8 +119,9 @@ module.exports.handler = async (event, context) => {
           console.info('🙂 -> file: index.js:123 -> shipmentHeaderData:', shipmentHeaderData);
           const shipmentAparConsoleData = await getAparDataByConsole({ shipmentAparData });
           const shipmentHeader = await getShipmentHeaderData({ shipmentAparConsoleData });
-          houseBill = _.get(shipmentHeader, 'Housebill', 0);
-          console.info('🚀 ~ file: index.js:121 ~ promises ~ houseBill:', houseBill);
+          houseBill = shipmentHeader.flatMap((headerData) => headerData.housebills);
+          console.info('🚀 ~ file: index.js:123 ~ promises ~ houseBill:', houseBill);
+
           const ConsolPayloadData = await consolPayload({
             referencesData,
             customersData,
@@ -166,7 +167,15 @@ module.exports.handler = async (event, context) => {
         const createPayloadResponse = await sendPayload({ payload });
         console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
         const shipmentId = _.get(createPayloadResponse, 'id', 0);
-        await liveSendUpdate(houseBill, shipmentId);
+        if (type === 'NON_CONSOLE') {
+          await liveSendUpdate(houseBill, shipmentId);
+        } else if (type === 'CONSOLE') {
+          // Mapping houseBills to promises
+          const houseBillPromises = houseBill.map(async (hb) => {
+            await liveSendUpdate(hb, shipmentId);
+          });
+          await Promise.all(houseBillPromises);
+        }
         const movements = _.get(createPayloadResponse, 'movements', []);
         // Add "brokerage_status" to each movement
         const updatedMovements = movements.map((movement) => ({

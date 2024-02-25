@@ -247,7 +247,7 @@ async function generateStopforConsole(
 
   const instructions = await queryDynamoDB(
     getParamsByTableName(
-      _.get(shipmentHeaderData, 'orderNo', ''),
+      _.get(shipmentHeaderData, '[0].orderNo', ''),
       'omni-wt-rt-instructions',
       timeZone
     )
@@ -297,7 +297,7 @@ async function generateStopforConsole(
   });
   if (type === 'shipper') {
     const userEmail = _.get(userData, 'UserEmail', '') || 'NA';
-    const equipmentCode = _.get(shipmentHeaderData, 'equipmentCode', '') || 'NA';
+    const equipmentCode = _.get(shipmentHeaderData, '[0].equipmentCode', '') || 'NA';
     const total = sumNumericValues(shipmentAparConsoleData, 'Total');
 
     stopData.stopNotes.push(
@@ -867,28 +867,38 @@ async function getHighValue({ shipmentAparConsoleData: aparData, type = 'high_va
 }
 
 async function getShipmentHeaderData({ shipmentAparConsoleData: aparData }) {
-  const data = aparData[0];
-  const shipmentHeaderParams = {
-    TableName: SHIPMENT_HEADER_TABLE,
-    KeyConditionExpression: 'PK_OrderNo = :orderNo',
-    ExpressionAttributeValues: {
-      ':orderNo': _.get(data, 'FK_OrderNo'),
-    },
-  };
-  console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentHeaderParams);
+  const headerDataArray = [];
 
-  const queryResult = await queryDynamoDB(shipmentHeaderParams);
-  const items = _.get(queryResult, 'Items', []);
+  // Iterate over each object in aparData
+  await Promise.all(
+    aparData.map(async (data) => {
+      const shipmentHeaderParams = {
+        TableName: SHIPMENT_HEADER_TABLE,
+        KeyConditionExpression: 'PK_OrderNo = :orderNo',
+        ExpressionAttributeValues: {
+          ':orderNo': _.get(data, 'FK_OrderNo'),
+        },
+      };
+      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentHeaderParams);
 
-  // Extracting FK_EquipmentCode, FK_ServiceLevelId, and OrderDate from the first object
-  const firstItem = items.length > 0 ? items[0] : null;
-  const equipmentCode = _.get(firstItem, 'FK_EquipmentCode');
-  const serviceLevelId = _.get(firstItem, 'FK_ServiceLevelId');
-  const Housebill = _.get(firstItem, 'Housebill');
-  const orderNo = _.get(firstItem, 'PK_OrderNo');
+      const queryResult = await queryDynamoDB(shipmentHeaderParams);
+      const items = _.get(queryResult, 'Items', []);
 
-  const headerData = { equipmentCode, serviceLevelId, Housebill, orderNo };
-  return headerData;
+      // Extracting FK_EquipmentCode, FK_ServiceLevelId, and OrderDate from any object
+      const firstItem = items.length > 0 ? items[0] : null;
+      const equipmentCode = _.get(firstItem, 'FK_EquipmentCode');
+      const serviceLevelId = _.get(firstItem, 'FK_ServiceLevelId');
+      const orderNo = _.get(firstItem, 'PK_OrderNo');
+
+      // Collecting Housebill from all objects
+      const housebills = items.map((item) => _.get(item, 'Housebill'));
+
+      const headerData = { equipmentCode, serviceLevelId, orderNo, housebills };
+      headerDataArray.push(headerData);
+    })
+  );
+
+  return headerDataArray;
 }
 
 async function getHousebillData({ shipmentAparConsoleData: aparData }) {

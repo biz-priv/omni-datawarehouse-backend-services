@@ -142,9 +142,14 @@ async function consolPayload({
   const shipmentHeaderData = await getShipmentHeaderData({ shipmentAparConsoleData });
   console.info('🚀 ~ file: payloads.js:143 ~ shipmentHeaderData:', shipmentHeaderData);
   const housebillData = await getHousebillData({ shipmentAparConsoleData });
-  console.info('🚀 ~ file: payloads.js:144 ~ housebillData:', housebillData);
   const descData = await descDataForConsole({ shipmentAparConsoleData });
-  console.info('🚀 ~ file: payloads.js:146 ~ descData:', descData);
+  // Convert housebillData to array of objects
+  const housebillObjects = housebillData.map((array) => array.map((item) => ({ ...item })));
+  console.info('🚀 ~ file: payloads.js:147 ~ housebillObjects:', housebillObjects);
+
+  // Convert descData to array of objects
+  const descObjects = descData.map((array) => array.map((item) => ({ ...item })));
+  console.info('🚀 ~ file: payloads.js:151 ~ descObjects:', descObjects);
   const deliveryStop = await generateStopforConsole(
     shipmentHeaderData,
     referencesData,
@@ -175,9 +180,9 @@ async function consolPayload({
     blnum: _.get(shipmentAparData, 'ConsolNo', ''),
     entered_user_id: 'apiuser',
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
-      _.get(shipmentHeaderData, 'equipmentCode', '')
+      _.get(shipmentHeaderData, '[0].equipmentCode', '')
     ),
-    order_type_id: mapOrderTypeToMcLeod(_.get(shipmentHeaderData, 'equipmentCode', '')),
+    order_type_id: mapOrderTypeToMcLeod(_.get(shipmentHeaderData, '[0].equipmentCode', '')),
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -188,14 +193,14 @@ async function consolPayload({
     is_autorate_dist: false,
     is_container: false,
     is_dedicated: false,
-    ltl: _.includes(['FT', 'HS'], _.get(shipmentHeaderData, 'serviceLevelId', '')),
+    ltl: _.includes(['FT', 'HS'], _.get(shipmentHeaderData, '[0].serviceLevelId', '')),
     on_hold: false,
     ordered_date: getFormattedDateTime(_.get(shipmentAparData, 'CreateDateTime', ''), timezone),
     rad_date: deliveryStop.sched_arrive_late, // Set rad_date to scheduled arrival late of SO stop
     ordered_method: 'M',
     order_value: await getHighValue({ shipmentAparConsoleData, type: 'order_value' }),
     pallets_required: false,
-    pieces: sumNumericValues(descData, 'Pieces'),
+    pieces: sumNumericValues(descObjects, 'Pieces'),
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
@@ -206,7 +211,7 @@ async function consolPayload({
     swap: true,
     teams_required: false,
     vessel: await getVesselForConsole({ shipmentAparConsoleData }),
-    weight: sumNumericValues(descData, 'Weight'),
+    weight: sumNumericValues(descObjects, 'Weight'),
     weight_um: 'LB',
     order_mode: 'T',
     operational_status: 'CLIN',
@@ -226,8 +231,8 @@ async function consolPayload({
       'shipper',
       userData,
       shipmentAparConsoleData,
-      housebillData,
-      descData
+      housebillObjects,
+      descObjects
     ),
     deliveryStop
   );
