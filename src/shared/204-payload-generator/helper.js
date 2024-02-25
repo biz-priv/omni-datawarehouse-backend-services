@@ -806,13 +806,19 @@ async function descDataForConsole({ shipmentAparConsoleData: aparData }) {
           ':orderNo': _.get(data, 'FK_OrderNo'),
         },
       };
-      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentDescParams);
 
-      return _.get(await queryDynamoDB(shipmentDescParams), 'Items', []);
+      const queryResult = await queryDynamoDB(shipmentDescParams);
+      const descItems = _.get(queryResult, 'Items', []);
+
+      // Assuming you want to push all items from the query result
+      return descItems;
     })
   );
-  console.info('🙂 -> file: test.js:36 -> descData:', descData);
-  return descData;
+
+  // Flatten the array of arrays
+  const descDataFlatten = _.flatten(descData);
+
+  return descDataFlatten;
 }
 
 async function getHazmat({ shipmentAparConsoleData: aparData }) {
@@ -902,10 +908,7 @@ async function getShipmentHeaderData({ shipmentAparConsoleData: aparData }) {
 }
 
 async function getHousebillData({ shipmentAparConsoleData: aparData }) {
-  const housebillData = [];
-
-  // Use Promise.all to concurrently execute queries for each PK_OrderNo
-  await Promise.all(
+  const housebillData = await Promise.all(
     aparData.map(async (dataItem) => {
       const shipmentHeaderParams = {
         TableName: SHIPMENT_HEADER_TABLE,
@@ -915,16 +918,17 @@ async function getHousebillData({ shipmentAparConsoleData: aparData }) {
         },
       };
 
-      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentHeaderParams);
-
       const queryResult = await queryDynamoDB(shipmentHeaderParams);
       const headerData = _.get(queryResult, 'Items', []);
 
-      housebillData.push(headerData);
+      return headerData; // Return all items from the query result
     })
   );
 
-  return housebillData;
+  // Flatten the array of arrays
+  const housebillDataFlatten = _.flatten(housebillData);
+
+  return housebillDataFlatten;
 }
 
 function getPieces({ shipmentDesc }) {

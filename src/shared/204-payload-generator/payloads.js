@@ -142,14 +142,9 @@ async function consolPayload({
   const shipmentHeaderData = await getShipmentHeaderData({ shipmentAparConsoleData });
   console.info('🚀 ~ file: payloads.js:143 ~ shipmentHeaderData:', shipmentHeaderData);
   const housebillData = await getHousebillData({ shipmentAparConsoleData });
+  console.info('🚀 ~ file: payloads.js:145 ~ housebillData:', housebillData);
   const descData = await descDataForConsole({ shipmentAparConsoleData });
-  // Convert housebillData to array of objects
-  const housebillObjects = housebillData.map((array) => array.map((item) => ({ ...item })));
-  console.info('🚀 ~ file: payloads.js:147 ~ housebillObjects:', housebillObjects);
-
-  // Convert descData to array of objects
-  const descObjects = descData.map((array) => array.map((item) => ({ ...item })));
-  console.info('🚀 ~ file: payloads.js:151 ~ descObjects:', descObjects);
+  console.info('🚀 ~ file: payloads.js:147 ~ descData:', descData);
   const deliveryStop = await generateStopforConsole(
     shipmentHeaderData,
     referencesData,
@@ -200,7 +195,7 @@ async function consolPayload({
     ordered_method: 'M',
     order_value: await getHighValue({ shipmentAparConsoleData, type: 'order_value' }),
     pallets_required: false,
-    pieces: sumNumericValues(descObjects, 'Pieces'),
+    pieces: sumNumericValues(descData, 'Pieces'),
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
@@ -211,7 +206,7 @@ async function consolPayload({
     swap: true,
     teams_required: false,
     vessel: await getVesselForConsole({ shipmentAparConsoleData }),
-    weight: sumNumericValues(descObjects, 'Weight'),
+    weight: sumNumericValues(descData, 'Weight'),
     weight_um: 'LB',
     order_mode: 'T',
     operational_status: 'CLIN',
@@ -231,8 +226,8 @@ async function consolPayload({
       'shipper',
       userData,
       shipmentAparConsoleData,
-      housebillObjects,
-      descObjects
+      housebillData,
+      descData
     ),
     deliveryStop
   );
