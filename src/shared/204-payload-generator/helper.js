@@ -777,9 +777,9 @@ async function getVesselForConsole({ shipmentAparConsoleData }) {
   return _.get(await queryDynamoDB(customersParams), 'Items.[0].CustName', '');
 }
 
-async function getWeightPiecesForConsole({ shipmentAparConsoleData: aparData }) {
+async function getWeightPiecesForConsole({ shipmentAparConsoleData }) {
   const descData = await Promise.all(
-    aparData.map(async (data) => {
+    shipmentAparConsoleData.map(async (data) => {
       const shipmentDescParams = {
         TableName: SHIPMENT_DESC_TABLE,
         KeyConditionExpression: 'FK_OrderNo = :orderNo',
@@ -792,6 +792,7 @@ async function getWeightPiecesForConsole({ shipmentAparConsoleData: aparData }) 
       return _.get(await queryDynamoDB(shipmentDescParams), 'Items', []);
     })
   );
+  console.info('🚀 ~ file: helper.js:795 ~ getWeightPiecesForConsole ~ descData:', descData);
   return descData;
 }
 

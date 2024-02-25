@@ -3,7 +3,7 @@ const _ = require('lodash');
 const {
   generateStop,
   getVesselForConsole,
-  getWeightPiecesForConsole,
+  // getWeightPiecesForConsole,
   getHazmat,
   getHighValue,
   getAparDataByConsole,
@@ -140,8 +140,11 @@ async function consolPayload({
 }) {
   const shipmentAparConsoleData = await getAparDataByConsole({ shipmentAparData });
   const shipmentHeaderData = await getShipmentHeaderData({ shipmentAparConsoleData });
+  console.info('🚀 ~ file: payloads.js:143 ~ shipmentHeaderData:', shipmentHeaderData);
   const housebillData = await getHousebillData({ shipmentAparConsoleData });
+  console.info('🚀 ~ file: payloads.js:144 ~ housebillData:', housebillData);
   const descData = await descDataForConsole({ shipmentAparConsoleData });
+  console.info('🚀 ~ file: payloads.js:146 ~ descData:', descData);
   const deliveryStop = await generateStopforConsole(
     shipmentHeaderData,
     referencesData,
@@ -192,10 +195,7 @@ async function consolPayload({
     ordered_method: 'M',
     order_value: await getHighValue({ shipmentAparConsoleData, type: 'order_value' }),
     pallets_required: false,
-    pieces: sumNumericValues(
-      await getWeightPiecesForConsole({ shipmentAparConsoleData }),
-      'Pieces'
-    ),
+    pieces: sumNumericValues(descData, 'Pieces'),
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
@@ -206,10 +206,7 @@ async function consolPayload({
     swap: true,
     teams_required: false,
     vessel: await getVesselForConsole({ shipmentAparConsoleData }),
-    weight: sumNumericValues(
-      await getWeightPiecesForConsole({ shipmentAparConsoleData }),
-      'Weight'
-    ),
+    weight: sumNumericValues(descData, 'Weight'),
     weight_um: 'LB',
     order_mode: 'T',
     operational_status: 'CLIN',
