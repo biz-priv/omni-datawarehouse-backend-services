@@ -62,6 +62,7 @@ module.exports.handler = async (event, context) => {
 
           // Extract bill numbers from the result
           const billNumbers = shipmentHeaderResult.map((item) => item.BillNo);
+          console.info('🚀 ~ file: index.js:65 ~ get ~ billNumbers:', billNumbers);
 
           // Check if any of the bill numbers are in the accepted list
           const commonBillNos = ACCEPTED_BILLNOS.filter((billNo) => billNumbers.includes(billNo));
