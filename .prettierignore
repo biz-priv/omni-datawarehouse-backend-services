@@ -20,4 +20,10 @@ config/functions/shipper-stream-to-dynamoDB.yml
 config/functions/tracking-notes-stream-to-dynamoDB.yml
 src/shipment_detail_collector/index.js
 config/functions/consignee-stream-to-dynamoDB.yml
+src/ltl_rating_log_insertion/index.js
+config/functions/ltl-rating-log-insertion.yml
+lambdaLayer/lib/nodejs/package.json
+package.json
+serverless.yml
+src/ltl_rating_log_insertion/index.js
 

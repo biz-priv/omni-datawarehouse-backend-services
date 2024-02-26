@@ -159,12 +159,14 @@ async function generateStop(
     referenceNumbers: type === 'shipper' ? generateReferenceNumbers({ references }) : [],
   };
 
-  stopData.stopNotes.push({
-    __type: 'stop_note',
-    __name: 'stopNotes',
-    company_id: 'TMS',
-    comment_type: 'OC',
-    comments: _.get(specialInstruction, 'Note', ''),
+  specialInstruction.map((item) => {
+    return stopData.stopNotes.push({
+      __type: 'stop_note',
+      __name: 'stopNotes',
+      company_id: 'TMS',
+      comment_type: 'OC',
+      comments: _.get(item, 'Note', 'NA'),
+    });
   });
   if (type === 'shipper') {
     const userEmail = _.get(userData, 'UserEmail', '') || 'NA';

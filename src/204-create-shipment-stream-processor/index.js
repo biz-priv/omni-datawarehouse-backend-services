@@ -65,7 +65,9 @@ module.exports.handler = async (event, context) => {
           console.info('🚀 ~ file: index.js:65 ~ get ~ billNumbers:', billNumbers);
 
           // Check if any of the bill numbers are in the accepted list
-          const commonBillNos = ACCEPTED_BILLNOS.filter((billNo) => billNumbers.includes(billNo));
+          const commonBillNos = ACCEPTED_BILLNOS.split(',').filter((billNo) =>
+            billNumbers.includes(billNo)
+          );
 
           // If there are no common bill numbers, skip further processing
           if (commonBillNos.length === 0) {
