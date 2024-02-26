@@ -1079,7 +1079,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     }
     const tnparams = {
       TableName: TRACKING_NOTES_TABLE,
-      IndexName: 'omni-tracking-notes-console-index-dev',
+      IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
         ':ConsolNo': CONSOL_NO.toString(),

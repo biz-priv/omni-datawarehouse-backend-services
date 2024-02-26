@@ -9,6 +9,7 @@ const {
   CONSIGNEE_TABLE,
   SHIPPER_TABLE,
   REFERENCES_TABLE,
+  REFERENCES_INDEX_KEY_NAME,
   TRACKING_NOTES_TABLE,
   TRACKING_NOTES_CONSOLENO_INDEX_KEY,
   CONSOL_STOP_HEADERS_CONSOL_INDEX,
@@ -117,7 +118,7 @@ const TABLE_PARAMS = {
     }),
     tbl_References: ({ orderNo }) => ({
       TableName: REFERENCES_TABLE,
-      IndexName: 'omni-wt-rt-ref-orderNo-index-dev',
+      IndexName: REFERENCES_INDEX_KEY_NAME,
       KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
       ExpressionAttributeValues: {
         ':FK_OrderNo': orderNo,
