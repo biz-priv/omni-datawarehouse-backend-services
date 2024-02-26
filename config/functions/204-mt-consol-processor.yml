@@ -40,7 +40,7 @@ function:
     SEND_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/create-orders.url}
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
     CONSOLE_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
-    CONSOL_STOP_HEADERS_CONSOL_INDEX: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-headers/ddb.ConsolNoIndex} #TO DO
+    CONSOL_STOP_HEADERS_CONSOL_INDEX: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-headers/ddb.ConsolNoIndex}
 
   events:
     - schedule: cron(*/1 * * * ? *) #cron for every 5 min
