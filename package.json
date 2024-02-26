@@ -50,6 +50,7 @@
           "message": "Unexpected property on console object was called"
         }
       ]
+
     }
   },
   "dependencies": {

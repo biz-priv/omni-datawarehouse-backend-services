@@ -34,21 +34,21 @@ async function putObject(data, fileName, bucket, contentType) {
  * specific error code and correlation ID.
  */
 async function getObject(bucket, key) {
-  try {
-    const params = {
-      Bucket: bucket,
-      Key: key,
-      ResponseContentType: 'application/json',
-    };
-    console.log(`🙂 -> file: s3.js:42 -> params:`, params);
-    const s3File = await s3.getObject(params).promise();
-    console.log(`🙂 -> file: s3.js:44 -> s3File:`, s3File);
-    // return s3File
-    return get(s3File, 'Body', '').toString('utf-8').trim();
-  } catch (e) {
-    console.error('s3 get object error: ', e);
-    throw e;
-  }
+    try {
+        const params = {
+            Bucket: bucket,
+            Key: key,
+            ResponseContentType: "application/json",
+        };
+        console.log(`🙂 -> file: s3.js:42 -> params:`, params);
+        const s3File = await s3.getObject(params).promise();
+        console.log(`🙂 -> file: s3.js:44 -> s3File:`, s3File);
+        // return s3File
+        return get(s3File, "Body", "").toString("utf-8").trim();
+    } catch (e) {
+        console.error("s3 get object error: ", e);
+        throw e;
+    }
 }
 
 /**
@@ -135,11 +135,35 @@ async function deleteObject(bucket, key) {
   }
 }
 
+async function checkIfObjectExists(bucket, key) {
+    return new Promise((resolve, reject) => {
+        const params = {
+            Bucket: bucket,
+            Key: key,
+        };
+
+        s3.headObject(params, (err, data) => {
+            if (err) {
+                if (err.code === "NotFound") {
+                    resolve(false);
+                } else {
+                    console.error("Error checking object existence:", err);
+                    reject(err);
+                }
+            } else {
+                console.log("Object exists. Metadata:", data);
+                resolve(true);
+            }
+        });
+    });
+}
+
 module.exports = {
-  putObject,
-  getObject,
-  getListObjects,
-  moveObject,
-  getGzipObject,
-  deleteObject,
+    putObject,
+    getObject,
+    getListObjects,
+    moveObject,
+    getGzipObject,
+    deleteObject,
+    checkIfObjectExists,
 };
