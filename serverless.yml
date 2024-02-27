@@ -1,108 +1,114 @@
 service: omni-dw-backend-services
 
 provider:
-    name: aws
-    region: ${opt:region, 'us-east-1'}
-    stage: ${opt:stage, 'dev'}
-    versionFunctions: false
-    tags: ${self:custom.tags}
-    stackTags: ${self:custom.tags}
-    runtime: python3.11
-    vpc:
-        securityGroupIds:
-            - ${ssm:/omni-dw/${self:provider.stage}/lambda/sgId}
-        subnetIds:
-            - ${ssm:/omni-dw/${self:provider.stage}/lambda/subnetA}
-    iamRoleStatements:
-        - Effect: "Allow"
-          Action:
-              - logs:CreateLogGroup
-              - logs:CreateLogStream
-              - logs:PutLogEvents
-              - ec2:CreateNetworkInterface
-              - ec2:DescribeNetworkInterfaces
-              - ec2:DetachNetworkInterface
-              - ec2:DeleteNetworkInterface
-              - ec2:AssignPrivateIpAddresses
-              - ec2:UnassignPrivateIpAddresses
-          Resource: "*"
-        - Effect: Allow
-          Action:
-              - s3:GetObject
-              - s3:ListBucket
-              - s3:PutObject
-              - dynamodb:PutItem
-              - dynamodb:UpdateItem
-              - dynamodb:GetItem
-              - dynamodb:Query
-              - dynamodb:DeleteItem
-              - dynamodb:Scan
-              - sqs:GetQueueUrl
-              - sqs:GetQueueAttributes
-              - sqs:ReceiveMessage
-              - sqs:DeleteMessage
-              - sqs:SendMessageBatch
-              - sqs:SendMessage
-              - secretsmanager:*
-              - sns:*
-              - states:*
-              - ses:SendRawEmail
-          Resource: "*"
+  name: aws
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  versionFunctions: false
+  tags: ${self:custom.tags}
+  stackTags: ${self:custom.tags}
+  runtime: python3.11
+  vpc:
+    securityGroupIds:
+      - ${ssm:/omni-dw/${self:provider.stage}/lambda/sgId}
+    subnetIds:
+      - ${ssm:/omni-dw/${self:provider.stage}/lambda/subnetA}
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+        - ec2:CreateNetworkInterface
+        - ec2:DescribeNetworkInterfaces
+        - ec2:DetachNetworkInterface
+        - ec2:DeleteNetworkInterface
+        - ec2:AssignPrivateIpAddresses
+        - ec2:UnassignPrivateIpAddresses
+      Resource: '*'
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:ListBucket
+        - s3:PutObject
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:GetItem
+        - dynamodb:Query
+        - dynamodb:DeleteItem
+        - dynamodb:Scan
+        - sqs:GetQueueUrl
+        - sqs:GetQueueAttributes
+        - sqs:ReceiveMessage
+        - sqs:DeleteMessage
+        - sqs:SendMessageBatch
+        - sqs:SendMessage
+        - secretsmanager:*
+        - sns:*
+      Resource: '*'
+  environment:
+    REGION: ${self:custom.region}
+    STAGE: ${opt:stage, 'dev'}
+    SNS_TOPIC_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
 
-    environment:
-        REGION: ${self:custom.region}
-        STAGE: ${opt:stage, 'dev'}
-
-    deploymentBucket:
-        name: ${ssm:/omni-dw/${self:provider.stage}/sls/deployment/bucket}
-        serverSideEncryption: AES256
+  deploymentBucket:
+    name: ${ssm:/omni-dw/${self:provider.stage}/sls/deployment/bucket}
+    serverSideEncryption: AES256
 
 custom:
-    region: ${opt:region, 'us-east-1'}
-    stage: ${opt:stage, 'dev'}
-    tags:
-        Application: OmniDataWarehouseBackendServiceIndex
-        CreateBy: BizCloudExperts
-        Environment: ${self:custom.stage}
-    serverless-layers:
-        functions:
-            - pod-doc-upload
-        dependenciesPath: ./requirements.txt
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  tags:
+    Application: OmniDataWarehouseBackendServiceIndex
+    CreateBy: BizCloudExperts
+    Environment: ${self:custom.stage}
+  serverless-layers:
+    functions:
+      - pod-doc-upload
+    dependenciesPath: ./requirements.txt
 
 package:
-    individually: true
-
+  individually: true
 functions:
-    #  lambda's responsible for inserting values from streams to shipment-header table
-    shipment-header-stream-to-dynamoDB: ${file(config/functions/shipment-header-stream-to-dynamoDB.yml):function}
-    consignee-stream-to-dynamoDB: ${file(config/functions/consignee-stream-to-dynamoDB.yml):function}
-    references-stream-to-dynamoDB: ${file(config/functions/references-stream-to-dynamoDB.yml):function}
-    shipment-desc-stream-to-dynamoDB: ${file(config/functions/shipment-desc-stream-to-dynamoDB.yml):function}
-    shipment-milestone-stream-to-dynamoDB: ${file(config/functions/shipment-milestone-stream-to-dynamoDB.yml):function}
-    shipper-stream-to-dynamoDB: ${file(config/functions/shipper-stream-to-dynamoDB.yml):function}
-    shipment-milestone-details-stream-to-dynamoDB: ${file(config/functions/shipment-milestone-details-stream-to-dynamoDB.yml):function}
-    tracking-notes-stream-to-dynamoDB: ${file(config/functions/tracking-notes-stream-to-dynamoDB.yml):function}
-    
-    pod-doc-upload: ${file(config/functions/pod-doc-upload.yml):function}
-    shipment-header-table-stream-processor: ${file(config/functions/shipment-header-table-stream-processor.yml):function}
-    ltl-rating-log-insertion: ${file(config/functions/ltl-rating-log-insertion.yml):function}
+  #  lambda's responsible for inserting values from streams to shipment-header table
+  shipment-header-stream-to-dynamoDB: ${file(config/functions/shipment-header-stream-to-dynamoDB.yml):function}
+  consignee-stream-to-dynamoDB: ${file(config/functions/consignee-stream-to-dynamoDB.yml):function}
+  references-stream-to-dynamoDB: ${file(config/functions/references-stream-to-dynamoDB.yml):function}
+  shipment-desc-stream-to-dynamoDB: ${file(config/functions/shipment-desc-stream-to-dynamoDB.yml):function}
+  shipment-milestone-stream-to-dynamoDB: ${file(config/functions/shipment-milestone-stream-to-dynamoDB.yml):function}
+  shipper-stream-to-dynamoDB: ${file(config/functions/shipper-stream-to-dynamoDB.yml):function}
+  shipment-milestone-details-stream-to-dynamoDB: ${file(config/functions/shipment-milestone-details-stream-to-dynamoDB.yml):function}
+  tracking-notes-stream-to-dynamoDB: ${file(config/functions/tracking-notes-stream-to-dynamoDB.yml):function}
+
+  pod-doc-upload: ${file(config/functions/pod-doc-upload.yml):function}
+  shipment-header-table-stream-processor: ${file(config/functions/shipment-header-table-stream-processor.yml):function}
+  ltl-rating-log-insertion: ${file(config/functions/ltl-rating-log-insertion.yml):function}
+
+  204-create-shipment-stream-processor: ${file(config/functions/204-create-shipment-stream-processor.yml):function}
+  204-p2p-processor: ${file(config/functions/204-p2p-processor.yml):function}
+  204-mt-consol-processor: ${file(config/functions/204-mt-consol-processor.yml):function}
+  204-mt-consol-payload-processor: ${file(config/functions/204-mt-consol-payload-processor.yml):function}
+  204-p2p-payload-processor: ${file(config/functions/204-p2p-payload-processor.yml):function}
+
+  cw-to-wt-create-shipment: ${file(config/functions/cw-to-wt-create-shipment.yml):function}
 
 resources:
-    Resources:
-        ShipmentFileTableStreamQueue: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamQueue}
-        ShipmentFileTableStreamDLQ: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamDLQ}
-        LtlRatingLogInsertionQueue: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionQueue}
-        LtlRatingLogInsertionDLQ: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionDLQ}
+  Resources:
+    ShipmentFileTableStreamQueue: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamQueue}
+    ShipmentFileTableStreamDLQ: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamDLQ}
+    LtlRatingLogInsertionQueue: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionQueue}
+    LtlRatingLogInsertionDLQ: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionDLQ}
 
 layers:
-    DWBackend:
-        path: lambdaLayer/lib
-        name: ${self:service}-layer-${self:provider.stage}
-        description: omni-dw-backend-services lambda layer for all node modules - ${self:provider.stage}
-        compatibleRuntimes:
-            - nodejs14.x
-            - nodejs18.x
-        retain: false
+  DWBackend:
+    path: lambdaLayer/lib
+    name: ${self:service}-layer-${self:provider.stage}
+    description: Omni backend services lambda layer for all node modules - ${self:provider.stage}
+    compatibleRuntimes:
+      - nodejs14.x
+      - nodejs18.x
+    retain: false
 
 plugins:
-    - serverless-layers
+  - serverless-layers
+  - serverless-plugin-existing-s3

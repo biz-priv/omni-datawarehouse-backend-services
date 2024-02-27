@@ -42,6 +42,7 @@ pipeline {
                 anyOf {
                     branch 'master';
                     branch 'develop';
+                    branch 'feature/*';
                 }
                 expression {
                     return true;
@@ -52,6 +53,7 @@ pipeline {
                     sh """
                     serverless --version
                     sls deploy -s ${env.ENVIRONMENT}
+                    sls s3deploy -s ${env.ENVIRONMENT}
                     """
                 }
             }

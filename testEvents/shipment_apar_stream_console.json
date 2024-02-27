@@ -1,0 +1,197 @@
+{
+  "Records": [
+    {
+      "eventID": "1",
+      "eventVersion": "1.0",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1704808220,
+        "Keys": {
+          "SeqNo": {
+            "S": "1"
+          },
+          "FK_OrderNo": {
+            "S": "290491"
+          }
+        },
+        "NewImage": {
+          "FK_OrderNo": {
+            "S": "302669"
+          },
+          "APARCode": {
+            "S": "V"
+          },
+          "APARStatus": {
+            "S": ""
+          },
+          "APARType": {
+            "S": "CLB"
+          },
+          "ChargeCode": {
+            "S": ""
+          },
+          "Complete": {
+            "S": "Y"
+          },
+          "Consolidation": {
+            "S": "Y"
+          },
+          "ConsolNo": {
+            "S": "302669"
+          },
+          "ConsolShipDateTime": {
+            "S": "2022-12-02 16:52:00.000"
+          },
+          "Cost": {
+            "S": "4000.00"
+          },
+          "CreateDateTime": {
+            "S": "2022-12-02 16:59:17.000"
+          },
+          "Currency": {
+            "S": "USD"
+          },
+          "CustomerInvoiceNo": {
+            "S": ""
+          },
+          "Description": {
+            "S": ""
+          },
+          "DueDate": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "Extra": {
+            "S": "0.00"
+          },
+          "Finalize": {
+            "S": "N"
+          },
+          "FinalizedBy": {
+            "S": ""
+          },
+          "FinalizedDate": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "FinalizedTotal": {
+            "S": "0.00"
+          },
+          "FK_AccountCode": {
+            "S": ""
+          },
+          "FK_AirCode": {
+            "S": ""
+          },
+          "FK_CodeNo": {
+            "S": "0"
+          },
+          "FK_ConsolStationId": {
+            "S": "DFW"
+          },
+          "FK_ConsolStatusId": {
+            "S": "AAO"
+          },
+          "FK_ContainerCode": {
+            "S": "D"
+          },
+          "FK_CustNo": {
+            "S": "31426"
+          },
+          "FK_EquipmentCode": {
+            "S": ""
+          },
+          "FK_HandlingStation": {
+            "S": ""
+          },
+          "FK_PaymentTermCode": {
+            "S": "NULL"
+          },
+          "FK_PaymentTermCode1": {
+            "S": "NULL"
+          },
+          "FK_ServiceId": {
+            "S": "TL"
+          },
+          "FK_VendorId": {
+            "S": "LIVELOGI"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:02:26 19:46:48"
+          },
+          "InvoiceDate": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "InvoiceNo": {
+            "S": ""
+          },
+          "InvoiceSeqNo": {
+            "S": "0"
+          },
+          "InvPrinted": {
+            "S": "N"
+          },
+          "InvPrintedDate": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "Override": {
+            "S": "O"
+          },
+          "PKSeqNo": {
+            "S": "40847689"
+          },
+          "PostedDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "Quantity": {
+            "S": "7728.000"
+          },
+          "Rate": {
+            "S": "0.0000"
+          },
+          "ReadyForInvoice": {
+            "S": "N"
+          },
+          "ReadyForInvoiceDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "RefNo": {
+            "S": "138348"
+          },
+          "SeqNo": {
+            "S": "9999"
+          },
+          "Tax": {
+            "S": "0.00"
+          },
+          "Total": {
+            "S": "4000.00"
+          },
+          "UpdatedBy": {
+            "S": "sellison"
+          },
+          "UpdatedOn": {
+            "S": "2022-12-12 09:23:26.000"
+          },
+          "VendorAmount": {
+            "S": "0.00"
+          },
+          "VendorCostSeqNo": {
+            "S": "0"
+          },
+          "Weight": {
+            "S": "6972.0"
+          }
+        },
+        "OldImage": {},
+        "SequenceNumber": "2377362800000000080142433706",
+        "SizeBytes": 1934,
+        "StreamViewType": "NEW_AND_OLD_IMAGES",
+        "dynamoTableName": "omni-wt-rt-shipment-apar-dev"
+      },
+      "eventName": "INSERT",
+      "eventSource": "aws:dynamodb",
+      "eventTime": "2023-08-11T14:48:41.540Z",
+      "eventType": "AwsApiCall",
+      "dynamoTableName": "omni-wt-rt-shipment-apar-dev",
+      "awsRegion": "us-east-1"
+    }
+  ]
+}
