@@ -136,7 +136,7 @@ async function checkMultiStop(tableData) {
         missingFields = missingFields.flat().join('\n');
         await publishSNSTopic({
           message: `All tables are not populated for consolNo: ${consolNo}.
-            \n Please check if all the below feilds are populated: 
+              \n Please check if all the below feilds are populated: 
               \n ${missingFields} 
               \n Please check ${CONSOLE_STATUS_TABLE} to see which table does not have data. 
               \n Retrigger the process by changing Status to ${STATUSES.PENDING} and resetting the RetryCount to 0.`,
