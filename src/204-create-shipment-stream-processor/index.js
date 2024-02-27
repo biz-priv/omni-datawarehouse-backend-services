@@ -71,8 +71,11 @@ module.exports.handler = async (event, context) => {
 
           // If there are no common bill numbers, skip further processing
           if (commonBillNos.length === 0) {
+            await publishSNSTopic({
+              message: `BillNo does not include any of the accepted bill numbers. Skipping process for this shipment.\nBill numbers we received: ${billNumbers}.`,
+            });
             console.info(
-              'BillNo does not include any of the accepted bill numbers. Skipping process.'
+              'Ignoring shipment, BillNo does not include any of the accepted bill numbers. Skipping process.'
             );
             return true;
           }
