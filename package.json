@@ -13,7 +13,8 @@
         "lodash": "^4.17.21",
         "moment-timezone": "^0.5.39",
         "uuid": "^9.0.1",
-        "axios": "^1.6.2"
+        "axios": "^1.6.2",
+        "xml2js": "^0.6.2"
     },
     "devDependencies": {
         "serverless": "2.72.3",
