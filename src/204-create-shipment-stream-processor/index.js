@@ -180,10 +180,7 @@ async function checkAndUpdateOrderTable({ orderNo, type, shipmentAparData }) {
     existingOrder
   );
 
-  if (
-    Object.keys(existingOrder).length <= 0 ||
-    (Object.keys(existingOrder).length > 0 && get(existingOrder, 'Status') === STATUSES.PENDING)
-  ) {
+  if (Object.keys(existingOrder).length <= 0) {
     return await insertShipmentStatus({
       orderNo: orderId,
       status: STATUSES.PENDING,
@@ -192,8 +189,12 @@ async function checkAndUpdateOrderTable({ orderNo, type, shipmentAparData }) {
       shipmentAparData,
     });
   }
-
-  if (Object.keys(existingOrder).length > 0 && get(existingOrder, 'Status') !== STATUSES.PENDING) {
+  if (Object.keys(existingOrder).length > 0 && get(existingOrder, 'Status') !== STATUSES.SENT) {
+    return await updateStatusTablePending({
+      orderNo: orderId,
+    });
+  }
+  if (Object.keys(existingOrder).length > 0 && get(existingOrder, 'Status') === STATUSES.SENT) {
     return await updateStatusTable({
       orderNo: orderId,
       resetCount: get(existingOrder, 'ResetCount', 0),
@@ -355,6 +356,29 @@ async function updateConsolStatusTable({ consolNo, resetCount }) {
     return await dynamoDb.update(updateParam).promise();
   } catch (error) {
     console.error('🚀 ~ file: index.js:304 ~ updateConsolStatusTable ~ error:', error);
+    throw error;
+  }
+}
+
+async function updateStatusTablePending({ orderNo }) {
+  try {
+    const updateParam = {
+      TableName: STATUS_TABLE,
+      Key: { FK_OrderNo: orderNo },
+      UpdateExpression:
+        'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt, #Status = :status',
+      ExpressionAttributeNames: { '#Status': 'Status' },
+      ExpressionAttributeValues: {
+        ':lastUpdateBy': functionName,
+        ':lastUpdatedAt': moment.tz('America/Chicago').format(),
+        ':status': STATUSES.PENDING,
+        ':resetCount': 0,
+      },
+    };
+    console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
+    return await dynamoDb.update(updateParam).promise();
+  } catch (error) {
+    console.error('🚀 ~ file: index.js:223 ~ updateStatusTable ~ error:', error);
     throw error;
   }
 }
