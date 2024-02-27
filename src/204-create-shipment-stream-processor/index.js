@@ -366,12 +366,13 @@ async function updateStatusTablePending({ orderNo }) {
       TableName: STATUS_TABLE,
       Key: { FK_OrderNo: orderNo },
       UpdateExpression:
-        'set LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt, #Status = :status',
+        'set ResetCount = :resetCount, LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt, #Status = :status',
       ExpressionAttributeNames: { '#Status': 'Status' },
       ExpressionAttributeValues: {
         ':lastUpdateBy': functionName,
         ':lastUpdatedAt': moment.tz('America/Chicago').format(),
         ':status': STATUSES.PENDING,
+        ':resetCount': 0,
       },
     };
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
