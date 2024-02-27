@@ -16,6 +16,7 @@ function:
       - '**/*'
   environment:
     STAGE: ${self:provider.stage}
+    LIVE_SNS_TOPIC_ARN: ${ssm:/omni-power-broker/${self:provider.stage}/error-notification/sns/arn}
     SHIPMENT_APAR_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.tableName~true}
     SHIPMENT_APAR_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.ConsolNoIndex}
     SHIPMENT_HEADER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.tableName~true}

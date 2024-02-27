@@ -12,7 +12,7 @@ const {
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
-const { STATUS_TABLE, SNS_TOPIC_ARN, STAGE } = process.env;
+const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, STAGE } = process.env;
 
 let functionName;
 module.exports.handler = async (event, context) => {
@@ -39,7 +39,7 @@ async function publishSNSTopic({ message }) {
   try {
     await sns
       .publish({
-        TopicArn: SNS_TOPIC_ARN,
+        TopicArn: LIVE_SNS_TOPIC_ARN,
         Subject: `POWERBROKER ERROR NOTIFIACATION - ${STAGE}`,
         Message: `An error occurred in ${functionName}: 
         \n${message}`,

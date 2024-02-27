@@ -21,7 +21,7 @@ const {
 } = require('../shared/204-payload-generator/apis');
 const { STATUSES, TYPES } = require('../shared/constants/204_create_shipment');
 
-const { STATUS_TABLE, SNS_TOPIC_ARN, OUTPUT_TABLE, STAGE } = process.env;
+const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, OUTPUT_TABLE, STAGE } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
@@ -326,7 +326,7 @@ async function publishSNSTopic({ message }) {
   try {
     await sns
       .publish({
-        TopicArn: SNS_TOPIC_ARN,
+        TopicArn: LIVE_SNS_TOPIC_ARN,
         Subject: `POWERBROKER ERROR NOTIFIACATION - ${STAGE}}`,
         Message: `An error occurred in ${functionName}: ${message}`,
       })

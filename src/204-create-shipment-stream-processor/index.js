@@ -11,7 +11,7 @@ const moment = require('moment-timezone');
 
 const {
   STATUS_TABLE,
-  SNS_TOPIC_ARN,
+  LIVE_SNS_TOPIC_ARN,
   STAGE,
   CONSOLE_STATUS_TABLE,
   SHIPMENT_APAR_INDEX_KEY_NAME,
@@ -158,7 +158,7 @@ async function insertShipmentStatus({ orderNo, status, type, tableStatuses, ship
 async function publishSNSTopic({ message }) {
   await sns
     .publish({
-      TopicArn: SNS_TOPIC_ARN,
+      TopicArn: LIVE_SNS_TOPIC_ARN,
       Subject: `POWERBROKER ERROR NOTIFIACATION - ${STAGE}`,
       Message: `An error occurred in ${functionName}: ${message}`,
     })

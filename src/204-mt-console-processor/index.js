@@ -10,7 +10,7 @@ const {
 } = require('../shared/constants/204_create_shipment');
 const moment = require('moment-timezone');
 
-const { SNS_TOPIC_ARN, STATUS_TABLE, CONSOLE_STATUS_TABLE, CONSOL_STOP_HEADERS, STAGE } =
+const { LIVE_SNS_TOPIC_ARN, STATUS_TABLE, CONSOLE_STATUS_TABLE, CONSOL_STOP_HEADERS, STAGE } =
   process.env;
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
@@ -41,7 +41,7 @@ module.exports.handler = async (event, context) => {
 async function publishSNSTopic({ message }) {
   return await sns
     .publish({
-      TopicArn: SNS_TOPIC_ARN,
+      TopicArn: LIVE_SNS_TOPIC_ARN,
       Subject: `POWERBROKER ERROR NOTIFIACATION - ${STAGE}}`,
       Message: `An error occurred in ${functionName}: ${message}`,
     })
