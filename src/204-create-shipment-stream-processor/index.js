@@ -58,6 +58,13 @@ module.exports.handler = async (event, context) => {
 
         const controlStation = get(shipmentAparData, "FK_ConsolStationId");
 
+        const createDateTime = get(shipmentAparData, "CreateDateTime");
+
+        if (createDateTime < "2024-02-27 16:15:000") {
+          console.info("shipment is created before 2024-02-27. Skipping the process");
+          return true;
+        }
+
         if (
           consolNo === 0 &&
           includes(["HS", "TL"], serviceLevelId) &&

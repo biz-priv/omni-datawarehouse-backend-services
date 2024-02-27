@@ -74,11 +74,11 @@ functions:
     ltl-rating-log-insertion: ${file(config/functions/ltl-rating-log-insertion.yml):function}
 
     # 204 create shipment lambda functions
-    # 204-create-shipment-stream-processor: ${file(config/functions/204-create-shipment-stream-processor.yml):function}
-    # 204-p2p-processor: ${file(config/functions/204-p2p-processor.yml):function}
-    # 204-mt-consol-processor: ${file(config/functions/204-mt-consol-processor.yml):function}
-    # 204-mt-consol-payload-processor: ${file(config/functions/204-mt-consol-payload-processor.yml):function}
-    # 204-p2p-payload-processor: ${file(config/functions/204-p2p-payload-processor.yml):function}
+    204-create-shipment-stream-processor: ${file(config/functions/204-create-shipment-stream-processor.yml):function}
+    204-p2p-processor: ${file(config/functions/204-p2p-processor.yml):function}
+    204-mt-consol-processor: ${file(config/functions/204-mt-consol-processor.yml):function}
+    204-mt-consol-payload-processor: ${file(config/functions/204-mt-consol-payload-processor.yml):function}
+    204-p2p-payload-processor: ${file(config/functions/204-p2p-payload-processor.yml):function}
 
 resources:
     Resources:
