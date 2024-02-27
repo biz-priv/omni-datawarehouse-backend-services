@@ -135,6 +135,29 @@ async function deleteObject(bucket, key) {
     }
 }
 
+async function checkIfObjectExists(bucket, key) {
+    return new Promise((resolve, reject) => {
+        const params = {
+            Bucket: bucket,
+            Key: key,
+        };
+
+        s3.headObject(params, (err, data) => {
+            if (err) {
+                if (err.code === "NotFound") {
+                    resolve(false);
+                } else {
+                    console.error("Error checking object existence:", err);
+                    reject(err);
+                }
+            } else {
+                console.log("Object exists. Metadata:", data);
+                resolve(true);
+            }
+        });
+    });
+}
+
 module.exports = {
     putObject,
     getObject,
@@ -142,4 +165,5 @@ module.exports = {
     moveObject,
     getGzipObject,
     deleteObject,
+    checkIfObjectExists
 };
