@@ -7,6 +7,8 @@ const { get } = require('lodash');
 const s3 = new AWS.S3();
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
+let orgCode = '';
+
 async function getS3Data(bucket, key) {
   let params;
   try {
@@ -52,9 +54,9 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
       'UniversalShipment.Shipment.OrganizationAddressCollection.OrganizationAddress',
       []
     ).filter((obj) => obj.AddressType === 'SendersLocalClient');
-    const orgCode = get(orgCodeData, '[0].OrganizationCode', '');
+    orgCode = get(orgCodeData, '[0].OrganizationCode', '');
     if (orgCode === '') {
-      throw new Error('Organization code doesnt exist in the source file');
+      throw new Error('Organization code is missing in the request data');
     }
 
     const headerData = {
@@ -62,7 +64,7 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
       ServiceLevel: 'EC',
       ShipmentType: 'Shipment',
       Mode: 'Domestic',
-      Station: await getStationId(orgCode),
+      Station: await getStationId(),
       ConsigneeAddress1: get(consigneeData, '[0].Address1', ''),
       ConsigneeAddress2: get(consigneeData, '[0].Address2', ''),
       ConsigneeCity: get(consigneeData, '[0].City', ''),
@@ -74,8 +76,25 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
       ConsigneeState: get(consigneeData, '[0].State._', ''),
       CustomerNo: get(CONSTANTS, `billToAcc.${orgCode}`, ''),
       BillToAcct: get(CONSTANTS, `billToAcc.${orgCode}`, ''),
-      ReferenceList: {
+    };
+
+    if (orgCode === 'ROYENFMKE') {
+      headerData.ShipperAddress1 = '1010 S INDUSTRIAL BLVD BLDG B';
+      headerData.ShipperAddress2 = '';
+      headerData.ShipperCity = 'EULESS';
+      headerData.ShipperName = 'ROYAL ENFIELD NA LTD-EULESS';
+      headerData.ShipperCountry = 'US';
+      headerData.ShipperEmail = '';
+      headerData.ShipperPhone = '';
+      headerData.ShipperZip = '76040';
+      headerData.ShipperState = 'TX';
+      headerData.ReferenceList = {
         NewShipmentRefsV3: [
+          {
+            ReferenceNo: get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', ''),
+            CustomerTypeV3: 'BillTo',
+            RefTypeId: 'INV',
+          },
           {
             ReferenceNo: get(
               xmlObj,
@@ -85,25 +104,8 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
             CustomerTypeV3: 'Shipper',
             RefTypeId: 'ORD',
           },
-          {
-            ReferenceNo: get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', ''),
-            CustomerTypeV3: 'BillTo',
-            RefTypeId: 'INV',
-          },
         ],
-      },
-    };
-
-    if (get(orgCodeData, 'OrganizationCode', '') === 'ROYENFMKE') {
-      headerData.ShipperAddress1 = '1010 S INDUSTRIAL BLVD BLDG B';
-      headerData.ShipperAddress2 = '';
-      headerData.ShipperCity = 'EULESS';
-      headerData.ShipperName = 'OMNI LOGISTICS, LLC.';
-      headerData.ShipperCountry = 'US';
-      headerData.ShipperEmail = '';
-      headerData.ShipperPhone = '';
-      headerData.ShipperZip = '76040';
-      headerData.ShipperState = 'TX';
+      };
     } else {
       headerData.ShipperAddress1 = get(shipperData, '[0].Address1', '');
       headerData.ShipperAddress2 = get(shipperData, '[0].Address2', '');
@@ -114,6 +116,20 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
       headerData.ShipperPhone = get(shipperData, '[0].Phone', '');
       headerData.ShipperZip = get(shipperData, '[0].Postcode', '');
       headerData.ShipperState = get(shipperData, '[0].State._', '');
+      headerData.ReferenceList = {
+        NewShipmentRefsV3: [
+          {
+            ReferenceNo: get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', ''),
+            CustomerTypeV3: 'BillTo',
+            RefTypeId: 'INV',
+          },
+          {
+            ReferenceNo: get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', ''),
+            CustomerTypeV3: 'Shipper',
+            RefTypeId: 'INV',
+          },
+        ],
+      };
     }
 
     const dateDeliveryBy = get(
@@ -126,7 +142,7 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
       headerData.ReadyDate = dateDeliveryBy;
       const dateValue = moment(dateDeliveryBy).startOf('day');
       headerData.ReadyTime = dateValue.add(8, 'hours').format('YYYY-MM-DDTHH:mm:ss');
-      headerData.CloseTime = dateValue.add(17, 'hours').format('YYYY-MM-DDTHH:mm:ss');
+      headerData.CloseTime = dateValue.add(9, 'hours').format('YYYY-MM-DDTHH:mm:ss');
     }
     return headerData;
   } catch (error) {
@@ -159,20 +175,56 @@ async function prepareShipmentListData(xmlObj) {
       {}
     );
 
-    if (Array.isArray(orderLineArray)) {
+    if (orgCode === 'ROYENFMKE') {
+      if (Array.isArray(orderLineArray)) {
+        ShipmentLineList.NewShipmentDimLineV3 = [];
+        await Promise.all(
+          orderLineArray.map(async (line) => {
+            const data = {
+              WeightUOMV3: 'lb',
+              Description: get(line, 'PartAttribute1', ''),
+              DimUOMV3: 'in',
+              PieceType: 'UNT',
+              Pieces: Number(get(line, 'QuantityMet', 0)),
+              Weigth: 600,
+              Length: 89,
+              Width: 48,
+              Height: 31,
+            };
+            ShipmentLineList.NewShipmentDimLineV3.push(data);
+          })
+        );
+      } else {
+        ShipmentLineList = {
+          NewShipmentDimLineV3: [
+            {
+              WeightUOMV3: 'lb',
+              Description: get(orderLineArray, 'PartAttribute1', ''),
+              DimUOMV3: 'in',
+              PieceType: 'UNT',
+              Pieces: Number(get(orderLineArray, 'QuantityMet', 0)),
+              Weigth: 600,
+              Length: 89,
+              Width: 48,
+              Height: 31,
+            },
+          ],
+        };
+      }
+    } else if (Array.isArray(orderLineArray)) {
       ShipmentLineList.NewShipmentDimLineV3 = [];
       await Promise.all(
         orderLineArray.map(async (line) => {
           const data = {
             WeightUOMV3: 'lb',
-            Description: get(line, 'PartAttribute1', ''),
+            Description: get(line, 'Product.Description', ''),
             DimUOMV3: 'in',
             PieceType: 'UNT',
             Pieces: Number(get(line, 'QuantityMet', 0)),
-            Weigth: 600,
-            Length: 89,
-            Width: 48,
-            Height: 31,
+            Weigth: 1,
+            Length: 1,
+            Width: 1,
+            Height: 1,
           };
           ShipmentLineList.NewShipmentDimLineV3.push(data);
         })
@@ -182,30 +234,30 @@ async function prepareShipmentListData(xmlObj) {
         NewShipmentDimLineV3: [
           {
             WeightUOMV3: 'lb',
-            Description: get(orderLineArray, 'PartAttribute1', ''),
+            Description: get(orderLineArray, 'Product.Description', ''),
             DimUOMV3: 'in',
             PieceType: 'UNT',
             Pieces: Number(get(orderLineArray, 'QuantityMet', 0)),
-            Weigth: 600,
-            Length: 89,
-            Width: 48,
-            Height: 31,
+            Weigth: 1,
+            Length: 1,
+            Width: 1,
+            Height: 1,
           },
         ],
       };
     }
-    return ShipmentLineList;
+    return { ShipmentLineList };
   } catch (error) {
     console.error('Error while preparing shipment list: ', error);
     throw error;
   }
 }
 
-async function getStationId(orgCode) {
+async function getStationId() {
   const billToAcc = get(CONSTANTS, `billToAcc.${orgCode}`, '');
   if (billToAcc === '') {
     throw new Error(
-      `Please provide a valid Organization Code, The organization code that we receieve: ${orgCode}`
+      `Organization Code which is provided is not valid, The organization code that we receieve: ${orgCode}.\n Please contact omni support to add a organization code.`
     );
   }
   const params = {
