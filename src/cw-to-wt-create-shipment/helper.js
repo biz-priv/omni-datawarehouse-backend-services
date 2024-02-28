@@ -37,7 +37,7 @@ async function putItem(item) {
   }
 }
 
-async function prepareHeaderLevelAndReferenceListData(xmlObj) {
+async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
   try {
     const consigneeData = get(
       xmlObj,
@@ -62,6 +62,7 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
     const headerData = {
       DeclaredType: 'LL',
       ServiceLevel: 'EC',
+      PayType: 3,
       ShipmentType: 'Shipment',
       Mode: 'Domestic',
       Station: await getStationId(),
@@ -79,6 +80,14 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
     };
 
     if (orgCode === 'ROYENFMKE') {
+      // If the status code is not 'DEP', we can ignore the event.
+      if (statusCode !== 'ATP') {
+        console.info('Status Code: ', statusCode);
+        throw new Error(
+          `Status Code is invalid, Status Code we recieved: ${statusCode}\nPlease correct the status code and send the request again.`
+        );
+      }
+
       headerData.ShipperAddress1 = '1010 S INDUSTRIAL BLVD BLDG B';
       headerData.ShipperAddress2 = '';
       headerData.ShipperCity = 'EULESS';
@@ -96,17 +105,19 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
             RefTypeId: 'INV',
           },
           {
-            ReferenceNo: get(
-              xmlObj,
-              'UniversalShipment.Shipment.DataContext.DataSourceCollection.DataSource.Key',
-              ''
-            ),
+            ReferenceNo: get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', ''),
             CustomerTypeV3: 'Shipper',
-            RefTypeId: 'ORD',
+            RefTypeId: 'INV',
           },
         ],
       };
     } else {
+      if (statusCode !== 'DEP') {
+        console.info('Status Code: ', statusCode);
+        throw new Error(
+          `Status Code is invalid, Status Code we recieved: ${statusCode}\nPlease correct the status code and send the request again.`
+        );
+      }
       headerData.ShipperAddress1 = get(shipperData, '[0].Address1', '');
       headerData.ShipperAddress2 = get(shipperData, '[0].Address2', '');
       headerData.ShipperCity = get(shipperData, '[0].City', '');
@@ -119,14 +130,13 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj) {
       headerData.ReferenceList = {
         NewShipmentRefsV3: [
           {
-            ReferenceNo: get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', ''),
-            CustomerTypeV3: 'BillTo',
-            RefTypeId: 'INV',
-          },
-          {
-            ReferenceNo: get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', ''),
+            ReferenceNo: get(
+              xmlObj,
+              'UniversalShipment.Shipment.DataContext.DataSourceCollection.DataSource.Key',
+              ''
+            ),
             CustomerTypeV3: 'Shipper',
-            RefTypeId: 'INV',
+            RefTypeId: 'WOR',
           },
         ],
       };

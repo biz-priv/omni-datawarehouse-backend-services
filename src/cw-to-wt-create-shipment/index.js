@@ -45,13 +45,13 @@ module.exports.handler = async (event, context) => {
     dynamoData.StatusCode = statusCode;
 
     // If the status code is not 'DEP', we can ignore the event.
-    if (statusCode !== 'DEP') {
-      console.info('Status Code: ', statusCode);
-      throw new Error(`Status Code has to be DEP, Status Code we recieved: ${statusCode}`);
-    }
+    // if (statusCode !== 'DEP') {
+    //   console.info('Status Code: ', statusCode);
+    //   throw new Error(`Status Code has to be DEP, Status Code we recieved: ${statusCode}`);
+    // }
 
     // Preparing payload to send the data to world trak.
-    const xmlWTPayload = await prepareWTpayload(xmlObj);
+    const xmlWTPayload = await prepareWTpayload(xmlObj, statusCode);
     dynamoData.XmlWTPayload = xmlWTPayload;
 
     // Sending the payload to world trak endpoint.
@@ -196,9 +196,12 @@ async function sendToCW(postData) {
   }
 }
 
-async function prepareWTpayload(xmlObj) {
+async function prepareWTpayload(xmlObj, statusCode) {
   try {
-    const headerAndReferenceListData = await prepareHeaderLevelAndReferenceListData(xmlObj);
+    const headerAndReferenceListData = await prepareHeaderLevelAndReferenceListData(
+      xmlObj,
+      statusCode
+    );
     const shipmentListData = await prepareShipmentListData(xmlObj);
     console.info(headerAndReferenceListData);
     console.info(shipmentListData);
