@@ -141,8 +141,14 @@ async function generateStop(
     confirmed: false,
     driver_load_unload: "N",
     location_id: locationId,
-    sched_arrive_early: getFormattedDateTime(schedArriveEarly, timeZone),
-    sched_arrive_late: getFormattedDateTime(schedArriveLate, timeZone),
+    sched_arrive_early: await getCstTime({
+      datetime: schedArriveEarly,
+      timezone: timeZone,
+    }),
+    sched_arrive_late: await getCstTime({
+      datetime: schedArriveLate,
+      timezone: timeZone,
+    }),
     late_eta_colorcode: false,
     status: "A",
     order_sequence: orderSequence,
@@ -270,8 +276,14 @@ async function generateStopforConsole(
     confirmed: false,
     driver_load_unload: "N",
     location_id: locationId,
-    sched_arrive_early: getFormattedDateTime(schedArriveEarly, timeZone),
-    sched_arrive_late: getFormattedDateTime(schedArriveLate, timeZone),
+    sched_arrive_early: await getCstTime({
+      datetime: schedArriveEarly,
+      timezone: timeZone,
+    }),
+    sched_arrive_late: await getCstTime({
+      datetime: schedArriveLate,
+      timezone: timeZone,
+    }),
     late_eta_colorcode: false,
     status: "A",
     order_sequence: orderSequence,
@@ -1314,7 +1326,15 @@ async function populateStops(
         }
       );
     }
+    // Split date and time for sched_arrive_early
+    const retrievedDateEarly = stopHeader.ConsolStopDate.split(" ")[0];
+    const retrievedTimeEarly = stopHeader.ConsolStopTimeBegin.split(" ")[1];
+    const earlyDatetime = `${retrievedDateEarly} ${retrievedTimeEarly}`;
 
+    // Split date and time for sched_arrive_late
+    const retrievedDateLate = stopHeader.ConsolStopDate.split(" ")[0];
+    const retrievedTimeLate = stopHeader.ConsolStopTimeEnd.split(" ")[1];
+    const lateDatetime = `${retrievedDateLate} ${retrievedTimeLate}`;
     // Populate special instructions
     const specialInstructions =
       await populateSpecialInstructions(shipmentHeader);
@@ -1330,14 +1350,12 @@ async function populateStops(
       late_eta_colorcode: false,
       location_id: locationId,
       sched_arrive_early: await getCstTime({
-        date: stopHeader.ConsolStopDate,
-        time: stopHeader.ConsolStopTimeBegin,
-        timeZoneCode,
+        datetime: earlyDatetime,
+        timezone: timeZoneCode,
       }),
       sched_arrive_late: await getCstTime({
-        date: stopHeader.ConsolStopDate,
-        time: stopHeader.ConsolStopTimeEnd,
-        timeZoneCode,
+        datetime: lateDatetime,
+        timezone: timeZoneCode,
       }),
       status: "A",
       order_sequence: parseInt(stopHeader.ConsolStopNumber || 0, 10) + 1,
@@ -1444,55 +1462,46 @@ function getUniqueObjects(array) {
   return Array.from(uniqueSet, JSON.parse);
 }
 
-async function getCstTime({ date, time, timezone }) {
+async function getCstTime({ datetime, timezone }) {
   try {
-    // Formatted date
-    const formattedDate = moment(date, "YYYY-MM-DD").format("YYYYMMDD");
-
     // Calculate UTC offset (including DST) for the timezone
-    const utcOffset = moment.tz(timezone).utcOffset();
-
-    // Format time with offset
-    const formattedTime = moment(time, "HH:mm:ss.SSS")
-      .utcOffset(utcOffset)
-      .format("HHmmssZZ");
+    const utcOffset = getNormalizedUtcOffset(datetime, timezone);
+    console.info("🚀 ~ updated offset:", utcOffset);
 
     // Combine date and time
-    const formattedDateTime = formattedDate + formattedTime;
+    let formattedDateTime = datetime + utcOffset;
     console.info(
       "🚀 ~ file: helper.js:1315 ~ getCstTime ~ formattedDateTime:",
+      formattedDateTime
+    );
+    formattedDateTime = moment(formattedDateTime, "YYYY-MM-DD HH:mm:ss.SSSZ")
+      .tz("America/Chicago")
+      .format("YYYYMMDDHHmmssZZ");
+
+    console.info(
+      "🚀 ~ file: test.js:25 ~ getCstTime ~ formattedDateTime:",
       formattedDateTime
     );
 
     return formattedDateTime;
   } catch (error) {
-    console.error(
-      "🚀 ~ file: helper.js:1068 ~ calculateSchedArriveEarly ~ error:",
-      error
-    );
+    console.error(error);
     throw error;
   }
 }
 
-function getFormattedDateTime(datetime, timezone) {
+function getNormalizedUtcOffset(formattedDate, timezone) {
   try {
-    // Parse the input datetime string
-    const parsedDatetime = moment(datetime, "YYYY-MM-DD HH:mm:ss.SSS");
-
-    // Get the UTC offset for the specified timezone
-    const utcOffset = moment.tz(timezone).utcOffset();
-
-    // Apply the offset to the parsed datetime
-    const adjustedDatetime = parsedDatetime.utcOffset(utcOffset);
-
-    // Format the adjusted datetime
-    const formattedDateTime = adjustedDatetime.format("YYYYMMDDHHmmssZZ");
-    console.info(
-      "🚀 ~ file: helper.js:1337 ~ getFormattedDateTime ~ formattedDateTime:",
-      formattedDateTime
+    const momentTimezone = moment.tz(
+      formattedDate,
+      "YYYY-MM-DD HH:mm:ss.SSS",
+      timezone
     );
 
-    return formattedDateTime;
+    const offsetFormatted = momentTimezone.format("ZZ");
+    console.info("🚀 ~ offset:", offsetFormatted);
+
+    return offsetFormatted;
   } catch (error) {
     console.error(error);
     throw error;
@@ -1685,7 +1694,7 @@ async function getTimezone({ stopCity, state, country, address1 }) {
 module.exports = {
   getPowerBrokerCode,
   generateReferenceNumbers,
-  getFormattedDateTime,
+  getCstTime,
   generateStop,
   getParamsByTableName,
   queryDynamoDB,
