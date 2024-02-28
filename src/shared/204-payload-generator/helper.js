@@ -1319,13 +1319,14 @@ async function getCstTime({ datetime, timezone }) {
   try {
     // Calculate UTC offset (including DST) for the timezone
     const utcOffset = getNormalizedUtcOffset(datetime, timezone);
+    console.info('🚀 ~ updated offset:', utcOffset);
 
     // Combine date and time
     let formattedDateTime = datetime + utcOffset;
     console.info('🚀 ~ file: helper.js:1315 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
-    formattedDateTime = moment(datetime, 'YYYY-MM-DD HH:mm:ss.SSSZ')
+    formattedDateTime = moment(formattedDateTime, 'YYYY-MM-DD HH:mm:ss.SSSZ')
       .tz('America/Chicago')
-      .format('	YYYYMMDDHHmmssZZ');
+      .format('YYYYMMDDHHmmssZZ');
 
     console.info('🚀 ~ file: test.js:25 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
 
@@ -1338,12 +1339,12 @@ async function getCstTime({ datetime, timezone }) {
 
 function getNormalizedUtcOffset(formattedDate, timezone) {
   try {
-    const momentTimezone = moment(formattedDate, 'YYYY-MM-DD HH:mm:ss.SSS').tz(timezone);
+    const momentTimezone = moment.tz(formattedDate, 'YYYY-MM-DD HH:mm:ss.SSS', timezone);
 
-    const offset = momentTimezone.utcOffset();
-    console.info('🚀 ~ file: test.js:163 ~ getNormalizedUtcOffset ~ offset:', offset);
+    const offsetFormatted = momentTimezone.format('ZZ');
+    console.info('🚀 ~ offset:', offsetFormatted);
 
-    return offset / 60;
+    return offsetFormatted;
   } catch (error) {
     console.error(error);
     throw error;
