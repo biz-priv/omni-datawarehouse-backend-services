@@ -15,7 +15,7 @@ const {
   generateStopforConsole,
   getHousebillData,
   descDataForConsole,
-  getFormattedDateTime,
+  getCstTime,
   getTimezone,
 } = require('./helper');
 
@@ -85,7 +85,7 @@ async function nonConsolPayload({
     is_dedicated: false,
     ltl: _.includes(['FT', 'HS'], _.get(shipmentHeader, 'FK_ServiceLevelId')),
     on_hold: false,
-    ordered_date: getFormattedDateTime(_.get(shipmentHeader, 'OrderDate', ''), timezone),
+    ordered_date: await getCstTime(_.get(shipmentHeader, 'OrderDate', ''), timezone),
     rad_date: deliveryStop.sched_arrive_late,
     ordered_method: 'M',
     order_value: _.get(shipmentHeader, 'Insurance', 0),
@@ -190,7 +190,7 @@ async function consolPayload({
     is_dedicated: false,
     ltl: _.includes(['FT', 'HS'], _.get(shipmentHeaderData, '[0].serviceLevelId', '')),
     on_hold: false,
-    ordered_date: getFormattedDateTime(_.get(shipmentAparData, 'CreateDateTime', ''), timezone),
+    ordered_date: await getCstTime(_.get(shipmentAparData, 'CreateDateTime', ''), timezone),
     rad_date: deliveryStop.sched_arrive_late, // Set rad_date to scheduled arrival late of SO stop
     ordered_method: 'M',
     order_value: await getHighValue({ shipmentAparConsoleData, type: 'order_value' }),
@@ -296,7 +296,7 @@ async function mtPayload(
     is_dedicated: false,
     ltl: _.includes(['FT', 'HS'], _.get(shipmentHeader, '[0]FK_ServiceLevelId')),
     on_hold: false,
-    ordered_date: getFormattedDateTime(_.get(shipmentApar, '[0]CreateDateTime', '')),
+    ordered_date: await getCstTime(_.get(shipmentApar, '[0]CreateDateTime', '')),
     rad_date: lastStop.sched_arrive_late,
     ordered_method: 'M',
     order_value: sumNumericValues(shipmentHeader, 'Insurance'),
