@@ -3,7 +3,6 @@ const _ = require('lodash');
 const {
   generateStop,
   getVesselForConsole,
-  // getWeightPiecesForConsole,
   getHazmat,
   getHighValue,
   getAparDataByConsole,
@@ -17,6 +16,7 @@ const {
   descDataForConsole,
   getCstTime,
   getTimezone,
+  stationCodeInfo,
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -31,7 +31,7 @@ async function nonConsolPayload({
   userData,
   shipmentAparData,
 }) {
-  let hazmat = _.get(shipmentDesc, 'Hazmat', false);
+  let hazmat = _.get(shipmentDesc, '[0]Hazmat', false);
   // Check if Hazmat is equal to 'Y'
   if (hazmat === 'Y') {
     // Set hazmat to true if it is 'Y'
@@ -40,6 +40,26 @@ async function nonConsolPayload({
     // Set hazmat to false for null or other values
     hazmat = false;
   }
+  const stationCode =
+    _.get(shipmentHeader, 'ControllingStation', '') ||
+    _.get(shipmentAparData, 'FK_HandlingStation', '');
+
+  if (!stationCode) {
+    throw new Error('Please populate the Controlling Station');
+  }
+
+  // Call the function to get customer ID and email based on the station code
+  const stationInfoResult = stationCodeInfo(stationCode);
+
+  // Extract customerId and email
+  const customerId = _.get(stationInfoResult, 'PbBillTo');
+
+  console.info('🚀 ~ file: test.js:608 ~ customerId:', customerId);
+
+  const equipmentCode =
+    _.get(shipmentHeader, 'FK_EquipmentCode', '') ||
+    _.get(shipmentAparData, 'FK_EquipmentCode', 'NA');
+
   const deliveryStop = await generateStop(
     shipmentHeader,
     referencesData,
@@ -48,7 +68,8 @@ async function nonConsolPayload({
     consigneeLocationId,
     finalConsigneeData,
     'consignee',
-    shipmentAparData
+    shipmentAparData,
+    shipmentDesc
   );
 
   const timezone = await getTimezone({
@@ -65,14 +86,13 @@ async function nonConsolPayload({
     bol_received: false,
     dispatch_opt: true,
     collection_method: 'P',
-    commodity_id: 'TVS',
-    customer_id: 'OMNICOT8',
+    commodity_id: 'MISC',
+    commodity: _.get(shipmentDesc, '[0]Description', ''),
+    customer_id: customerId,
     blnum: _.get(shipmentHeader, 'Housebill', ''),
     entered_user_id: 'apiuser',
-    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
-      _.get(shipmentHeader, 'FK_EquipmentCode', '')
-    ),
-    order_type_id: mapOrderTypeToMcLeod(_.get(shipmentHeader, 'FK_EquipmentCode', '')),
+    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(equipmentCode),
+    order_type_id: mapOrderTypeToMcLeod(equipmentCode),
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -85,7 +105,10 @@ async function nonConsolPayload({
     is_dedicated: false,
     ltl: _.includes(['FT', 'HS'], _.get(shipmentHeader, 'FK_ServiceLevelId')),
     on_hold: false,
-    ordered_date: await getCstTime({ datetime: _.get(shipmentHeader, 'OrderDate', ''), timezone }),
+    ordered_date: await getCstTime({
+      datetime: _.get(shipmentHeader, 'OrderDate', ''),
+      timezone,
+    }),
     rad_date: deliveryStop.sched_arrive_late,
     ordered_method: 'M',
     order_value: _.get(shipmentHeader, 'Insurance', 0),
@@ -94,7 +117,7 @@ async function nonConsolPayload({
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
-    revenue_code_id: 'PRI',
+    revenue_code_id: 'SPOT',
     round_trip: false,
     ship_status_to_edi: false,
     status: 'A',
@@ -120,7 +143,8 @@ async function nonConsolPayload({
       finalShipperData,
       'shipper',
       userData,
-      shipmentAparData
+      shipmentAparData,
+      shipmentDesc
     ),
     deliveryStop
   );
@@ -138,13 +162,21 @@ async function consolPayload({
   shipmentAparData,
   userData,
 }) {
-  const shipmentAparConsoleData = await getAparDataByConsole({ shipmentAparData });
-  const shipmentHeaderData = await getShipmentHeaderData({ shipmentAparConsoleData });
+  const shipmentAparConsoleData = await getAparDataByConsole({
+    shipmentAparData,
+  });
+  const shipmentHeaderData = await getShipmentHeaderData({
+    shipmentAparConsoleData,
+  });
   console.info('🚀 ~ file: payloads.js:143 ~ shipmentHeaderData:', shipmentHeaderData);
   const housebillData = await getHousebillData({ shipmentAparConsoleData });
   console.info('🚀 ~ file: payloads.js:145 ~ housebillData:', housebillData);
   const descData = await descDataForConsole({ shipmentAparConsoleData });
   console.info('🚀 ~ file: payloads.js:147 ~ descData:', descData);
+  const equipmentCode =
+    _.get(shipmentHeaderData, '[0].equipmentCode', '') ||
+    _.get(shipmentAparData, 'FK_EquipmentCode', 'NA');
+
   const deliveryStop = await generateStopforConsole(
     shipmentHeaderData,
     referencesData,
@@ -154,7 +186,8 @@ async function consolPayload({
     finalConsigneeData,
     'consignee',
     '',
-    shipmentAparConsoleData
+    shipmentAparConsoleData,
+    descData
   );
   const timezone = await getTimezone({
     stopCity: _.get(finalShipperData, 'ShipCity', ''),
@@ -170,14 +203,13 @@ async function consolPayload({
     bol_received: false,
     dispatch_opt: true,
     collection_method: 'P',
-    commodity_id: 'TVS',
-    customer_id: 'OMNICOT8',
+    commodity_id: 'MISC',
+    commodity: _.get(descData, '[0].Description', ''),
+    customer_id: 'OTRODATX',
     blnum: _.get(shipmentAparData, 'ConsolNo', ''),
     entered_user_id: 'apiuser',
-    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
-      _.get(shipmentHeaderData, '[0].equipmentCode', '')
-    ),
-    order_type_id: mapOrderTypeToMcLeod(_.get(shipmentHeaderData, '[0].equipmentCode', '')),
+    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(equipmentCode),
+    order_type_id: mapOrderTypeToMcLeod(equipmentCode),
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -196,13 +228,16 @@ async function consolPayload({
     }),
     rad_date: deliveryStop.sched_arrive_late, // Set rad_date to scheduled arrival late of SO stop
     ordered_method: 'M',
-    order_value: await getHighValue({ shipmentAparConsoleData, type: 'order_value' }),
+    order_value: await getHighValue({
+      shipmentAparConsoleData,
+      type: 'order_value',
+    }),
     pallets_required: false,
     pieces: sumNumericValues(descData, 'Pieces'),
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
-    revenue_code_id: 'PRI',
+    revenue_code_id: 'SPOT',
     round_trip: false,
     ship_status_to_edi: false,
     status: 'A',
@@ -248,16 +283,6 @@ async function mtPayload(
   users
 ) {
   console.info('entered payload function');
-  let hazmat = _.get(shipmentDesc, '[0]Hazmat', false);
-
-  // Check if Hazmat is equal to 'Y'
-  if (hazmat === 'Y') {
-    // Set hazmat to true if it is 'Y'
-    hazmat = true;
-  } else {
-    // Set hazmat to false for null or other values
-    hazmat = false;
-  }
 
   // Populate stops
   const stops = await populateStops(
@@ -284,19 +309,24 @@ async function mtPayload(
     bol_received: false,
     dispatch_opt: true,
     collection_method: 'P',
-    commodity_id: 'TVS',
-    customer_id: 'OMNICOT8',
+    commodity_id: 'MISC',
+    commodity: _.get(shipmentDesc, '[0]Description', ''),
+    customer_id: 'OTRODATX',
     blnum: _.get(consolStopHeaders, '[0]FK_ConsolNo', ''),
     entered_user_id: 'apiuser',
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
-      _.get(shipmentHeader, '[0]FK_EquipmentCode', '')
+      _.get(shipmentHeader, '[0]FK_EquipmentCode', '') ||
+        _.get(shipmentApar, '[0]FK_EquipmentCode', '')
     ),
-    order_type_id: mapOrderTypeToMcLeod(_.get(shipmentHeader, '[0]FK_EquipmentCode', '')),
+    order_type_id: mapOrderTypeToMcLeod(
+      _.get(shipmentHeader, '[0]FK_EquipmentCode', '') ||
+        _.get(shipmentApar, '[0]FK_EquipmentCode', '')
+    ),
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
-    hazmat,
-    high_value: _.get(shipmentHeader, '[0]Insurance', 0) > 100000,
+    hazmat: await getHazmat({ shipmentAparConsoleData: shipmentApar }),
+    high_value: sumNumericValues(shipmentHeader, 'Insurance') > 100000,
     hold_reason: 'NEW API',
     include_split_point: false,
     is_autorate_dist: false,
@@ -316,7 +346,7 @@ async function mtPayload(
     preloaded: false,
     ready_to_bill: false,
     reply_transmitted: false,
-    revenue_code_id: 'PRI',
+    revenue_code_id: 'SPOT',
     round_trip: false,
     ship_status_to_edi: false,
     status: 'A',
