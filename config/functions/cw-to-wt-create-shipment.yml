@@ -86,6 +86,7 @@ function:
   environment:
     WT_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipment/wt/url}
     CW_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipmentResponse/cw/url}
+    CW_ENDPOINT_AUTHORIZATION: ${ssm:/omni-dw/${self:provider.stage}/createShipmentResponse/cw/url.authorizer}
     LOGS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/ddb.tableName}
     CUSTOMERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customers/ddb.tableName}
     wt_soap_username: ${ssm:/omni-dw/${self:provider.stage}/wt/soap/username~true}

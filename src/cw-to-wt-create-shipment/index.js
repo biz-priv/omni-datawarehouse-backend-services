@@ -164,7 +164,6 @@ async function sendToWT(postData) {
     if (get(res, 'status', '') === 200) {
       return get(res, 'data', '');
     }
-    dynamoData.xmlWTResponse = get(res, 'data', '');
     throw new Error(`WORLD TRAK API Request Failed: ${res}`);
   } catch (error) {
     console.error('WORLD TRAK API Request Failed: ', error);
@@ -178,7 +177,7 @@ async function sendToCW(postData) {
       url: process.env.CW_URL,
       method: 'post',
       headers: {
-        Authorization: 'Basic dHJ4dHMyOjY0ODg1Nw==',
+        Authorization: process.env.CW_ENDPOINT_AUTHORIZATION,
       },
       data: postData,
     };
@@ -188,7 +187,6 @@ async function sendToCW(postData) {
     if (get(res, 'status', '') === 200) {
       return get(res, 'data', '');
     }
-    dynamoData.xmlWTResponse = get(res, 'data', '');
     throw new Error(`CARGOWISE API Request Failed: ${res}`);
   } catch (error) {
     console.error('CARGOWISE API Request Failed: ', error);
@@ -274,7 +272,7 @@ async function prepareCWpayload(xmlObj, xmlWTObjResponse) {
     'soap:Envelope.soap:Body.AddNewShipmentV3Response.AddNewShipmentV3Result.Housebill',
     ''
   );
-  dynamoData.fileNumber = get(
+  dynamoData.FileNumber = get(
     xmlWTObjResponse,
     'soap:Envelope.soap:Body.AddNewShipmentV3Response.AddNewShipmentV3Result.ShipQuoteNo',
     ''
