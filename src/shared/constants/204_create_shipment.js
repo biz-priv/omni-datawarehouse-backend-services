@@ -8,8 +8,6 @@ const {
   CONFIRMATION_COST_INDEX_KEY_NAME,
   CONSIGNEE_TABLE,
   SHIPPER_TABLE,
-  REFERENCES_TABLE,
-  REFERENCES_INDEX_KEY_NAME,
   TRACKING_NOTES_TABLE,
   TRACKING_NOTES_CONSOLENO_INDEX_KEY,
   CONSOL_STOP_HEADERS_CONSOL_INDEX,
@@ -46,7 +44,6 @@ const CONSOLE_WISE_TABLES = {
     tbl_ConsolStopItems: STATUSES.PENDING,
     tbl_ShipmentDesc: STATUSES.PENDING,
     tbl_TrackingNotes: STATUSES.PENDING,
-    tbl_References: STATUSES.PENDING,
     tbl_ConsolStopHeaders: STATUSES.PENDING,
   },
 };
@@ -111,14 +108,6 @@ const TABLE_PARAMS = {
     }),
     tbl_ConsolStopItems: ({ orderNo }) => ({
       TableName: CONSOL_STOP_ITEMS,
-      KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
-      ExpressionAttributeValues: {
-        ':FK_OrderNo': orderNo,
-      },
-    }),
-    tbl_References: ({ orderNo }) => ({
-      TableName: REFERENCES_TABLE,
-      IndexName: REFERENCES_INDEX_KEY_NAME,
       KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
       ExpressionAttributeValues: {
         ':FK_OrderNo': orderNo,
@@ -206,9 +195,8 @@ const CONSOLE_WISE_REQUIRED_FIELDS = {
   },
   [TYPES.MULTI_STOP]: {
     tbl_ShipmentHeader: ['EquipmentCode', 'Insurance', 'ServiceLevelId', 'Housebill'],
-    tbl_ShipmentDesc: ['Hazmat', 'Pieces', 'Weight'],
+    tbl_ShipmentDesc: ['Hazmat', 'Pieces', 'Weight', 'Length', 'Width', 'Height', 'Description'],
     tbl_TrackingNotes: ['UserId'],
-    tbl_References: ['Reference', 'Reference type'],
     tbl_ConsolStopHeaders: [
       'Consol Number',
       'ConsolStop Name',

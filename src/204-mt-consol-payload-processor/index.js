@@ -39,15 +39,8 @@ module.exports.handler = async (event, context) => {
         const newImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
         consolNo = _.get(newImage, 'ConsolNo', 0);
 
-        const {
-          shipmentApar,
-          shipmentHeader,
-          shipmentDesc,
-          consolStopHeaders,
-          customer,
-          references,
-          users,
-        } = await fetchDataFromTablesList(consolNo);
+        const { shipmentApar, shipmentHeader, shipmentDesc, consolStopHeaders, customer, users } =
+          await fetchDataFromTablesList(consolNo);
         orderId = _.map(shipmentApar, 'FK_OrderNo'); // comma separated orderNo's
         stationCode = '';
         for (const apar of shipmentApar) {
@@ -67,7 +60,6 @@ module.exports.handler = async (event, context) => {
           shipmentDesc,
           consolStopHeaders,
           customer,
-          references,
           users
         );
         console.info('🙂 -> file: index.js:114 -> mtPayloadData:', JSON.stringify(mtPayloadData));

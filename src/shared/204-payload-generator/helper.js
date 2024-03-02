@@ -21,11 +21,8 @@ const {
   CONFIRMATION_COST_INDEX_KEY_NAME,
   CONSIGNEE_TABLE,
   SHIPPER_TABLE,
-
-  REFERENCES_TABLE,
   USERS_TABLE,
   TRACKING_NOTES_TABLE,
-  REFERENCES_INDEX_KEY_NAME,
   TRACKING_NOTES_CONSOLENO_INDEX_KEY,
   SHIPMENT_APAR_INDEX_KEY_NAME,
   INSTRUCTIONS_INDEX_KEY_NAME,
@@ -92,25 +89,8 @@ function getPowerBrokerCode(reftypeId) {
   return _.get(refTypeMap, reftypeId, 'NA');
 }
 
-function generateReferenceNumbers({ references }) {
-  return getUniqueObjects(
-    _.map(references, (ref) => ({
-      __type: 'reference_number',
-      __name: 'referenceNumbers',
-      company_id: 'TMS',
-      element_id: '128',
-      partner_id: 'TMS',
-      reference_number: _.get(ref, 'ReferenceNo', 'NA'),
-      reference_qual: getPowerBrokerCode(_.get(ref, 'FK_RefTypeId', 'NA')),
-      send_to_driver: true,
-      version: '004010',
-    }))
-  );
-}
-
 async function generateStop(
   shipmentHeader,
-  references,
   orderSequence,
   stopType,
   locationId,
@@ -171,7 +151,6 @@ async function generateStop(
         comments: getNote(stateData, type),
       },
     ],
-    referenceNumbers: type === 'shipper' ? generateReferenceNumbers({ references }) : [],
   };
 
   specialInstruction.map((item) => {
@@ -248,7 +227,6 @@ async function processStopDataNonConsol(stopType, shipmentHeader, stateData) {
 
 async function generateStopforConsole(
   shipmentHeaderData,
-  references,
   orderSequence,
   stopType,
   locationId,
@@ -316,12 +294,7 @@ async function generateStopforConsole(
       },
     ],
     referenceNumbers:
-      type === 'shipper'
-        ? [
-            ...generateReferenceNumbers({ references }),
-            ...populateHousebillNumbers(housebillData, descData),
-          ]
-        : [],
+      type === 'shipper' ? [...populateHousebillNumbers(housebillData, descData)] : [],
   };
   stopData.stopNotes.push({
     __type: 'stop_note',
@@ -436,15 +409,6 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
         KeyConditionExpression: 'PK_OrderNo = :orderNo',
         ExpressionAttributeValues: {
           ':orderNo': orderNo,
-        },
-      };
-    case 'omni-wt-rt-references':
-      return {
-        TableName: REFERENCES_TABLE,
-        IndexName: REFERENCES_INDEX_KEY_NAME,
-        KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
-        ExpressionAttributeValues: {
-          ':FK_OrderNo': orderNo,
         },
       };
     case 'omni-wt-rt-shipper':
@@ -655,13 +619,9 @@ async function fetchCommonTableData({ shipmentAparData }) {
 
 async function fetchNonConsoleTableData({ shipmentAparData }) {
   try {
-    const tables = [
-      'omni-wt-rt-shipment-header-non-console',
-      'omni-wt-rt-references',
-      'omni-wt-rt-shipment-desc',
-    ];
+    const tables = ['omni-wt-rt-shipment-header-non-console', 'omni-wt-rt-shipment-desc'];
 
-    const [shipmentHeaderData, referencesData, shipmentDescData] = await Promise.all(
+    const [shipmentHeaderData, shipmentDescData] = await Promise.all(
       tables.map(async (table) => {
         const param = getParamsByTableName(_.get(shipmentAparData, 'FK_OrderNo'), table);
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
@@ -698,7 +658,6 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
     console.info('🚀 ~ file: helper.js:491 ~ userData:', userData);
     return {
       shipmentHeaderData,
-      referencesData,
       shipmentDescData,
       customersData,
       userData,
@@ -707,7 +666,6 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
     console.error('🙂 -> file: helper.js:494 -> err:', err);
     return {
       shipmentHeaderData: [],
-      referencesData: [],
       shipmentDescData: [],
       customersData: [],
     };
@@ -718,28 +676,26 @@ async function fetchConsoleTableData({ shipmentAparData }) {
   try {
     const tables = [
       'omni-wt-rt-shipment-header-console',
-      'omni-wt-rt-references',
       'omni-wt-rt-shipment-desc',
       'omni-wt-rt-tracking-notes',
     ];
 
-    const [shipmentHeaderData, referencesData, shipmentDescData, trackingNotesData] =
-      await Promise.all(
-        tables.map(async (table) => {
-          const param = getParamsByTableName(
-            _.get(shipmentAparData, 'FK_OrderNo'),
-            table,
-            '',
-            '',
-            '',
-            _.get(shipmentAparData, 'ConsolNo')
-          );
-          console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
-          const response = await queryDynamoDB(param);
-          console.info('🚀 ~ file: helper.js:510 ~ response:', response);
-          return _.get(response, 'Items', false);
-        })
-      );
+    const [shipmentHeaderData, shipmentDescData, trackingNotesData] = await Promise.all(
+      tables.map(async (table) => {
+        const param = getParamsByTableName(
+          _.get(shipmentAparData, 'FK_OrderNo'),
+          table,
+          '',
+          '',
+          '',
+          _.get(shipmentAparData, 'ConsolNo')
+        );
+        console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
+        const response = await queryDynamoDB(param);
+        console.info('🚀 ~ file: helper.js:510 ~ response:', response);
+        return _.get(response, 'Items', false);
+      })
+    );
     if (shipmentHeaderData === 0 || trackingNotesData === 0) {
       throw new Error('Missing data in customers or users');
     }
@@ -781,7 +737,6 @@ async function fetchConsoleTableData({ shipmentAparData }) {
     userData = [userData.filter((item) => item && _.has(item, 'UserEmail'))[0]];
     return {
       shipmentHeaderData,
-      referencesData,
       shipmentDescData,
       trackingNotesData,
       customersData,
@@ -791,7 +746,6 @@ async function fetchConsoleTableData({ shipmentAparData }) {
     console.info('🙂 -> file: helper.js:526 -> err:', err);
     return {
       shipmentHeaderData: [],
-      referencesData: [],
       shipmentDescData: [],
       trackingNotesData: [],
       customersData: [],
@@ -1121,20 +1075,6 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       throw new Error(`No customer data found for BillNo:${shipmentHeader[0].BillNo}`);
     }
 
-    const references = [];
-    const refparams = {
-      TableName: REFERENCES_TABLE,
-      IndexName: REFERENCES_INDEX_KEY_NAME,
-      KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
-      ExpressionAttributeValues: {
-        ':FK_OrderNo': element.FK_OrderNo.toString(),
-      },
-    };
-    const refResult = await dynamoDB.query(refparams).promise();
-    references.push(...refResult.Items);
-    if (references.length === 0) {
-      throw new Error(`No references data found for FK_OrderNo:${element.FK_OrderNo}`);
-    }
     const tnparams = {
       TableName: TRACKING_NOTES_TABLE,
       IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
@@ -1174,7 +1114,6 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       consolStopHeaders: uniqueConsolStopHeaders,
       consolStopItems,
       customer,
-      references,
       users,
     };
   } catch (error) {
@@ -1183,14 +1122,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
   }
 }
 
-async function populateStops(
-  consolStopHeaders,
-  references,
-  users,
-  shipmentHeader,
-  shipmentDesc,
-  shipmentApar
-) {
+async function populateStops(consolStopHeaders, users, shipmentHeader, shipmentDesc, shipmentApar) {
   const stops = [];
   const orderId = _.join(_.map(shipmentApar, 'FK_OrderNo'));
   const locationIds = await fetchLocationIds(consolStopHeaders, orderId);
@@ -1206,10 +1138,7 @@ async function populateStops(
       address1: _.get(stopHeader, 'ConsolStopAddress1', ''),
     });
 
-    const referenceNumbersArray = [
-      generateReferenceNumbers({ references }),
-      populateHousebillNumbers(shipmentHeader, shipmentDesc),
-    ];
+    const referenceNumbersArray = [populateHousebillNumbers(shipmentHeader, shipmentDesc)];
     const dims = populateDims(shipmentHeader, shipmentDesc);
 
     let stopNotes = [
@@ -1688,7 +1617,6 @@ async function getTimezone({ stopCity, state, country, address1 }) {
 
 module.exports = {
   getPowerBrokerCode,
-  generateReferenceNumbers,
   getCstTime,
   generateStop,
   getParamsByTableName,

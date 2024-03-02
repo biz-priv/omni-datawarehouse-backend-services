@@ -22,7 +22,6 @@ const {
 async function nonConsolPayload({
   shipmentHeader,
   shipmentDesc,
-  referencesData,
   shipperLocationId,
   consigneeLocationId,
   finalShipperData,
@@ -59,12 +58,12 @@ async function nonConsolPayload({
 
   const deliveryStop = await generateStop(
     shipmentHeader,
-    referencesData,
     2,
     'SO',
     consigneeLocationId,
     finalConsigneeData,
     'consignee',
+    '',
     shipmentAparData,
     shipmentDesc
   );
@@ -135,7 +134,6 @@ async function nonConsolPayload({
   payload.stops.push(
     await generateStop(
       shipmentHeader,
-      referencesData,
       1,
       'PU',
       shipperLocationId,
@@ -152,12 +150,10 @@ async function nonConsolPayload({
 }
 
 async function consolPayload({
-  referencesData,
   shipperLocationId,
   consigneeLocationId,
   finalShipperData,
   finalConsigneeData,
-  // customersData,
   shipmentAparData,
   userData,
 }) {
@@ -178,7 +174,7 @@ async function consolPayload({
 
   const deliveryStop = await generateStopforConsole(
     shipmentHeaderData,
-    referencesData,
+
     2,
     'SO',
     consigneeLocationId,
@@ -259,7 +255,7 @@ async function consolPayload({
   payload.stops.push(
     await generateStopforConsole(
       shipmentHeaderData,
-      referencesData,
+
       1,
       'PU',
       shipperLocationId,
@@ -282,7 +278,6 @@ async function mtPayload(
   shipmentDesc,
   consolStopHeaders,
   customer,
-  references,
   users
 ) {
   console.info('entered payload function');
@@ -290,7 +285,6 @@ async function mtPayload(
   // Populate stops
   const stops = await populateStops(
     consolStopHeaders,
-    references,
     users,
     shipmentHeader,
     shipmentDesc,

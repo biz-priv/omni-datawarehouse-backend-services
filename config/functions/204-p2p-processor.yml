@@ -31,10 +31,6 @@ function:
     EQUIPMENT_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/equipment/ddb.tableName~true}
     CUSTOMER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customer/ddb.tableName~true}
     CONFIRMATION_COST_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/confirmation-cost/ddb.orderNoIndex}
-    TIMEZONE_MASTER: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/timezone-master/ddb.tableName~true}
-    TIMEZONE_ZIP_CR: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/timezone-zip-cr/ddb.tableName~true}
-    REFERENCES_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.tableName~true}
-    REFERENCES_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.orderNoIndex}
     USERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/users/ddb.tableName~true}
     TRACKING_NOTES_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.tableName~true}
     TRACKING_NOTES_CONSOLENO_INDEX_KEY: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.ConsolNoIndex}
