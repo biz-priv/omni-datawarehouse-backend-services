@@ -43,18 +43,15 @@ async function nonConsolPayload({
   const stationCode =
     _.get(shipmentHeader, 'ControllingStation', '') ||
     _.get(shipmentAparData, 'FK_HandlingStation', '');
+  console.info('🚀 ~ file: payloads.js:44 ~ stationCode:', stationCode);
 
   if (!stationCode) {
     throw new Error('Please populate the Controlling Station');
   }
 
   // Call the function to get customer ID and email based on the station code
-  const stationInfoResult = stationCodeInfo(stationCode);
-
-  // Extract customerId and email
-  const customerId = _.get(stationInfoResult, 'PbBillTo');
-
-  console.info('🚀 ~ file: test.js:608 ~ customerId:', customerId);
+  const customerId = stationCodeInfo(stationCode);
+  console.info('🚀 ~ file: payloads.js:53 ~ customerId:', customerId);
 
   const equipmentCode =
     _.get(shipmentHeader, 'FK_EquipmentCode', '') ||
@@ -86,7 +83,6 @@ async function nonConsolPayload({
     bol_received: false,
     dispatch_opt: true,
     collection_method: 'P',
-    commodity_id: 'MISC',
     commodity: _.get(shipmentDesc, '[0]Description', ''),
     customer_id: customerId,
     blnum: _.get(shipmentHeader, 'Housebill', ''),
@@ -132,7 +128,10 @@ async function nonConsolPayload({
     def_move_type: 'A',
     stops: [],
   };
-
+  // Conditionally set commodity_id if hazmat is true
+  if (hazmat) {
+    _.set(payload, 'commodity_id', 'HAZMAT');
+  }
   payload.stops.push(
     await generateStop(
       shipmentHeader,
@@ -195,6 +194,8 @@ async function consolPayload({
     country: _.get(finalShipperData, 'FK_ShipCountry', ''),
     address1: _.get(finalShipperData, 'ShipAddress1', ''),
   });
+  const hazmat = await getHazmat({ shipmentAparConsoleData }); // Obtain hazmat information
+
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
@@ -203,7 +204,6 @@ async function consolPayload({
     bol_received: false,
     dispatch_opt: true,
     collection_method: 'P',
-    commodity_id: 'MISC',
     commodity: _.get(descData, '[0].Description', ''),
     customer_id: 'OTRODATX',
     blnum: _.get(shipmentAparData, 'ConsolNo', ''),
@@ -213,7 +213,7 @@ async function consolPayload({
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
-    hazmat: await getHazmat({ shipmentAparConsoleData }),
+    hazmat,
     high_value: await getHighValue({ shipmentAparConsoleData }),
     hold_reason: 'NEW API',
     include_split_point: false,
@@ -252,7 +252,10 @@ async function consolPayload({
     def_move_type: 'A',
     stops: [],
   };
-
+  // Conditionally set commodity_id if hazmat is true
+  if (hazmat) {
+    _.set(payload, 'commodity_id', 'HAZMAT');
+  }
   payload.stops.push(
     await generateStopforConsole(
       shipmentHeaderData,
@@ -301,6 +304,8 @@ async function mtPayload(
     country: _.get(consolStopHeaders, '[0].FK_ConsolStopCountry', ''),
     address1: _.get(consolStopHeaders, '[0].ConsolStopAddress1', ''),
   });
+  const hazmat = await getHazmat({ shipmentAparConsoleData: shipmentApar }); // Obtain hazmat information
+
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
@@ -309,7 +314,6 @@ async function mtPayload(
     bol_received: false,
     dispatch_opt: true,
     collection_method: 'P',
-    commodity_id: 'MISC',
     commodity: _.get(shipmentDesc, '[0]Description', ''),
     customer_id: 'OTRODATX',
     blnum: _.get(consolStopHeaders, '[0]FK_ConsolNo', ''),
@@ -325,7 +329,7 @@ async function mtPayload(
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
-    hazmat: await getHazmat({ shipmentAparConsoleData: shipmentApar }),
+    hazmat,
     high_value: sumNumericValues(shipmentHeader, 'Insurance') > 100000,
     hold_reason: 'NEW API',
     include_split_point: false,
@@ -361,7 +365,10 @@ async function mtPayload(
     def_move_type: 'A',
     stops,
   };
-
+  // Conditionally set commodity_id if hazmat is true
+  if (hazmat) {
+    _.set(payload, 'commodity_id', 'HAZMAT');
+  }
   return payload;
 }
 

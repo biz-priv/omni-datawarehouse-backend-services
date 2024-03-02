@@ -210,9 +210,9 @@ async function generateStop(
         company_id: 'TMS',
         comment_type: 'OC',
         comments: total,
-      }
+      },
+      dims
     );
-    stopData.stopNotes = stopData.stopNotes.concat(dims);
   }
 
   return stopData;
@@ -357,9 +357,9 @@ async function generateStopforConsole(
         company_id: 'TMS',
         comment_type: 'OC',
         comments: total,
-      }
+      },
+      dims
     );
-    stopData.stopNotes = stopData.stopNotes.concat(dims);
   }
 
   return stopData;
@@ -1244,9 +1244,9 @@ async function populateStops(
           company_id: 'TMS',
           comment_type: 'OC',
           comments: sumNumericValues(shipmentApar, 'Total'),
-        }
+        },
+        dims
       );
-      stopNotes.push(dims[0]);
     }
     // Split date and time for sched_arrive_early
     const retrievedDateEarly = stopHeader.ConsolStopDate.split(' ')[0];
@@ -1342,37 +1342,37 @@ function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
 function populateDims(shipmentHeader, shipmentDesc) {
   const combinedDims = {};
 
-  _.forEach(shipmentHeader, (header) => {
-    const matchingDesc = _.filter(shipmentDesc, {
-      FK_OrderNo: header.PK_OrderNo,
-    });
+  // Iterate over each shipment header
+  shipmentHeader.forEach((header) => {
+    const matchingDesc = shipmentDesc.filter((desc) => desc.FK_OrderNo === header.PK_OrderNo);
 
-    _.forEach(matchingDesc, (desc) => {
+    matchingDesc.forEach((desc) => {
       const housebill = header.Housebill;
-      combinedDims[housebill] = combinedDims[housebill] || {
-        length: 0,
-        width: 0,
-        height: 0,
-      };
-      combinedDims[housebill].length += parseFloat(desc.Length);
-      combinedDims[housebill].width += parseFloat(desc.Width);
-      combinedDims[housebill].height += parseFloat(desc.Height);
+      combinedDims[housebill] = combinedDims[housebill] || [];
+      combinedDims[housebill].push({
+        pieces: desc.Pieces,
+        length: parseFloat(desc.Length),
+        width: parseFloat(desc.Width),
+        height: parseFloat(desc.Height),
+      });
     });
   });
 
-  const comments = _.map(combinedDims, (dims, housebill) => {
-    return `Housebill: ${housebill}, Dims: L/W/H: ${dims.length}/${dims.width}/${dims.height}`;
+  // Generate comments for each housebill
+  const comments = Object.entries(combinedDims).map(([housebill, dimsArray]) => {
+    const dimsComments = dimsArray
+      .map((dim) => `Pieces: ${dim.pieces}, Dims: L/W/H: ${dim.length}/${dim.width}/${dim.height}`)
+      .join(', ');
+    return `Housebill: ${housebill} ~ ${dimsComments}`;
   });
 
-  return [
-    {
-      __type: 'stop_note',
-      __name: 'stopNotes',
-      company_id: 'TMS',
-      comment_type: 'OC',
-      comments: comments.join('\n'),
-    },
-  ];
+  return {
+    __type: 'stop_note',
+    __name: 'stopNotes',
+    company_id: 'TMS',
+    comment_type: 'OC',
+    comments: comments.join('\n'),
+  };
 }
 
 async function fetchLocationIds(stopsData, orderId) {

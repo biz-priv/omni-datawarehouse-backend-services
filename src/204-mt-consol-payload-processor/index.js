@@ -117,7 +117,23 @@ module.exports.handler = async (event, context) => {
         }));
         // Update the movements array in the response
         _.set(createPayloadResponse, 'movements', updatedMovements);
+        const stops = _.get(payload, 'stops', []);
 
+        const contactNames = {};
+        stops.forEach((stop) => {
+          if (stop.order_sequence) {
+            contactNames[stop.order_sequence] = stop.contact_name;
+          }
+        });
+
+        // Update the stops array in the response with contact names
+        const updatedStops = stops.map((stop) => ({
+          ...stop,
+          contact_name: contactNames[stop.order_sequence] || 'NA',
+        }));
+
+        // Update the stops array in the payload with the updated contact names
+        _.set(createPayloadResponse, 'stops', updatedStops);
         const updatedOrderResponse = await updateOrders({
           payload: createPayloadResponse,
           consolNo,
@@ -195,17 +211,19 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function updateStatusTable({ ConsolNo, status, response, payload }) {
+async function updateStatusTable({ ConsolNo, status, response, payload, Housebill }) {
   try {
     const updateParam = {
       TableName: CONSOL_STATUS_TABLE,
       Key: { ConsolNo },
-      UpdateExpression: 'set #Status = :status, #Response = :response, Payload = :payload',
+      UpdateExpression:
+        'set #Status = :status, #Response = :response, Payload = :payload, Housebill = :housebill',
       ExpressionAttributeNames: { '#Status': 'Status', '#Response': 'Response' },
       ExpressionAttributeValues: {
         ':status': status,
         ':response': response,
         ':payload': payload,
+        ':housebill': Housebill,
       },
     };
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
@@ -216,17 +234,19 @@ async function updateStatusTable({ ConsolNo, status, response, payload }) {
   }
 }
 
-async function updateOrderStatusTable({ orderNo, status, response, payload }) {
+async function updateOrderStatusTable({ orderNo, status, response, payload, Housebill }) {
   try {
     const updateParam = {
       TableName: STATUS_TABLE,
       Key: { FK_OrderNo: orderNo },
-      UpdateExpression: 'set #Status = :status, #Response = :response, Payload = :payload',
+      UpdateExpression:
+        'set #Status = :status, #Response = :response, Payload = :payload, Housebill = :housebill',
       ExpressionAttributeNames: { '#Status': 'Status', '#Response': 'Response' },
       ExpressionAttributeValues: {
         ':status': status,
         ':response': response,
         ':payload': payload,
+        ':housebill': Housebill,
       },
     };
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
@@ -237,7 +257,7 @@ async function updateOrderStatusTable({ orderNo, status, response, payload }) {
   }
 }
 
-async function insertInOutputTable({ ConsolNo, status, response, payload }) {
+async function insertInOutputTable({ ConsolNo, status, response, payload, Housebill }) {
   try {
     const params = {
       TableName: OUTPUT_TABLE,
@@ -249,6 +269,7 @@ async function insertInOutputTable({ ConsolNo, status, response, payload }) {
         CreatedAt: moment.tz('America/Chicago').format(),
         Response: response,
         Payload: payload,
+        Housebill,
         LastUpdateBy: functionName,
       },
     };
