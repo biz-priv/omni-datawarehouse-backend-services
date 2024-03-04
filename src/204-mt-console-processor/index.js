@@ -16,6 +16,7 @@ const {
   CONSOLE_STATUS_TABLE,
   CONSOL_STOP_HEADERS,
   STAGE,
+  SHIPMENT_APAR_TABLE,
 } = process.env;
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
@@ -46,14 +47,25 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function publishSNSTopic({ message }) {
-  return await sns
-    .publish({
+async function publishSNSTopic({ message, stationCode }) {
+  try {
+    const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFIACATION - ${STAGE}`,
+      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
       Message: `An error occurred in ${functionName}: ${message}`,
-    })
-    .promise();
+      MessageAttributes: {
+        stationCode: {
+          DataType: "String",
+          StringValue: stationCode,
+        },
+      },
+    };
+
+    await sns.publish(params).promise();
+  } catch (error) {
+    console.error("Error publishing to SNS topic:", error);
+    throw error;
+  }
 }
 
 async function queryTableStatusPending() {
@@ -78,106 +90,130 @@ async function queryTableStatusPending() {
 }
 
 async function checkMultiStop(tableData) {
-  console.info("🙂 -> file: index.js:80 -> tableData:", tableData);
-  const originalTableStatuses = { ...get(tableData, "TableStatuses", {}) };
-  const type = TYPES.MULTI_STOP;
-  console.info("🙂 -> file: index.js:83 -> type:", type);
-  const consolNo = get(tableData, "ConsolNo");
-  console.info("🙂 -> file: index.js:87 -> consolNo:", consolNo);
-  const retryCount = get(tableData, "RetryCount", 0);
-  console.info("🙂 -> file: index.js:90 -> retryCount:", retryCount);
-  const orderNumbersForConsol = Object.keys(get(tableData, "TableStatuses"));
-  await Promise.all(
-    orderNumbersForConsol.map(async (orderNoForConsol) => {
-      console.info(
-        "🙂 -> file: index.js:160 -> orderNoForConsol:",
-        orderNoForConsol
-      );
-      const tableNames = Object.keys(
-        pickBy(
-          get(tableData, `TableStatuses.${orderNoForConsol}`, {}),
-          (value) => value === STATUSES.PENDING
-        )
-      );
-      console.info("🙂 -> file: index.js:81 -> tableName:", tableNames);
-      await Promise.all(
-        tableNames.map(async (tableName) => {
-          try {
-            console.info("🙂 -> file: index.js:86 -> tableName:", tableName);
-            const param = TABLE_PARAMS[type][tableName]({
-              orderNo: orderNoForConsol,
-              consoleNo: consolNo,
-            });
-            originalTableStatuses[`${orderNoForConsol}`][tableName] =
-              await fetchItemFromTable({
-                params: param,
-              });
-          } catch (error) {
-            console.info("🙂 -> file: index.js:182 -> error:", error);
-            throw error;
-          }
-        })
-      );
-      await checkAndUpdateOrderTable({
-        orderNo: orderNoForConsol,
-        originalTableStatuses: originalTableStatuses[orderNoForConsol],
-      });
-    })
-  );
+  let consolNo;
+  const orders = Object.keys(get(tableData, "TableStatuses"));
+  const aparResult = await queryDynamoDB(orders[0]);
+  const stationCode = get(aparResult, "[0].FK_ConsolStationId");
   console.info(
-    "🙂 -> file: index.js:149 -> originalTableStatuses:",
-    originalTableStatuses
+    "🚀 ~ file: index.js:93 ~ checkMultiStop ~ stationCode:",
+    stationCode
   );
-
-  for (const key in originalTableStatuses) {
-    if (Object.hasOwn(originalTableStatuses, key)) {
-      const tableStatuses = originalTableStatuses[key];
-      if (
-        Object.values(tableStatuses).includes(STATUSES.PENDING) &&
-        retryCount < 5
-      ) {
-        return await updateConosleStatusTable({
-          consolNo,
-          originalTableStatuses,
-          retryCount,
-          status: STATUSES.PENDING,
-        });
-      }
-
-      if (
-        Object.values(tableStatuses).includes(STATUSES.PENDING) &&
-        retryCount >= 5
-      ) {
-        const pendingTables = Object.keys(tableStatuses).filter((table) => {
-          return tableStatuses[table] === STATUSES.PENDING;
-        });
-        let missingFields = pendingTables.map(
-          (pendingTable) => CONSOLE_WISE_REQUIRED_FIELDS[type][pendingTable]
+  if (stationCode === "") {
+    throw new Error("Please populate handling Station code");
+  }
+  try {
+    console.info("🙂 -> file: index.js:80 -> tableData:", tableData);
+    const originalTableStatuses = { ...get(tableData, "TableStatuses", {}) };
+    const type = TYPES.MULTI_STOP;
+    console.info("🙂 -> file: index.js:83 -> type:", type);
+    consolNo = get(tableData, "ConsolNo");
+    console.info("🙂 -> file: index.js:87 -> consolNo:", consolNo);
+    const retryCount = get(tableData, "RetryCount", 0);
+    console.info("🙂 -> file: index.js:90 -> retryCount:", retryCount);
+    const orderNumbersForConsol = Object.keys(get(tableData, "TableStatuses"));
+    await Promise.all(
+      orderNumbersForConsol.map(async (orderNoForConsol) => {
+        console.info(
+          "🙂 -> file: index.js:160 -> orderNoForConsol:",
+          orderNoForConsol
         );
-        missingFields = missingFields.flat().join("\n");
-        await publishSNSTopic({
-          message: `All tables are not populated for consolNo: ${consolNo}.
+        const tableNames = Object.keys(
+          pickBy(
+            get(tableData, `TableStatuses.${orderNoForConsol}`, {}),
+            (value) => value === STATUSES.PENDING
+          )
+        );
+        console.info("🙂 -> file: index.js:81 -> tableName:", tableNames);
+        await Promise.all(
+          tableNames.map(async (tableName) => {
+            try {
+              console.info("🙂 -> file: index.js:86 -> tableName:", tableName);
+              const param = TABLE_PARAMS[type][tableName]({
+                orderNo: orderNoForConsol,
+                consoleNo: consolNo,
+              });
+              originalTableStatuses[`${orderNoForConsol}`][tableName] =
+                await fetchItemFromTable({
+                  params: param,
+                });
+            } catch (error) {
+              console.info("🙂 -> file: index.js:182 -> error:", error);
+              throw error;
+            }
+          })
+        );
+        await checkAndUpdateOrderTable({
+          orderNo: orderNoForConsol,
+          originalTableStatuses: originalTableStatuses[orderNoForConsol],
+        });
+      })
+    );
+    console.info(
+      "🙂 -> file: index.js:149 -> originalTableStatuses:",
+      originalTableStatuses
+    );
+
+    for (const key in originalTableStatuses) {
+      if (Object.hasOwn(originalTableStatuses, key)) {
+        const tableStatuses = originalTableStatuses[key];
+        if (
+          Object.values(tableStatuses).includes(STATUSES.PENDING) &&
+          retryCount < 5
+        ) {
+          return await updateConosleStatusTable({
+            consolNo,
+            originalTableStatuses,
+            retryCount,
+            status: STATUSES.PENDING,
+          });
+        }
+
+        if (
+          Object.values(tableStatuses).includes(STATUSES.PENDING) &&
+          retryCount >= 5
+        ) {
+          const pendingTables = Object.keys(tableStatuses).filter((table) => {
+            return tableStatuses[table] === STATUSES.PENDING;
+          });
+          let missingFields = pendingTables.map(
+            (pendingTable) => CONSOLE_WISE_REQUIRED_FIELDS[type][pendingTable]
+          );
+          missingFields = missingFields.flat().join("\n");
+          await publishSNSTopic({
+            message: `All tables are not populated for consolNo: ${consolNo}.
               \n Please check if all the below feilds are populated: 
               \n ${missingFields} 
               \n Please check ${CONSOLE_STATUS_TABLE} to see which table does not have data. 
               \n Retrigger the process by changing Status to ${STATUSES.PENDING} and resetting the RetryCount to 0.`,
-        });
-        return await updateConosleStatusTable({
-          consolNo,
-          originalTableStatuses,
-          retryCount,
-          status: STATUSES.FAILED,
-        });
+            stationCode,
+          });
+          return await updateConosleStatusTable({
+            consolNo,
+            originalTableStatuses,
+            retryCount,
+            status: STATUSES.FAILED,
+          });
+        }
       }
     }
-  }
 
-  return await updateConosleStatusTable({
-    consolNo,
-    originalTableStatuses,
-    retryCount,
-    status: STATUSES.READY,
-  });
+    return await updateConosleStatusTable({
+      consolNo,
+      originalTableStatuses,
+      retryCount,
+      status: STATUSES.READY,
+    });
+  } catch (error) {
+    console.error("🚀 ~ file: index.js:225 ~ error:", error);
+    await publishSNSTopic({
+      message: ` ${error.message}
+      \n consolNo: ${consolNo}
+      \n Please check details on ${CONSOLE_STATUS_TABLE}. Look for status FAILED.
+      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+      stationCode,
+    });
+    return false;
+  }
 }
 
 async function fetchItemFromTable({ params }) {
@@ -333,6 +369,25 @@ async function sleep(seconds) {
     return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
   } catch (error) {
     console.error("🚀 ~ file: index.js:249 ~ sleep ~ error:", error);
+    throw error;
+  }
+}
+
+async function queryDynamoDB(orderNo) {
+  const params = {
+    TableName: SHIPMENT_APAR_TABLE,
+    KeyConditionExpression: "FK_OrderNo = :orderNo",
+    ExpressionAttributeValues: {
+      ":orderNo": orderNo,
+    },
+  };
+
+  try {
+    const result = await dynamoDb.query(params).promise();
+    console.info("🚀 ~ file: index.js:344 ~ queryDynamoDB ~ result:", result);
+    return result.Items;
+  } catch (error) {
+    console.error("Error querying DynamoDB:", error);
     throw error;
   }
 }

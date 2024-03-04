@@ -23,8 +23,12 @@ async function getLocationId(
   address2,
   cityName,
   state,
-  zipCode
+  zipCode,
+  country
 ) {
+  if (country.toLowerCase() === "us" && zipCode.length > 5) {
+    zipCode = zipCode.slice(0, 5);
+  }
   const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${
     address2 ?? ""
   }&city_name=${cityName}&state=${state}&zip_code=${zipCode}`;
@@ -54,7 +58,16 @@ async function getLocationId(
   }
 }
 
-async function createLocation(data) {
+async function createLocation({
+  data,
+  orderId,
+  consolNo = 0,
+  country,
+  houseBill,
+}) {
+  if (country.toLowerCase() === "us" && _.get(data, "zip_code", 0).length > 5) {
+    data.zip_code = data.zip_code.slice(0, 5);
+  }
   const apiUrl = CREATE_LOC_URL;
 
   const headers = {
@@ -78,14 +91,22 @@ async function createLocation(data) {
   } catch (error) {
     const errorMessage = _.get(error, "response.data", error.message);
     console.error("🙂 -> file: apis.js:58 -> createLocation -> error:", error);
-    throw new Error(`Error in Create Location API.
+    throw new Error(`\nError in Create Location API.
+    \n FK_OrderNo: ${orderId}
+    \n ConsolNo: ${consolNo}
+    \n Housebill: ${houseBill}
     \n Error Details: ${errorMessage}
     \n Payload:
     \n ${JSON.stringify(data)}`);
   }
 }
 
-async function sendPayload({ payload: data }) {
+async function sendPayload({
+  payload: data,
+  orderId,
+  consolNo = 0,
+  houseBillString,
+}) {
   const apiUrl = SEND_PAYLOAD_URL;
 
   const headers = {
@@ -106,14 +127,22 @@ async function sendPayload({ payload: data }) {
   } catch (error) {
     console.info("🙂 -> file: apis.js:78 -> error:", error);
     const errorMessage = _.get(error, "response.data", error.message);
-    throw new Error(`Error in Create Orders API.
+    throw new Error(`\nError in Create Orders API.
+    \n FK_OrderNo: ${orderId}
+    \n ConsolNo: ${consolNo}
+    \n Housebill: ${houseBillString}
     \n Error Details: ${errorMessage}
     \n Payload: 
     \n ${JSON.stringify(data)}`);
   }
 }
 
-async function updateOrders({ payload: data }) {
+async function updateOrders({
+  payload: data,
+  orderId,
+  consolNo = 0,
+  houseBillString,
+}) {
   const apiUrl = UPDATE_PAYLOAD_URL;
 
   const headers = {
@@ -137,7 +166,10 @@ async function updateOrders({ payload: data }) {
   } catch (error) {
     console.info("🙂 -> file: apis.js:103 -> error:", error);
     const errorMessage = _.get(error, "response.data", error.message);
-    throw new Error(`Error in Update Orders API.
+    throw new Error(`\nError in Update Orders API.
+    \n FK_OrderNo: ${orderId}
+    \n ConsolNo: ${consolNo}
+    \n Housebill: ${houseBillString}
     \n Error Details: ${errorMessage}
     \n Payload:
     \n ${JSON.stringify(data)}`);
