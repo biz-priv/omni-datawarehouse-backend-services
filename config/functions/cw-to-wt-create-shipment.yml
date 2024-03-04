@@ -20,69 +20,69 @@ function:
         rules:
           - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/FederalSignal}
           - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-    # - existingS3:
-    #     bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-    #     events:
-    #       - s3:ObjectCreated:*
-    #     rules:
-    #       - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/CiscoSystems}
-    #       - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-    # - existingS3:
-    #     bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-    #     events:
-    #       - s3:ObjectCreated:*
-    #     rules:
-    #       - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/OmniCell}
-    #       - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-    # - existingS3:
-    #     bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-    #     events:
-    #       - s3:ObjectCreated:*
-    #     rules:
-    #       - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/Arjo}
-    #       - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-    # - existingS3:
-    #     bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-    #     events:
-    #       - s3:ObjectCreated:*
-    #     rules:
-    #       - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/CumminsAllison}
-    #       - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-    # - existingS3:
-    #     bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-    #     events:
-    #       - s3:ObjectCreated:*
-    #     rules:
-    #       - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/RTC}
-    #       - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-    # - existingS3:
-    #     bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-    #     events:
-    #       - s3:ObjectCreated:*
-    #     rules:
-    #       - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/WaterBox}
-    #       - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-    # - existingS3:
-    #     bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-    #     events:
-    #       - s3:ObjectCreated:*
-    #     rules:
-    #       - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/CircleK}
-    #       - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-    # - existingS3:
-    #     bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-    #     events:
-    #       - s3:ObjectCreated:*
-    #     rules:
-    #       - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/Arxium}
-    #       - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
-    # - existingS3:
-    #     bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-    #     events:
-    #       - s3:ObjectCreated:*
-    #     rules:
-    #       - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/RoyalEnfield}
-    #       - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/CiscoSystems}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/OmniCell}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/Arjo}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/CumminsAllison}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/RTC}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/WaterBox}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/CircleK}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/Arxium}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/RoyalEnfield}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
   environment:
     WT_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipment/wt/url}
     CW_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipmentResponse/cw/url}
