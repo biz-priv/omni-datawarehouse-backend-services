@@ -1368,7 +1368,7 @@ async function getCstTime({ datetime, timezone }) {
     let formattedDateTime = datetime + utcOffset;
     console.info('🚀 ~ file: helper.js:1315 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
     formattedDateTime = moment(formattedDateTime, 'YYYY-MM-DD HH:mm:ss.SSSZ')
-      .tz('America/Chicago')
+      .tz(timezone)
       .format('YYYYMMDDHHmmssZZ');
 
     console.info('🚀 ~ file: test.js:25 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
