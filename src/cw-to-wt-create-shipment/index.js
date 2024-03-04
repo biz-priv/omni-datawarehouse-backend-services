@@ -44,14 +44,8 @@ module.exports.handler = async (event, context) => {
     const statusCode = get(xmlObj, 'UniversalShipment.Shipment.Order.Status.Code', '');
     dynamoData.StatusCode = statusCode;
 
-    // If the status code is not 'DEP', we can ignore the event.
-    if (statusCode !== 'DEP') {
-      console.info('Status Code: ', statusCode);
-      throw new Error(`Status Code has to be DEP, Status Code we recieved: ${statusCode}`);
-    }
-
     // Preparing payload to send the data to world trak.
-    const xmlWTPayload = await prepareWTpayload(xmlObj);
+    const xmlWTPayload = await prepareWTpayload(xmlObj, statusCode);
     dynamoData.XmlWTPayload = xmlWTPayload;
 
     // Sending the payload to world trak endpoint.
@@ -164,7 +158,6 @@ async function sendToWT(postData) {
     if (get(res, 'status', '') === 200) {
       return get(res, 'data', '');
     }
-    dynamoData.xmlWTResponse = get(res, 'data', '');
     throw new Error(`WORLD TRAK API Request Failed: ${res}`);
   } catch (error) {
     console.error('WORLD TRAK API Request Failed: ', error);
@@ -178,7 +171,7 @@ async function sendToCW(postData) {
       url: process.env.CW_URL,
       method: 'post',
       headers: {
-        Authorization: 'Basic dHJ4dHMyOjY0ODg1Nw==',
+        Authorization: process.env.CW_ENDPOINT_AUTHORIZATION,
       },
       data: postData,
     };
@@ -188,7 +181,6 @@ async function sendToCW(postData) {
     if (get(res, 'status', '') === 200) {
       return get(res, 'data', '');
     }
-    dynamoData.xmlWTResponse = get(res, 'data', '');
     throw new Error(`CARGOWISE API Request Failed: ${res}`);
   } catch (error) {
     console.error('CARGOWISE API Request Failed: ', error);
@@ -196,9 +188,12 @@ async function sendToCW(postData) {
   }
 }
 
-async function prepareWTpayload(xmlObj) {
+async function prepareWTpayload(xmlObj, statusCode) {
   try {
-    const headerAndReferenceListData = await prepareHeaderLevelAndReferenceListData(xmlObj);
+    const headerAndReferenceListData = await prepareHeaderLevelAndReferenceListData(
+      xmlObj,
+      statusCode
+    );
     const shipmentListData = await prepareShipmentListData(xmlObj);
     console.info(headerAndReferenceListData);
     console.info(shipmentListData);
@@ -271,7 +266,7 @@ async function prepareCWpayload(xmlObj, xmlWTObjResponse) {
     'soap:Envelope.soap:Body.AddNewShipmentV3Response.AddNewShipmentV3Result.Housebill',
     ''
   );
-  dynamoData.fileNumber = get(
+  dynamoData.FileNumber = get(
     xmlWTObjResponse,
     'soap:Envelope.soap:Body.AddNewShipmentV3Response.AddNewShipmentV3Result.ShipQuoteNo',
     ''
