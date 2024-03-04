@@ -127,7 +127,7 @@ module.exports.handler = async (event, context) => {
       const params = {
         Message: `An error occurred in function ${context.functionName}.\n\nERROR DETAILS: ${error}.\n\nId: ${get(dynamoData, 'Id', '')}.\n\nEVENT: ${JSON.stringify(event)}.\n\nS3BUCKET: ${s3Bucket}.\n\nS3KEY: ${s3Key}.\n\nLAMBDA TRIGGER: This lambda will trigger when there is a XML file dropped in a s3 Bucket(for s3 bucket and the file path, please refer to the event).\n\nRETRIGGER PROCESS: After fixing the issue, please retrigger the process by reuploading the file mentioned in the event.\n\nNote: Use the id: ${get(dynamoData, 'Id', '')} for better search in the logs and also check in dynamodb: ${process.env.LOGS_TABLE} for understanding the complete data.`,
         Subject: `CW to WT Create Shipment ERROR ${context.functionName}`,
-        TopicArn: process.env.SNS_TOPIC_ARN,
+        TopicArn: process.env.NOTIFICATION_ARN,
       };
       await sns.publish(params).promise();
       console.info('SNS notification has sent');
