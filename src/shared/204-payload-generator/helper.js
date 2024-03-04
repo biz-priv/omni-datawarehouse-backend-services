@@ -21,11 +21,8 @@ const {
   CONFIRMATION_COST_INDEX_KEY_NAME,
   CONSIGNEE_TABLE,
   SHIPPER_TABLE,
-
-  REFERENCES_TABLE,
   USERS_TABLE,
   TRACKING_NOTES_TABLE,
-  REFERENCES_INDEX_KEY_NAME,
   TRACKING_NOTES_CONSOLENO_INDEX_KEY,
   SHIPMENT_APAR_INDEX_KEY_NAME,
   INSTRUCTIONS_INDEX_KEY_NAME,
@@ -92,32 +89,16 @@ function getPowerBrokerCode(reftypeId) {
   return _.get(refTypeMap, reftypeId, "NA");
 }
 
-function generateReferenceNumbers({ references }) {
-  return getUniqueObjects(
-    _.map(references, (ref) => ({
-      __type: "reference_number",
-      __name: "referenceNumbers",
-      company_id: "TMS",
-      element_id: "128",
-      partner_id: "TMS",
-      reference_number: _.get(ref, "ReferenceNo", "NA"),
-      reference_qual: getPowerBrokerCode(_.get(ref, "FK_RefTypeId", "NA")),
-      send_to_driver: true,
-      version: "004010",
-    }))
-  );
-}
-
 async function generateStop(
   shipmentHeader,
-  references,
   orderSequence,
   stopType,
   locationId,
   stateData,
   type,
   userData,
-  shipmentAparData
+  shipmentAparData,
+  shipmentDesc
 ) {
   const { schedArriveEarly, schedArriveLate, timeZone } =
     await processStopDataNonConsol(stopType, shipmentHeader, stateData);
@@ -141,6 +122,14 @@ async function generateStop(
     confirmed: false,
     driver_load_unload: "N",
     location_id: locationId,
+    contact_name:
+      type === "shipper"
+        ? _.get(stateData, "ShipContact", "NA")
+        : _.get(stateData, "ConContact", "NA"),
+    phone:
+      type === "shipper"
+        ? _.get(stateData, "ShipPhone", "NA")
+        : _.get(stateData, "ConPhone", "NA"),
     sched_arrive_early: await getCstTime({
       datetime: schedArriveEarly,
       timezone: timeZone,
@@ -164,8 +153,6 @@ async function generateStop(
         comments: getNote(stateData, type),
       },
     ],
-    referenceNumbers:
-      type === "shipper" ? generateReferenceNumbers({ references }) : [],
   };
 
   specialInstruction.map((item) => {
@@ -181,6 +168,7 @@ async function generateStop(
     const userEmail = _.get(userData, "UserEmail", "") || "NA";
     const equipmentCode = _.get(shipmentHeader, "FK_EquipmentCode", "") || "NA";
     const total = _.get(shipmentAparData, "Total", 0);
+    const dims = populateDims(shipmentHeader, shipmentDesc);
 
     stopData.stopNotes.push(
       {
@@ -203,7 +191,8 @@ async function generateStop(
         company_id: "TMS",
         comment_type: "OC",
         comments: total,
-      }
+      },
+      dims
     );
   }
 
@@ -240,7 +229,6 @@ async function processStopDataNonConsol(stopType, shipmentHeader, stateData) {
 
 async function generateStopforConsole(
   shipmentHeaderData,
-  references,
   orderSequence,
   stopType,
   locationId,
@@ -276,6 +264,14 @@ async function generateStopforConsole(
     confirmed: false,
     driver_load_unload: "N",
     location_id: locationId,
+    contact_name:
+      type === "shipper"
+        ? _.get(confirmationCostData, "ShipContact", "NA")
+        : _.get(confirmationCostData, "ConContact", "NA"),
+    phone:
+      type === "shipper"
+        ? _.get(confirmationCostData, "ShipPhone", "NA")
+        : _.get(confirmationCostData, "ConPhone", "NA"),
     sched_arrive_early: await getCstTime({
       datetime: schedArriveEarly,
       timezone: timeZone,
@@ -301,10 +297,7 @@ async function generateStopforConsole(
     ],
     referenceNumbers:
       type === "shipper"
-        ? [
-            ...generateReferenceNumbers({ references }),
-            ...populateHousebillNumbers(housebillData, descData),
-          ]
+        ? [...populateHousebillNumbers(housebillData, descData)]
         : [],
   };
   stopData.stopNotes.push({
@@ -319,6 +312,7 @@ async function generateStopforConsole(
     const equipmentCode =
       _.get(shipmentHeaderData, "[0].equipmentCode", "") || "NA";
     const total = sumNumericValues(shipmentAparConsoleData, "Total");
+    const dims = populateDims(housebillData, descData);
 
     stopData.stopNotes.push(
       {
@@ -341,7 +335,8 @@ async function generateStopforConsole(
         company_id: "TMS",
         comment_type: "OC",
         comments: total,
-      }
+      },
+      dims
     );
   }
 
@@ -426,15 +421,6 @@ function getParamsByTableName(
         KeyConditionExpression: "PK_OrderNo = :orderNo",
         ExpressionAttributeValues: {
           ":orderNo": orderNo,
-        },
-      };
-    case "omni-wt-rt-references":
-      return {
-        TableName: REFERENCES_TABLE,
-        IndexName: REFERENCES_INDEX_KEY_NAME,
-        KeyConditionExpression: "FK_OrderNo = :FK_OrderNo",
-        ExpressionAttributeValues: {
-          ":FK_OrderNo": orderNo,
         },
       };
     case "omni-wt-rt-shipper":
@@ -530,7 +516,12 @@ async function queryDynamoDB(params) {
   }
 }
 
-async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
+async function fetchLocationId({
+  finalShipperData,
+  finalConsigneeData,
+  orderId,
+  houseBill,
+}) {
   // Get location ID for shipper
   let shipperLocationId = await getLocationId(
     finalShipperData.ShipName,
@@ -538,7 +529,8 @@ async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
     finalShipperData.ShipAddress2,
     finalShipperData.ShipCity,
     finalShipperData.FK_ShipState,
-    finalShipperData.ShipZip
+    finalShipperData.ShipZip,
+    finalShipperData.FK_ShipCountry
   );
 
   // Get location ID for consignee
@@ -548,35 +540,46 @@ async function fetchLocationId({ finalShipperData, finalConsigneeData }) {
     finalConsigneeData.ConAddress2,
     finalConsigneeData.ConCity,
     finalConsigneeData.FK_ConState,
-    finalConsigneeData.ConZip
+    finalConsigneeData.ConZip,
+    finalShipperData.FK_ConCountry
   );
 
   // Use the obtained location IDs to create locations if needed
   if (!shipperLocationId) {
     shipperLocationId = await createLocation({
-      __type: "location",
-      company_id: "TMS",
-      address1: finalShipperData.ShipAddress1,
-      address2: finalShipperData.ShipAddress2,
-      city_name: finalShipperData.ShipCity,
-      is_active: true,
-      name: finalShipperData.ShipName,
-      state: finalShipperData.FK_ShipState,
-      zip_code: finalShipperData.ShipZip,
+      data: {
+        __type: "location",
+        company_id: "TMS",
+        address1: finalShipperData.ShipAddress1,
+        address2: finalShipperData.ShipAddress2,
+        city_name: finalShipperData.ShipCity,
+        is_active: true,
+        name: finalShipperData.ShipName,
+        state: finalShipperData.FK_ShipState,
+        zip_code: finalShipperData.ShipZip,
+      },
+      orderId,
+      country: finalShipperData.FK_ShipCountry,
+      houseBill,
     });
   }
 
   if (!consigneeLocationId) {
     consigneeLocationId = await createLocation({
-      __type: "location",
-      company_id: "TMS",
-      address1: finalConsigneeData.ConAddress1,
-      address2: finalConsigneeData.ConAddress2,
-      city_name: finalConsigneeData.ConCity,
-      is_active: true,
-      name: finalConsigneeData.ConName,
-      state: finalConsigneeData.FK_ConState,
-      zip_code: finalConsigneeData.ConZip,
+      data: {
+        __type: "location",
+        company_id: "TMS",
+        address1: finalConsigneeData.ConAddress1,
+        address2: finalConsigneeData.ConAddress2,
+        city_name: finalConsigneeData.ConCity,
+        is_active: true,
+        name: finalConsigneeData.ConName,
+        state: finalConsigneeData.FK_ConState,
+        zip_code: finalConsigneeData.ConZip,
+      },
+      orderId,
+      country: finalShipperData.FK_ConCountry,
+      houseBill,
     });
   }
 
@@ -654,26 +657,24 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
   try {
     const tables = [
       "omni-wt-rt-shipment-header-non-console",
-      "omni-wt-rt-references",
       "omni-wt-rt-shipment-desc",
     ];
 
-    const [shipmentHeaderData, referencesData, shipmentDescData] =
-      await Promise.all(
-        tables.map(async (table) => {
-          const param = getParamsByTableName(
-            _.get(shipmentAparData, "FK_OrderNo"),
-            table
-          );
-          console.info(
-            "🙂 -> file: index.js:35 -> tables.map -> param:",
-            table,
-            param
-          );
-          const response = await queryDynamoDB(param);
-          return _.get(response, "Items", false);
-        })
-      );
+    const [shipmentHeaderData, shipmentDescData] = await Promise.all(
+      tables.map(async (table) => {
+        const param = getParamsByTableName(
+          _.get(shipmentAparData, "FK_OrderNo"),
+          table
+        );
+        console.info(
+          "🙂 -> file: index.js:35 -> tables.map -> param:",
+          table,
+          param
+        );
+        const response = await queryDynamoDB(param);
+        return _.get(response, "Items", false);
+      })
+    );
     if (shipmentHeaderData.length === 0) {
       throw new Error("Missing data in shipment header");
     }
@@ -713,7 +714,6 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
     console.info("🚀 ~ file: helper.js:491 ~ userData:", userData);
     return {
       shipmentHeaderData,
-      referencesData,
       shipmentDescData,
       customersData,
       userData,
@@ -722,7 +722,6 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
     console.error("🙂 -> file: helper.js:494 -> err:", err);
     return {
       shipmentHeaderData: [],
-      referencesData: [],
       shipmentDescData: [],
       customersData: [],
     };
@@ -733,36 +732,31 @@ async function fetchConsoleTableData({ shipmentAparData }) {
   try {
     const tables = [
       "omni-wt-rt-shipment-header-console",
-      "omni-wt-rt-references",
       "omni-wt-rt-shipment-desc",
       "omni-wt-rt-tracking-notes",
     ];
 
-    const [
-      shipmentHeaderData,
-      referencesData,
-      shipmentDescData,
-      trackingNotesData,
-    ] = await Promise.all(
-      tables.map(async (table) => {
-        const param = getParamsByTableName(
-          _.get(shipmentAparData, "FK_OrderNo"),
-          table,
-          "",
-          "",
-          "",
-          _.get(shipmentAparData, "ConsolNo")
-        );
-        console.info(
-          "🙂 -> file: index.js:35 -> tables.map -> param:",
-          table,
-          param
-        );
-        const response = await queryDynamoDB(param);
-        console.info("🚀 ~ file: helper.js:510 ~ response:", response);
-        return _.get(response, "Items", false);
-      })
-    );
+    const [shipmentHeaderData, shipmentDescData, trackingNotesData] =
+      await Promise.all(
+        tables.map(async (table) => {
+          const param = getParamsByTableName(
+            _.get(shipmentAparData, "FK_OrderNo"),
+            table,
+            "",
+            "",
+            "",
+            _.get(shipmentAparData, "ConsolNo")
+          );
+          console.info(
+            "🙂 -> file: index.js:35 -> tables.map -> param:",
+            table,
+            param
+          );
+          const response = await queryDynamoDB(param);
+          console.info("🚀 ~ file: helper.js:510 ~ response:", response);
+          return _.get(response, "Items", false);
+        })
+      );
     if (shipmentHeaderData === 0 || trackingNotesData === 0) {
       throw new Error("Missing data in customers or users");
     }
@@ -808,7 +802,6 @@ async function fetchConsoleTableData({ shipmentAparData }) {
     userData = [userData.filter((item) => item && _.has(item, "UserEmail"))[0]];
     return {
       shipmentHeaderData,
-      referencesData,
       shipmentDescData,
       trackingNotesData,
       customersData,
@@ -818,7 +811,6 @@ async function fetchConsoleTableData({ shipmentAparData }) {
     console.info("🙂 -> file: helper.js:526 -> err:", err);
     return {
       shipmentHeaderData: [],
-      referencesData: [],
       shipmentDescData: [],
       trackingNotesData: [],
       customersData: [],
@@ -1194,22 +1186,6 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       );
     }
 
-    const references = [];
-    const refparams = {
-      TableName: REFERENCES_TABLE,
-      IndexName: REFERENCES_INDEX_KEY_NAME,
-      KeyConditionExpression: "FK_OrderNo = :FK_OrderNo",
-      ExpressionAttributeValues: {
-        ":FK_OrderNo": element.FK_OrderNo.toString(),
-      },
-    };
-    const refResult = await dynamoDB.query(refparams).promise();
-    references.push(...refResult.Items);
-    if (references.length === 0) {
-      throw new Error(
-        `No references data found for FK_OrderNo:${element.FK_OrderNo}`
-      );
-    }
     const tnparams = {
       TableName: TRACKING_NOTES_TABLE,
       IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
@@ -1254,7 +1230,6 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       consolStopHeaders: uniqueConsolStopHeaders,
       consolStopItems,
       customer,
-      references,
       users,
     };
   } catch (error) {
@@ -1265,15 +1240,19 @@ async function fetchDataFromTablesList(CONSOL_NO) {
 
 async function populateStops(
   consolStopHeaders,
-  references,
   users,
   shipmentHeader,
   shipmentDesc,
   shipmentApar
 ) {
   const stops = [];
-
-  const locationIds = await fetchLocationIds(consolStopHeaders);
+  const orderId = _.join(_.map(shipmentApar, "FK_OrderNo"));
+  const houseBill = _.join(_.map(shipmentHeader, "Housebill"));
+  const locationIds = await fetchLocationIds(
+    consolStopHeaders,
+    orderId,
+    houseBill
+  );
 
   for (const [index, stopHeader] of consolStopHeaders.entries()) {
     const locationId = locationIds[index];
@@ -1287,9 +1266,9 @@ async function populateStops(
     });
 
     const referenceNumbersArray = [
-      generateReferenceNumbers({ references }),
       populateHousebillNumbers(shipmentHeader, shipmentDesc),
     ];
+    const dims = populateDims(shipmentHeader, shipmentDesc);
 
     let stopNotes = [
       {
@@ -1323,7 +1302,8 @@ async function populateStops(
           company_id: "TMS",
           comment_type: "OC",
           comments: sumNumericValues(shipmentApar, "Total"),
-        }
+        },
+        dims
       );
     }
     // Split date and time for sched_arrive_early
@@ -1349,6 +1329,8 @@ async function populateStops(
       driver_load_unload: "N",
       late_eta_colorcode: false,
       location_id: locationId,
+      contact_name: _.get(stopHeader, "ConsolStopContact", "NA"),
+      phone: _.get(stopHeader, "ConsolStopPhone", 0),
       sched_arrive_early: await getCstTime({
         datetime: earlyDatetime,
         timezone: timeZoneCode,
@@ -1358,7 +1340,7 @@ async function populateStops(
         timezone: timeZoneCode,
       }),
       status: "A",
-      order_sequence: parseInt(stopHeader.ConsolStopNumber || 0, 10) + 1,
+      order_sequence: parseInt(stopHeader.ConsolStopNumber ?? 0, 10) + 1,
       stop_type: stoptype,
       requested_service: false,
       prior_uncleared_stops: false,
@@ -1424,7 +1406,59 @@ function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
   });
 }
 
-async function fetchLocationIds(stopsData) {
+function populateDims(shipmentHeader, shipmentDesc) {
+  // Check if shipmentHeader is not an array, then wrap it into an array
+  if (!Array.isArray(shipmentHeader)) {
+    shipmentHeader = [shipmentHeader];
+  }
+  console.info(
+    "🚀 ~ file: test.js:627 ~ populateDims ~ shipmentHeader:",
+    shipmentHeader
+  );
+
+  const combinedDims = {};
+
+  // Iterate over each shipment header
+  shipmentHeader.forEach((header) => {
+    const matchingDesc = shipmentDesc.filter(
+      (desc) => desc.FK_OrderNo === header.PK_OrderNo
+    );
+
+    matchingDesc.forEach((desc) => {
+      const housebill = header.Housebill;
+      combinedDims[housebill] = combinedDims[housebill] || [];
+      combinedDims[housebill].push({
+        pieces: desc.Pieces,
+        length: parseFloat(desc.Length),
+        width: parseFloat(desc.Width),
+        height: parseFloat(desc.Height),
+      });
+    });
+  });
+
+  // Generate comments for each housebill
+  const comments = Object.entries(combinedDims).map(
+    ([housebill, dimsArray]) => {
+      const dimsComments = dimsArray
+        .map(
+          (dim) =>
+            `Pieces: ${dim.pieces}, Dims: L/W/H: ${dim.length}/${dim.width}/${dim.height}`
+        )
+        .join(", ");
+      return `Housebill: ${housebill} ~ ${dimsComments}`;
+    }
+  );
+
+  return {
+    __type: "stop_note",
+    __name: "stopNotes",
+    company_id: "TMS",
+    comment_type: "OC",
+    comments: comments.join("\n"),
+  };
+}
+
+async function fetchLocationIds(stopsData, orderId, houseBill) {
   const locationPromises = stopsData.map(async (stopData) => {
     const locationId = await getLocationId(
       stopData.ConsolStopName,
@@ -1432,20 +1466,27 @@ async function fetchLocationIds(stopsData) {
       stopData.ConsolStopAddress2,
       stopData.ConsolStopCity,
       stopData.FK_ConsolStopState,
-      stopData.ConsolStopZip
+      stopData.ConsolStopZip,
+      stopData.FK_ConsolStopCountry
     );
 
     if (!locationId) {
       return createLocation({
-        __type: "location",
-        company_id: "TMS",
-        address1: stopData.ConsolStopAddress1,
-        address2: stopData.ConsolStopAddress2,
-        city_name: stopData.ConsolStopCity,
-        is_active: true,
-        name: stopData.ConsolStopName,
-        state: stopData.FK_ConsolStopState,
-        zip_code: stopData.ConsolStopZip,
+        data: {
+          __type: "location",
+          company_id: "TMS",
+          address1: stopData.ConsolStopAddress1,
+          address2: stopData.ConsolStopAddress2,
+          city_name: stopData.ConsolStopCity,
+          is_active: true,
+          name: stopData.ConsolStopName,
+          state: stopData.FK_ConsolStopState,
+          zip_code: stopData.ConsolStopZip,
+        },
+        consolNo: stopData.FK_ConsolNo,
+        orderId,
+        country: stopData.FK_ConsolStopCountry,
+        houseBill,
       });
     }
 
@@ -1603,8 +1644,8 @@ function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
     "26 BOX": "SBT",
     48: "TT",
     "48 FT AIR": "TT",
-    53: "TT",
-    "53 FT AIR": "TT",
+    53: "V",
+    "53 FT AIR": "VA",
     C: "C",
     "CARGO VAN": "V",
     CN: "CN",
@@ -1654,6 +1695,54 @@ function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
   return "NA";
 }
 
+function stationCodeInfo(stationCode) {
+  const billingInfo = {
+    ACN: { PbBillTo: "ACUNACMX" },
+    LAX: { PbBillTo: "EPICCOTX" },
+    LGB: { PbBillTo: "EPICCOTX" },
+    IAH: { PbBillTo: "HOUSHOTX" },
+    BNA: { PbBillTo: "NASHNATN" },
+    AUS: { PbBillTo: "OMNIAUTX" },
+    COE: { PbBillTo: "OMNICO24" },
+    PHL: { PbBillTo: "OMNICO27" },
+    ORD: { PbBillTo: "OMNICOT1" },
+    SAT: { PbBillTo: "OMNICOT2" },
+    BOS: { PbBillTo: "OMNICOT4" },
+    SLC: { PbBillTo: "OMNICOT8" },
+    ATL: { PbBillTo: "OMNICOT9" },
+    BRO: { PbBillTo: "OMNICOT9" },
+    CMH: { PbBillTo: "OMNICOT9" },
+    CVG: { PbBillTo: "OMNICOT9" },
+    DAL: { PbBillTo: "OMNICOT9" },
+    DTW: { PbBillTo: "OMNICOT9" },
+    EXP: { PbBillTo: "OMNICOT9" },
+    GSP: { PbBillTo: "OMNICOT9" },
+    LRD: { PbBillTo: "OMNICOT9" },
+    MKE: { PbBillTo: "OMNICOT9" },
+    MSP: { PbBillTo: "OMNICOT9" },
+    PHX: { PbBillTo: "OMNICOT9" },
+    TAN: { PbBillTo: "OMNICOT9" },
+    YYZ: { PbBillTo: "OMNICOT9" },
+    DFW: { PbBillTo: "OMNICOTX" },
+    IND: { PbBillTo: "OMNIDATX" },
+    ELP: { PbBillTo: "OMNIELTX" },
+    PIT: { PbBillTo: "OMNIOAPA" },
+    MFE: { PbBillTo: "OMNIPHTX" },
+    OLH: { PbBillTo: "OMNITEAZ" },
+    OTR: { PbBillTo: "OTRODATX" },
+    PDX: { PbBillTo: "PORTPOOR" },
+    SAN: { PbBillTo: "SANDSACA" },
+    SFO: { PbBillTo: "SFOOCOTX" },
+  };
+
+  const stationInfo = billingInfo[stationCode];
+  if (stationInfo) {
+    const PbBillTo = stationInfo.PbBillTo;
+    return PbBillTo;
+  }
+  return "NA";
+}
+
 async function getTimezoneFormGoogleApi({ address }) {
   const { lat, lng } = await checkAddressByGoogleApi(address);
   const googleRes = await getTimezoneByGoogleApi(lat, lng);
@@ -1674,7 +1763,7 @@ async function getTimezone({ stopCity, state, country, address1 }) {
       );
     })?.timezone;
   } else {
-    timezone = _.get(cityListForState[0], "timezone", null);
+    timezone = _.get(cityListForState, "[0].timezone", null);
   }
 
   if (!timezone) {
@@ -1693,7 +1782,6 @@ async function getTimezone({ stopCity, state, country, address1 }) {
 
 module.exports = {
   getPowerBrokerCode,
-  generateReferenceNumbers,
   getCstTime,
   generateStop,
   getParamsByTableName,
@@ -1720,4 +1808,5 @@ module.exports = {
   getHousebillData,
   descDataForConsole,
   getTimezone,
+  stationCodeInfo,
 };
