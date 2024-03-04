@@ -13,7 +13,7 @@ const {
 } = require('../shared/204-payload-generator/apis');
 const { STATUSES, TYPES } = require('../shared/constants/204_create_shipment');
 
-const { LIVE_SNS_TOPIC_ARN, CONSOL_STATUS_TABLE, OUTPUT_TABLE, STAGE } = process.env;
+const { LIVE_SNS_TOPIC_ARN, CONSOL_STATUS_TABLE, OUTPUT_TABLE, STAGE, STATUS_TABLE } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
@@ -27,6 +27,9 @@ module.exports.handler = async (event, context) => {
   functionName = _.get(context, 'functionName');
   const dynamoEventRecords = event.Records;
   let consolNo;
+  let orderId;
+  let houseBillString = '';
+  let stationCode;
 
   try {
     const promises = dynamoEventRecords.map(async (record) => {
@@ -36,23 +39,27 @@ module.exports.handler = async (event, context) => {
         const newImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
         consolNo = _.get(newImage, 'ConsolNo', 0);
 
-        const {
-          shipmentApar,
-          shipmentHeader,
-          shipmentDesc,
-          consolStopHeaders,
-          customer,
-          references,
-          users,
-        } = await fetchDataFromTablesList(consolNo);
-
+        const { shipmentApar, shipmentHeader, shipmentDesc, consolStopHeaders, customer, users } =
+          await fetchDataFromTablesList(consolNo);
+        orderId = _.map(shipmentApar, 'FK_OrderNo'); // comma separated orderNo's
+        stationCode = '';
+        for (const apar of shipmentApar) {
+          const consolStationId = _.get(apar, 'FK_ConsolStationId', '');
+          if (consolStationId !== '') {
+            stationCode = consolStationId;
+            break; // Stop iterating once a non-empty value is found
+          }
+        }
+        console.info('🚀 ~ file: index.js:53 ~ promises ~ stationCode:', stationCode);
+        if (stationCode === '') {
+          throw new Error('No station code found in shipmentApar');
+        }
         const mtPayloadData = await mtPayload(
           shipmentApar,
           shipmentHeader,
           shipmentDesc,
           consolStopHeaders,
           customer,
-          references,
           users
         );
         console.info('🙂 -> file: index.js:114 -> mtPayloadData:', JSON.stringify(mtPayloadData));
@@ -75,12 +82,17 @@ module.exports.handler = async (event, context) => {
             }
           }
         }
-
-        const createPayloadResponse = await sendPayload({ payload });
-        console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
-        const shipmentId = _.get(createPayloadResponse, 'id', 0);
         // Get an array of Housebills
         const houseBills = _.map(shipmentHeader, 'Housebill');
+        houseBillString = _.join(houseBills);
+        const createPayloadResponse = await sendPayload({
+          payload,
+          consolNo,
+          orderId: _.join(orderId),
+          houseBillString,
+        });
+        console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
+        const shipmentId = _.get(createPayloadResponse, 'id', 0);
 
         // Call liveSendUpdate for each Housebill
         await Promise.all(
@@ -93,24 +105,60 @@ module.exports.handler = async (event, context) => {
         const updatedMovements = movements.map((movement) => ({
           ...movement,
           brokerage_status: 'NEWOMNI',
+          brokerage: true,
         }));
         // Update the movements array in the response
         _.set(createPayloadResponse, 'movements', updatedMovements);
+        const stopsOfOriginalPayload = _.get(payload, 'stops', []);
 
-        const updatedOrderResponse = await updateOrders({ payload: createPayloadResponse });
+        const contactNames = {};
+        stopsOfOriginalPayload.forEach((stop) => {
+          if (stop.order_sequence) {
+            contactNames[stop.order_sequence] = stop.contact_name;
+          }
+        });
+        const stopsOfUpdatedPayload = _.get(createPayloadResponse, 'stops', []);
+
+        // Update the stops array in the response with contact names
+        const updatedStops = stopsOfUpdatedPayload.map((stop) => ({
+          ...stop,
+          contact_name: contactNames[stop.order_sequence] || 'NA',
+        }));
+
+        // Update the stops array in the payload with the updated contact names
+        _.set(createPayloadResponse, 'stops', updatedStops);
+        const updatedOrderResponse = await updateOrders({
+          payload: createPayloadResponse,
+          consolNo,
+          orderId: _.join(orderId),
+          houseBillString,
+        });
 
         await updateStatusTable({
           response: updatedOrderResponse,
           payload,
           ConsolNo: String(consolNo),
           status: STATUSES.SENT,
+          Housebill: String(houseBillString),
         });
         await insertInOutputTable({
           response: updatedOrderResponse,
           payload,
           ConsolNo: String(consolNo),
           status: STATUSES.SENT,
+          Housebill: String(houseBillString),
         });
+        await Promise.all(
+          orderId.map(async (orderNo) => {
+            await updateOrderStatusTable({
+              orderNo,
+              response: updatedOrderResponse,
+              payload,
+              status: STATUSES.SENT,
+              Housebill: String(houseBillString),
+            });
+          })
+        );
       } catch (error) {
         console.info('Error', error);
         await insertInOutputTable({
@@ -118,13 +166,26 @@ module.exports.handler = async (event, context) => {
           response: error.message,
           payload,
           status: STATUSES.FAILED,
+          Housebill: String(houseBillString),
         });
         await updateStatusTable({
           response: error.message,
           payload,
           ConsolNo: String(consolNo),
           status: STATUSES.FAILED,
+          Housebill: String(houseBillString),
         });
+        await Promise.all(
+          orderId.map(async (orderNo) => {
+            await updateOrderStatusTable({
+              orderNo,
+              response: error.message,
+              payload,
+              status: STATUSES.FAILED,
+              Housebill: String(houseBillString),
+            });
+          })
+        );
         throw error;
       }
       return false;
@@ -137,22 +198,25 @@ module.exports.handler = async (event, context) => {
       message: ` ${error.message}
       \n Please check details on ${CONSOL_STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
+      stationCode,
     });
     return false;
   }
 };
 
-async function updateStatusTable({ ConsolNo, status, response, payload }) {
+async function updateStatusTable({ ConsolNo, status, response, payload, Housebill }) {
   try {
     const updateParam = {
       TableName: CONSOL_STATUS_TABLE,
       Key: { ConsolNo },
-      UpdateExpression: 'set #Status = :status, #Response = :response, Payload = :payload',
+      UpdateExpression:
+        'set #Status = :status, #Response = :response, Payload = :payload, Housebill = :housebill',
       ExpressionAttributeNames: { '#Status': 'Status', '#Response': 'Response' },
       ExpressionAttributeValues: {
         ':status': status,
         ':response': response,
         ':payload': payload,
+        ':housebill': Housebill,
       },
     };
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
@@ -163,7 +227,30 @@ async function updateStatusTable({ ConsolNo, status, response, payload }) {
   }
 }
 
-async function insertInOutputTable({ ConsolNo, status, response, payload }) {
+async function updateOrderStatusTable({ orderNo, status, response, payload, Housebill }) {
+  try {
+    const updateParam = {
+      TableName: STATUS_TABLE,
+      Key: { FK_OrderNo: orderNo },
+      UpdateExpression:
+        'set #Status = :status, #Response = :response, Payload = :payload, Housebill = :housebill',
+      ExpressionAttributeNames: { '#Status': 'Status', '#Response': 'Response' },
+      ExpressionAttributeValues: {
+        ':status': status,
+        ':response': response,
+        ':payload': payload,
+        ':housebill': Housebill,
+      },
+    };
+    console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
+    return await dynamoDb.update(updateParam).promise();
+  } catch (err) {
+    console.info('🙂 -> file: index.js:224 -> err:', err);
+    throw err;
+  }
+}
+
+async function insertInOutputTable({ ConsolNo, status, response, payload, Housebill }) {
   try {
     const params = {
       TableName: OUTPUT_TABLE,
@@ -175,6 +262,7 @@ async function insertInOutputTable({ ConsolNo, status, response, payload }) {
         CreatedAt: moment.tz('America/Chicago').format(),
         Response: response,
         Payload: payload,
+        Housebill,
         LastUpdateBy: functionName,
       },
     };
@@ -187,15 +275,25 @@ async function insertInOutputTable({ ConsolNo, status, response, payload }) {
   }
 }
 
-async function publishSNSTopic({ message }) {
-  // return;
-  await sns
-    .publish({
+async function publishSNSTopic({ message, stationCode }) {
+  try {
+    const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFIACATION - ${STAGE}`,
+      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
       Message: `An error occurred in ${functionName}: ${message}`,
-    })
-    .promise();
+      MessageAttributes: {
+        stationCode: {
+          DataType: 'String',
+          StringValue: stationCode.toString(),
+        },
+      },
+    };
+
+    await sns.publish(params).promise();
+  } catch (error) {
+    console.error('Error publishing to SNS topic:', error);
+    throw error;
+  }
 }
 
 async function fetch204TableDataForConsole({ consolNo }) {

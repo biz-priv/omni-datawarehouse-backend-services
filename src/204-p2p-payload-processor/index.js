@@ -35,12 +35,15 @@ module.exports.handler = async (event, context) => {
   );
   functionName = _.get(context, 'functionName');
   const dynamoEventRecords = event.Records;
+  let stationCode;
 
   try {
     const promises = dynamoEventRecords.map(async (record) => {
       let payload = '';
       let orderId;
       let houseBill;
+      let consolNo = 0;
+      let houseBillString = '';
 
       try {
         const newImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
@@ -55,8 +58,6 @@ module.exports.handler = async (event, context) => {
           parseInt(_.get(shipmentAparData, 'ConsolNo', 0), 10) === 0 &&
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
-          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
-            await consolNonConsolCommonData({ shipmentAparData });
           const {
             shipmentHeaderData: [shipmentHeaderData],
             referencesData,
@@ -69,6 +70,20 @@ module.exports.handler = async (event, context) => {
           }
           houseBill = _.get(shipmentHeaderData, 'Housebill', 0);
           console.info('🚀 ~ file: index.js:71 ~ promises ~ houseBill:', houseBill);
+          stationCode =
+            _.get(shipmentHeaderData, 'ControllingStation', '') ||
+            _.get(shipmentAparData, 'FK_HandlingStation', '');
+
+          if (!stationCode) {
+            throw new Error('Please populate the Controlling Station');
+          }
+          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
+            await consolNonConsolCommonData({
+              shipmentAparData,
+              orderId,
+              consolNo,
+              houseBill,
+            });
           const nonConsolPayloadData = await nonConsolPayload({
             referencesData,
             customersData,
@@ -94,8 +109,8 @@ module.exports.handler = async (event, context) => {
           _.get(shipmentAparData, 'Consolidation') === 'Y' &&
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
-          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
-            await consolNonConsolCommonData({ shipmentAparData });
+          consolNo = _.get(shipmentAparData, 'ConsolNo', 0);
+
           const shipmentAparDataForConsole = await fetchAparTableForConsole({
             orderNo: _.get(shipmentAparData, 'FK_OrderNo'),
           });
@@ -117,11 +132,28 @@ module.exports.handler = async (event, context) => {
           console.info('🙂 -> file: index.js:121 -> shipmentDescData:', shipmentDescData);
           console.info('🙂 -> file: index.js:122 -> referencesData:', referencesData);
           console.info('🙂 -> file: index.js:123 -> shipmentHeaderData:', shipmentHeaderData);
-          const shipmentAparConsoleData = await getAparDataByConsole({ shipmentAparData });
-          const shipmentHeader = await getShipmentHeaderData({ shipmentAparConsoleData });
+          const shipmentAparConsoleData = await getAparDataByConsole({
+            shipmentAparData,
+          });
+          const shipmentHeader = await getShipmentHeaderData({
+            shipmentAparConsoleData,
+          });
+          stationCode =
+            _.get(shipmentHeaderData, 'ControllingStation', '') ||
+            _.get(shipmentAparData, 'FK_ConsolStationId', '');
+
+          if (!stationCode) {
+            throw new Error('Please populate the Controlling Station');
+          }
           houseBill = shipmentHeader.flatMap((headerData) => headerData.housebills);
           console.info('🚀 ~ file: index.js:123 ~ promises ~ houseBill:', houseBill);
-
+          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
+            await consolNonConsolCommonData({
+              shipmentAparData,
+              consolNo,
+              orderId,
+              houseBill: houseBill.join(','),
+            });
           const ConsolPayloadData = await consolPayload({
             referencesData,
             customersData,
@@ -154,17 +186,23 @@ module.exports.handler = async (event, context) => {
             // Compare oldPayload with payload constructed now
             if (_.isEqual(oldPayload, payload)) {
               console.info('Payload is the same as the old payload. Skipping further processing.');
-              await publishSNSTopic({
-                message: `Payload is the same as the old payload. Skipping further processing.
-              \n Payload: ${JSON.stringify(payload)}`,
-              });
               throw new Error(`Payload is the same as the old payload. Skipping further processing.
-              \n Payload: ${JSON.stringify(payload)}`);
+              \n Payload: ${JSON.stringify(payload)}
+              `);
             }
           }
         }
-
-        const createPayloadResponse = await sendPayload({ payload });
+        if (Array.isArray(houseBill)) {
+          houseBillString = houseBill.join(',');
+        } else {
+          houseBillString = houseBill;
+        }
+        const createPayloadResponse = await sendPayload({
+          payload,
+          orderId,
+          consolNo,
+          houseBillString,
+        });
         console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
         const shipmentId = _.get(createPayloadResponse, 'id', 0);
         if (type === 'NON_CONSOLE') {
@@ -185,19 +223,45 @@ module.exports.handler = async (event, context) => {
         // Update the movements array in the response
         _.set(createPayloadResponse, 'movements', updatedMovements);
 
-        const updatedOrderResponse = await updateOrders({ payload: createPayloadResponse });
+        const stopsOfOriginalPayload = _.get(payload, 'stops', []);
+
+        const contactNames = {};
+        stopsOfOriginalPayload.forEach((stop) => {
+          if (stop.order_sequence) {
+            contactNames[stop.order_sequence] = stop.contact_name;
+          }
+        });
+        const stopsOfUpdatedPayload = _.get(createPayloadResponse, 'stops', []);
+
+        // Update the stops array in the response with contact names
+        const updatedStops = stopsOfUpdatedPayload.map((stop) => ({
+          ...stop,
+          contact_name: contactNames[stop.order_sequence] || 'NA',
+        }));
+
+        // Update the stops array in the payload with the updated contact names
+        _.set(createPayloadResponse, 'stops', updatedStops);
+
+        const updatedOrderResponse = await updateOrders({
+          payload: createPayloadResponse,
+          orderId,
+          consolNo,
+          houseBillString,
+        });
 
         await updateStatusTable({
           response: updatedOrderResponse,
           payload,
           orderNo: orderId,
           status: STATUSES.SENT,
+          Housebill: String(houseBillString),
         });
         await insertInOutputTable({
           response: updatedOrderResponse,
           payload,
           orderNo: orderId,
           status: STATUSES.SENT,
+          Housebill: String(houseBillString),
         });
       } catch (error) {
         console.info('Error', error);
@@ -206,31 +270,34 @@ module.exports.handler = async (event, context) => {
           response: error.message,
           payload,
           status: STATUSES.FAILED,
+          Housebill: String(houseBillString),
         });
         await insertInOutputTable({
           response: error.message,
           payload,
           orderNo: orderId,
           status: STATUSES.FAILED,
+          Housebill: String(houseBillString),
         });
         throw error;
       }
       return false;
     });
     await Promise.all(promises);
-    return true; // Modify if needed
+    return true;
   } catch (error) {
     console.error('Error', error);
     await publishSNSTopic({
       message: ` ${error.message}
       \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
+      stationCode,
     });
     return false;
   }
 };
 
-async function consolNonConsolCommonData({ shipmentAparData }) {
+async function consolNonConsolCommonData({ shipmentAparData, orderId, consolNo, houseBill }) {
   try {
     const {
       confirmationCostData: [confirmationCostData],
@@ -253,6 +320,9 @@ async function consolNonConsolCommonData({ shipmentAparData }) {
     const { shipperLocationId, consigneeLocationId } = await fetchLocationId({
       finalConsigneeData,
       finalShipperData,
+      orderId,
+      consolNo,
+      houseBill,
     });
 
     console.info(
@@ -277,17 +347,22 @@ async function consolNonConsolCommonData({ shipmentAparData }) {
   }
 }
 
-async function updateStatusTable({ orderNo, status, response, payload }) {
+async function updateStatusTable({ orderNo, status, response, payload, Housebill }) {
   try {
     const updateParam = {
       TableName: STATUS_TABLE,
       Key: { FK_OrderNo: orderNo },
-      UpdateExpression: 'set #Status = :status, #Response = :response, Payload = :payload',
-      ExpressionAttributeNames: { '#Status': 'Status', '#Response': 'Response' },
+      UpdateExpression:
+        'set #Status = :status, #Response = :response, Payload = :payload, Housebill = :housebill',
+      ExpressionAttributeNames: {
+        '#Status': 'Status',
+        '#Response': 'Response',
+      },
       ExpressionAttributeValues: {
         ':status': status,
         ':response': response,
         ':payload': payload,
+        ':housebill': Housebill,
       },
     };
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
@@ -298,7 +373,7 @@ async function updateStatusTable({ orderNo, status, response, payload }) {
   }
 }
 
-async function insertInOutputTable({ orderNo, status, response, payload }) {
+async function insertInOutputTable({ orderNo, status, response, payload, Housebill }) {
   try {
     const params = {
       TableName: OUTPUT_TABLE,
@@ -310,6 +385,7 @@ async function insertInOutputTable({ orderNo, status, response, payload }) {
         CreatedAt: moment.tz('America/Chicago').format(),
         Response: response,
         Payload: payload,
+        Housebill,
         LastUpdateBy: functionName,
       },
     };
@@ -322,17 +398,23 @@ async function insertInOutputTable({ orderNo, status, response, payload }) {
   }
 }
 
-async function publishSNSTopic({ message }) {
+async function publishSNSTopic({ message, stationCode }) {
   try {
-    await sns
-      .publish({
-        TopicArn: LIVE_SNS_TOPIC_ARN,
-        Subject: `POWERBROKER ERROR NOTIFIACATION - ${STAGE}`,
-        Message: `An error occurred in ${functionName}: ${message}`,
-      })
-      .promise();
+    const params = {
+      TopicArn: LIVE_SNS_TOPIC_ARN,
+      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
+      Message: `An error occurred in ${functionName}: ${message}`,
+      MessageAttributes: {
+        stationCode: {
+          DataType: 'String',
+          StringValue: stationCode.toString(),
+        },
+      },
+    };
+
+    await sns.publish(params).promise();
   } catch (error) {
-    console.info('🚀 ~ file: index.js:312 ~ publishSNSTopic ~ error:', error);
+    console.error('Error publishing to SNS topic:', error);
     throw error;
   }
 }

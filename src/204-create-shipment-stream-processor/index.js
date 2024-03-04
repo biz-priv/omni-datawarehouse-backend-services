@@ -25,6 +25,7 @@ const sns = new AWS.SNS();
 let functionName;
 let orderId;
 module.exports.handler = async (event, context) => {
+  let controlStation;
   console.info('🚀 ~ file: index.js:26 ~ event:', JSON.stringify(event));
   try {
     functionName = get(context, 'functionName');
@@ -48,7 +49,7 @@ module.exports.handler = async (event, context) => {
 
         const consolidation = get(shipmentAparData, 'Consolidation');
 
-        const controlStation = get(shipmentAparData, 'FK_ConsolStationId');
+        controlStation = get(shipmentAparData, 'FK_ConsolStationId');
 
         if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
           console.info('Non Console');
@@ -71,9 +72,6 @@ module.exports.handler = async (event, context) => {
 
           // If there are no common bill numbers, skip further processing
           if (commonBillNos.length === 0) {
-            await publishSNSTopic({
-              message: `BillNo does not include any of the accepted bill numbers. Skipping process for this shipment.\nFileno: ${orderId}.\nBill numbers we received: ${billNumbers}.\nAccepted Bill numbers are: ${ACCEPTED_BILLNOS}.`,
-            });
             console.info(
               'Ignoring shipment, BillNo does not include any of the accepted bill numbers. Skipping process.'
             );
@@ -125,9 +123,12 @@ module.exports.handler = async (event, context) => {
       '🚀 ~ file: shipment_apar_table_stream_processor.js:117 ~ module.exports.handler= ~ e:',
       e
     );
-    return await publishSNSTopic({
-      message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
-    });
+    return await publishSNSTopic(
+      {
+        message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
+      },
+      controlStation
+    );
   }
 };
 
@@ -155,14 +156,25 @@ async function insertShipmentStatus({ orderNo, status, type, tableStatuses, ship
   }
 }
 
-async function publishSNSTopic({ message }) {
-  await sns
-    .publish({
+async function publishSNSTopic(message, stationCode) {
+  try {
+    const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFIACATION - ${STAGE}`,
+      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
       Message: `An error occurred in ${functionName}: ${message}`,
-    })
-    .promise();
+      MessageAttributes: {
+        stationCode: {
+          DataType: 'String',
+          StringValue: stationCode.toString(),
+        },
+      },
+    };
+
+    await sns.publish(params).promise();
+  } catch (error) {
+    console.error('Error publishing to SNS topic:', error);
+    throw error;
+  }
 }
 
 async function checkAndUpdateOrderTable({ orderNo, type, shipmentAparData }) {
