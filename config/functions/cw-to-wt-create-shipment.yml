@@ -12,14 +12,14 @@ function:
       - 'src/shared/**'
     exclude:
       - '**/*'
-  # events:
-  #   - existingS3:
-  #       bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
-  #       events:
-  #         - s3:ObjectCreated:*
-  #       rules:
-  #         - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/FederalSignal}
-  #         - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+  events:
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/FederalSignal}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
     # - existingS3:
     #     bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
     #     events:
