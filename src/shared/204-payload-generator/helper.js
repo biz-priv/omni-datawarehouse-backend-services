@@ -1199,6 +1199,8 @@ async function populateStops(consolStopHeaders, users, shipmentHeader, shipmentD
       driver_load_unload: 'N',
       late_eta_colorcode: false,
       location_id: locationId,
+      contact_name: _.get(stopHeader, 'ConsolStopContact', 'NA'),
+      phone: _.get(stopHeader, 'ConsolStopPhone', 0),
       sched_arrive_early: await getCstTime({
         datetime: earlyDatetime,
         timezone: timeZoneCode,
@@ -1208,7 +1210,7 @@ async function populateStops(consolStopHeaders, users, shipmentHeader, shipmentD
         timezone: timeZoneCode,
       }),
       status: 'A',
-      order_sequence: parseInt(stopHeader.ConsolStopNumber || 0, 10) + 1,
+      order_sequence: parseInt(stopHeader.ConsolStopNumber ?? 0, 10) + 1,
       stop_type: stoptype,
       requested_service: false,
       prior_uncleared_stops: false,
@@ -1269,6 +1271,12 @@ function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
 }
 
 function populateDims(shipmentHeader, shipmentDesc) {
+  // Check if shipmentHeader is not an array, then wrap it into an array
+  if (!Array.isArray(shipmentHeader)) {
+    shipmentHeader = [shipmentHeader];
+  }
+  console.info('🚀 ~ file: test.js:627 ~ populateDims ~ shipmentHeader:', shipmentHeader);
+
   const combinedDims = {};
 
   // Iterate over each shipment header

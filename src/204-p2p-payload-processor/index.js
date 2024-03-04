@@ -223,27 +223,21 @@ module.exports.handler = async (event, context) => {
         // Update the movements array in the response
         _.set(createPayloadResponse, 'movements', updatedMovements);
 
-        const stops = _.get(payload, 'stops', []);
+        const stopsOfOriginalPayload = _.get(payload, 'stops', []);
 
-        // Extract contact names for stops of type 'PU' and 'SO'
-        const contactNames = {
-          PU: _.find(stops, { stop_type: 'PU' })?.contact_name,
-          SO: _.find(stops, { stop_type: 'SO' })?.contact_name,
-        };
+        const contactNames = {};
+        stopsOfOriginalPayload.forEach((stop) => {
+          if (stop.order_sequence) {
+            contactNames[stop.order_sequence] = stop.contact_name;
+          }
+        });
+        const stopsOfUpdatedPayload = _.get(createPayloadResponse, 'stops', []);
 
         // Update the stops array in the response with contact names
-        const updatedStops = stops.map((stop) => {
-          let contactName = 'NA';
-          if (stop.order_sequence === 1) {
-            contactName = contactNames.PU;
-          } else if (stop.order_sequence === 2) {
-            contactName = contactNames.SO;
-          }
-          return {
-            ...stop,
-            contact_name: contactName,
-          };
-        });
+        const updatedStops = stopsOfUpdatedPayload.map((stop) => ({
+          ...stop,
+          contact_name: contactNames[stop.order_sequence] || 'NA',
+        }));
 
         // Update the stops array in the payload with the updated contact names
         _.set(createPayloadResponse, 'stops', updatedStops);
