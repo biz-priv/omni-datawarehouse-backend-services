@@ -91,3 +91,4 @@ function:
     CUSTOMERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customers/ddb.tableName}
     wt_soap_username: ${ssm:/omni-dw/${self:provider.stage}/wt/soap/username~true}
     wt_soap_password: ${ssm:/omni-dw/${self:provider.stage}/wt/soap/password~true}
+    NOTIFICATION_ARN: ${ssm:/omni-cw-to-wt/${self:provider.stage}/error-notification/sns/arn}
