@@ -52,6 +52,7 @@ pipeline {
                     sh """
                     serverless --version
                     sls deploy -s ${env.ENVIRONMENT}
+                    sls s3deploy -s ${env.ENVIRONMENT}
                     """
                 }
             }

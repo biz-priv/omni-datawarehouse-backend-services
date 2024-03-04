@@ -73,6 +73,8 @@ functions:
     shipment-header-table-stream-processor: ${file(config/functions/shipment-header-table-stream-processor.yml):function}
     ltl-rating-log-insertion: ${file(config/functions/ltl-rating-log-insertion.yml):function}
 
+    cw-to-wt-create-shipment: ${file(config/functions/cw-to-wt-create-shipment.yml):function}
+
     # 204 create shipment lambda functions
     204-create-shipment-stream-processor: ${file(config/functions/204-create-shipment-stream-processor.yml):function}
     204-p2p-processor: ${file(config/functions/204-p2p-processor.yml):function}
@@ -99,3 +101,4 @@ layers:
 
 plugins:
   - serverless-layers
+  - serverless-plugin-existing-s3
