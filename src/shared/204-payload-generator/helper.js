@@ -1125,7 +1125,8 @@ async function fetchDataFromTablesList(CONSOL_NO) {
 async function populateStops(consolStopHeaders, users, shipmentHeader, shipmentDesc, shipmentApar) {
   const stops = [];
   const orderId = _.join(_.map(shipmentApar, 'FK_OrderNo'));
-  const locationIds = await fetchLocationIds(consolStopHeaders, orderId);
+  const houseBill = _.join(_.map(shipmentHeader, 'Housebill'));
+  const locationIds = await fetchLocationIds(consolStopHeaders, orderId, houseBill);
 
   for (const [index, stopHeader] of consolStopHeaders.entries()) {
     const locationId = locationIds[index];
@@ -1312,7 +1313,7 @@ function populateDims(shipmentHeader, shipmentDesc) {
   };
 }
 
-async function fetchLocationIds(stopsData, orderId) {
+async function fetchLocationIds(stopsData, orderId, houseBill) {
   const locationPromises = stopsData.map(async (stopData) => {
     const locationId = await getLocationId(
       stopData.ConsolStopName,
@@ -1340,6 +1341,7 @@ async function fetchLocationIds(stopsData, orderId) {
         consolNo: stopData.FK_ConsolNo,
         orderId,
         country: stopData.FK_ConsolStopCountry,
+        houseBill,
       });
     }
 
