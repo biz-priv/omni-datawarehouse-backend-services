@@ -1,0 +1,93 @@
+---
+function:
+  name: omni-cw-to-wt-create-shipment-${self:provider.stage}
+  handler: src/cw-to-wt-create-shipment/index.handler
+  runtime: nodejs18.x
+  timeout: 900
+  layers:
+    - { Ref: DWBackendLambdaLayer }
+  package:
+    include:
+      - 'src/cw-to-wt-create-shipment/**'
+      - 'src/shared/**'
+    exclude:
+      - '**/*'
+  events:
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/FederalSignal}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/CiscoSystems}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/OmniCell}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/Arjo}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/CumminsAllison}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/RTC}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/WaterBox}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/CircleK}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/Arxium}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - existingS3:
+        bucket: ${ssm:/omni-dw/${self:provider.stage}/wms/bucket/name}
+        events:
+          - s3:ObjectCreated:*
+        rules:
+          - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/RoyalEnfield}
+          - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+  environment:
+    WT_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipment/wt/url}
+    CW_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipmentResponse/cw/url}
+    CW_ENDPOINT_AUTHORIZATION: ${ssm:/omni-dw/${self:provider.stage}/createShipmentResponse/cw/url.authorizer}
+    LOGS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/ddb.tableName}
+    CUSTOMERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customers/ddb.tableName}
+    wt_soap_username: ${ssm:/omni-dw/${self:provider.stage}/wt/soap/username~true}
+    wt_soap_password: ${ssm:/omni-dw/${self:provider.stage}/wt/soap/password~true}
