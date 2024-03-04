@@ -4,21 +4,21 @@
       "eventVersion": "2.1",
       "eventSource": "aws:s3",
       "awsRegion": "us-east-1",
-      "eventTime": "2024-02-23T13:47:27.436Z",
+      "eventTime": "2024-02-27T12:24:39.618Z",
       "eventName": "ObjectCreated:Put",
       "userIdentity": {
         "principalId": "AWS:AROAU2XMJTS2T67LQAZTF:madhava.matta@bizcloudexperts.com"
       },
       "requestParameters": {
-        "sourceIPAddress": "122.178.62.133"
+        "sourceIPAddress": "171.78.176.204"
       },
       "responseElements": {
-        "x-amz-request-id": "543AF4QPG42A8WH2",
-        "x-amz-id-2": "d/6hfjiqcp6WZZZEGb2J48SKlJxamQU/mCgzi80NZlEKFLyXONF4+SzFwVnjfCHrETovqn7FjAafyl9ciseREspsy8d5qulw"
+        "x-amz-request-id": "NTAZNYTNS0F705RE",
+        "x-amz-id-2": "b8uVp1dgsQcgkMS+XJ+ptVZx3AIoHzrfCOKaGN+Z3EcBaxL3qsgJ+NZumxETCg7gX04JhIaZac1HTQBQUswSnfYC2BGWpbzq3Tux2i6uJPI="
       },
       "s3": {
         "s3SchemaVersion": "1.0",
-        "configurationId": "exS3-v2--efd598a9121b43c44faed0107206b8a7",
+        "configurationId": "exS3-v2--1f6e8938705134971c081e7f431a892e",
         "bucket": {
           "name": "dev-cargowise-to-datawarehouse",
           "ownerIdentity": {
@@ -27,10 +27,10 @@
           "arn": "arn:aws:s3:::dev-cargowise-to-datawarehouse"
         },
         "object": {
-          "key": "CargoWiseOutbound/RoyalEnfield/TRXELPTS2_WOU_RLS_W00229650_ROYENFMKET_ROYENFMKET_202402131247442370.xml",
-          "size": 18564,
-          "eTag": "061d321c8887a1aab1036dad7e401256",
-          "sequencer": "0065D8A1EF5644AAA5"
+          "key": "CargoWiseOutbound/FederalSignal/TRXELPTS2_WOU_RLS_W00229670_CUMALLORDT_CUMALLORDT_202402191215033200.xml",
+          "size": 23839,
+          "eTag": "8c9834bde1e862f3123bce0428f7e858",
+          "sequencer": "0065DDD48790B5CE5C"
         }
       }
     }

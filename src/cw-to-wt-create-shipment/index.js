@@ -39,7 +39,7 @@ module.exports.handler = async (event, context) => {
     // Convert the XML data from s3 to json.
     const xmlObjFromCW = await xmlToJson(s3Data);
 
-    const xmlObj = get(xmlObjFromCW, 'UniversalInterchange.Body', '');
+    const xmlObj = get(xmlObjFromCW, 'UniversalInterchange.Body', {});
 
     const statusCode = get(xmlObj, 'UniversalShipment.Shipment.Order.Status.Code', '');
     dynamoData.StatusCode = statusCode;
@@ -195,8 +195,6 @@ async function prepareWTpayload(xmlObj, statusCode) {
       statusCode
     );
     const shipmentListData = await prepareShipmentListData(xmlObj);
-    console.info(headerAndReferenceListData);
-    console.info(shipmentListData);
 
     const finalData = {
       oshipData: {
@@ -234,7 +232,7 @@ async function prepareWTpayload(xmlObj, statusCode) {
             $: {
               xmlns: 'http://tempuri.org/',
             },
-            oShipData: finalData.oshipData, // Insert your JSON data here
+            oShipData: finalData.oshipData,
           },
         },
       },
