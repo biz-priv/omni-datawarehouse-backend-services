@@ -17,6 +17,7 @@ const {
   CONSOL_STOP_HEADERS,
   STAGE,
   SHIPMENT_APAR_TABLE,
+  SHIPMENT_APAR_INDEX_KEY_NAME,
 } = process.env;
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
@@ -87,9 +88,8 @@ async function queryTableStatusPending() {
 }
 
 async function checkMultiStop(tableData) {
-  let consolNo;
-  const orders = Object.keys(get(tableData, 'TableStatuses'));
-  const aparResult = await queryDynamoDB(orders[0]);
+  const consolNo = get(tableData, 'ConsolNo');
+  const aparResult = await queryDynamoDB(consolNo);
   const stationCode = get(aparResult, '[0].FK_ConsolStationId');
   console.info('🚀 ~ file: index.js:93 ~ checkMultiStop ~ stationCode:', stationCode);
   if (stationCode === '') {
@@ -100,7 +100,6 @@ async function checkMultiStop(tableData) {
     const originalTableStatuses = { ...get(tableData, 'TableStatuses', {}) };
     const type = TYPES.MULTI_STOP;
     console.info('🙂 -> file: index.js:83 -> type:', type);
-    consolNo = get(tableData, 'ConsolNo');
     console.info('🙂 -> file: index.js:87 -> consolNo:', consolNo);
     const retryCount = get(tableData, 'RetryCount', 0);
     console.info('🙂 -> file: index.js:90 -> retryCount:', retryCount);
@@ -330,12 +329,13 @@ async function sleep(seconds) {
   }
 }
 
-async function queryDynamoDB(orderNo) {
+async function queryDynamoDB(consolNo) {
   const params = {
     TableName: SHIPMENT_APAR_TABLE,
-    KeyConditionExpression: 'FK_OrderNo = :orderNo',
+    IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
+    KeyConditionExpression: 'ConsolNo = :consolno',
     ExpressionAttributeValues: {
-      ':orderNo': orderNo,
+      ':consolno': consolNo,
     },
   };
 
