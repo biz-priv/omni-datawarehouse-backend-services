@@ -124,6 +124,11 @@ module.exports.handler = async (event, context) => {
         ) {
           console.info('Multi Stop');
           type = TYPES.MULTI_STOP;
+          const aparResult = await fetchPreviousOrderNos({ consolNo });
+          if (aparResult.length > 0) {
+            console.info('A shipment is already created before 2024-02-27. Skipping the process');
+            return true;
+          }
           const existingConsol = await fetchConsoleStatusTable({ consolNo });
           if (Object.keys(existingConsol).length > 0) {
             await updateConsolStatusTable({
@@ -328,16 +333,6 @@ async function fetchOrderData({ consolNo }) {
     console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
     const data = await dynamoDb.query(params).promise();
     console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
-    // Check if any item has CreateDateTime less than 2024-02-27T16:15:000
-    const hasOldShipment = data.Items.some((item) => {
-      const createDateTime = item.CreateDateTime;
-      return createDateTime < '2024-02-27T16:15:000';
-    });
-
-    if (hasOldShipment) {
-      console.info('A shipment is already created before 2024-02-27. Skipping the process.');
-      return 'A shipment is already created before 2024-02-27. Skipping the process.';
-    }
     return get(data, 'Items', []);
   } catch (err) {
     console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
