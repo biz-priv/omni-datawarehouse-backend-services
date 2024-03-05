@@ -58,6 +58,7 @@ module.exports.handler = async (event, context) => {
         const consolidation = get(shipmentAparData, "Consolidation");
 
         controlStation = get(shipmentAparData, "FK_ConsolStationId");
+
         const createDateTime = get(shipmentAparData, "CreateDateTime");
 
         if (createDateTime < "2024-02-27 16:15:000") {
@@ -66,6 +67,17 @@ module.exports.handler = async (event, context) => {
           );
           return true;
         }
+        const processedRecords = await checkAndSkipOrderTable({
+          orderNo: orderId,
+        });
+
+        if (Object.keys(processedRecords).length > 0) {
+          console.info(
+            "Records found in the order table with the same orderNo. Skipping process."
+          );
+          return true;
+        }
+
         if (
           consolNo === 0 &&
           includes(["HS", "TL"], serviceLevelId) &&
@@ -73,6 +85,15 @@ module.exports.handler = async (event, context) => {
         ) {
           console.info("Non Console");
           type = TYPES.NON_CONSOLE;
+
+          const aparResult = await fetchOrderNos({ orderId });
+          if (aparResult.length > 0) {
+            console.info(
+              "A shipment is already created before 2024-02-27. Skipping the process"
+            );
+            return true;
+          }
+
           const shipmentHeaderResult = await fetchBillNos({ orderNo: orderId });
           // Check if there are any items in the result
           if (shipmentHeaderResult.length === 0) {
@@ -110,6 +131,13 @@ module.exports.handler = async (event, context) => {
         ) {
           console.info("Console");
           type = TYPES.CONSOLE;
+          const aparResult = await fetchPreviousOrderNos({ consolNo });
+          if (aparResult.length > 0) {
+            console.info(
+              "A shipment is already created before 2024-02-27. Skipping the process"
+            );
+            return true;
+          }
         }
 
         if (
@@ -121,6 +149,13 @@ module.exports.handler = async (event, context) => {
         ) {
           console.info("Multi Stop");
           type = TYPES.MULTI_STOP;
+          const aparResult = await fetchPreviousOrderNos({ consolNo });
+          if (aparResult.length > 0) {
+            console.info(
+              "A shipment is already created before 2024-02-27. Skipping the process"
+            );
+            return true;
+          }
           const existingConsol = await fetchConsoleStatusTable({ consolNo });
           if (Object.keys(existingConsol).length > 0) {
             await updateConsolStatusTable({
@@ -471,6 +506,93 @@ async function updateStatusTablePending({ orderNo }) {
       "🚀 ~ file: index.js:223 ~ updateStatusTable ~ error:",
       error
     );
+    throw error;
+  }
+}
+
+async function fetchOrderNos({ orderId: orderNo }) {
+  try {
+    const params = {
+      TableName: SHIPMENT_APAR_TABLE,
+      KeyConditionExpression: "FK_OrderNo = :orderNo",
+      FilterExpression:
+        "FK_VendorId = :vendorid AND CreateDateTime < :createdatetime",
+      ExpressionAttributeValues: {
+        ":orderNo": orderNo,
+        ":vendorid": "LIVELOGI",
+        ":createdatetime": "2024-02-27 16:15:000",
+      },
+    };
+    console.info(
+      "🙂 -> file: index.js:216 -> fetchOrderData -> params:",
+      params
+    );
+    const data = await dynamoDb.query(params).promise();
+    console.info(
+      "🙂 -> file: index.js:138 -> fetchItemFromTable -> data:",
+      data
+    );
+    return get(data, "Items", []);
+  } catch (err) {
+    console.error("🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:", err);
+    throw err;
+  }
+}
+
+async function fetchPreviousOrderNos({ consolNo }) {
+  try {
+    const params = {
+      TableName: SHIPMENT_APAR_TABLE,
+      IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
+      KeyConditionExpression: "ConsolNo = :consolno",
+      FilterExpression:
+        "FK_VendorId = :vendorid AND CreateDateTime < :createdatetime",
+      ExpressionAttributeValues: {
+        ":consolno": String(consolNo),
+        ":vendorid": "LIVELOGI",
+        ":createdatetime": "2024-02-27 16:15:000",
+      },
+    };
+    console.info(
+      "🙂 -> file: index.js:216 -> fetchOrderData -> params:",
+      params
+    );
+    const data = await dynamoDb.query(params).promise();
+    console.info(
+      "🙂 -> file: index.js:138 -> fetchItemFromTable -> data:",
+      data
+    );
+    return get(data, "Items", []);
+  } catch (err) {
+    console.error("🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:", err);
+    throw err;
+  }
+}
+
+async function checkAndSkipOrderTable({ orderNo }) {
+  try {
+    const existingOrderParam = {
+      TableName: STATUS_TABLE,
+      KeyConditionExpression: "FK_OrderNo = :orderNo",
+      ExpressionAttributeValues: {
+        ":orderNo": orderNo,
+      },
+    };
+    console.info(
+      "🚀 ~ file: index.js:144 ~ existingOrderParam:",
+      existingOrderParam
+    );
+    const existingOrder = await fetchItemFromTable({
+      params: existingOrderParam,
+    });
+    console.info(
+      "🙂 -> file: index.js:65 -> module.exports.handler= -> existingOrder:",
+      existingOrder
+    );
+
+    return existingOrder;
+  } catch (error) {
+    console.error("🚀 ~ file: index.js:144 ~ existingOrderParam:", error);
     throw error;
   }
 }

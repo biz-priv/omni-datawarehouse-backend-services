@@ -1515,15 +1515,19 @@ async function getCstTime({ datetime, timezone }) {
       "🚀 ~ file: helper.js:1315 ~ getCstTime ~ formattedDateTime:",
       formattedDateTime
     );
-    formattedDateTime = moment(formattedDateTime, "YYYY-MM-DD HH:mm:ss.SSSZ")
-      .tz("America/Chicago")
-      .format("YYYYMMDDHHmmssZZ");
-
+    formattedDateTime = moment(formattedDateTime, "YYYY-MM-DD HH:mm:ss.SSSZZ")
+      .tz(timezone)
+      .format("YYYYMMDDHHmmss");
+    const cstOffset = getNormalizedUtcOffset(new Date(), "America/Chicago");
+    console.info(
+      "🚀 ~ file: helper.js:1374 ~ getCstTime ~ cstOffset:",
+      cstOffset
+    );
     console.info(
       "🚀 ~ file: test.js:25 ~ getCstTime ~ formattedDateTime:",
       formattedDateTime
     );
-
+    formattedDateTime += cstOffset;
     return formattedDateTime;
   } catch (error) {
     console.error(error);
@@ -1549,93 +1553,6 @@ function getNormalizedUtcOffset(formattedDate, timezone) {
   }
 }
 
-// Define the mapping function
-function mapOrderTypeToMcLeod(fkEquipmentCode) {
-  const orderTypeMapping = {
-    "22 BOX": "BOX",
-    "24 BOX": "BOX",
-    "26 BOX": "BOX",
-    "2M BOX": "BOX",
-    48: "V",
-    "48 FT AIR": "V",
-    53: "V",
-    "53 FT AIR": "V",
-    "CARGO VAN": "V",
-    CN: "FB",
-    DD: "FB",
-    F2: "FB",
-    FA: "FB",
-    FC: "FB",
-    FD: "FB",
-    FH: "FB",
-    FM: "FB",
-    FN: "FB",
-    FO: "FB",
-    FR: "FB",
-    FS: "FB",
-    FT: "FB",
-    FZ: "FB",
-    HB: "PO",
-    HVD: "V",
-    HVDF: "FB",
-    HVDR: "R",
-    LA: "FB",
-    LB: "FB",
-    "LG SPRINT": "SPNTR",
-    LO: "FB",
-    LR: "FB",
-    MV: "V",
-    MX: "FB",
-    OT: "FB",
-    PO: "PO",
-    R: "R",
-    R2: "R",
-    RA: "R",
-    RG: "R",
-    RL: "R",
-    RM: "R",
-    RN: "R",
-    RP: "R",
-    RV: "R",
-    RZ: "R",
-    SB: "BOX",
-    SD: "FB",
-    "SM SPRINT": "SPNTR",
-    SN: "FB",
-    SR: "FB",
-    STRAIGHT: "BOX",
-    "TM CARGO": "V",
-    "TM SPINT": "SPNTR",
-    TN: "IMDL",
-    V: "V",
-    V2: "V",
-    V3: "V",
-    VA: "V",
-    VB: "V",
-    VC: "V",
-    VF: "V",
-    VG: "V",
-    VH: "V",
-    VI: "V",
-    VL: "V",
-    VM: "V",
-    VN: "V",
-    VP: "V",
-    VR: "VR",
-    VS: "V",
-    VT: "V",
-    VV: "V",
-    VW: "V",
-    VZ: "V",
-  };
-  // Convert the input to uppercase for case-insensitive comparison
-  const upperCaseOrderCode = fkEquipmentCode.toUpperCase();
-
-  if (Object.hasOwn(orderTypeMapping, upperCaseOrderCode)) {
-    return orderTypeMapping[upperCaseOrderCode];
-  }
-  return "NA";
-}
 
 function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
   const equipmentCodeMapping = {
@@ -1802,7 +1719,6 @@ module.exports = {
   populateStops,
   mapEquipmentCodeToFkPowerbrokerCode,
   getPieces,
-  mapOrderTypeToMcLeod,
   getShipmentHeaderData,
   generateStopforConsole,
   getHousebillData,
