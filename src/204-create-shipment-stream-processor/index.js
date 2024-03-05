@@ -455,7 +455,7 @@ async function fetchPreviousOrderNos({ consolNo }) {
       KeyConditionExpression: 'ConsolNo = :consolno',
       FilterExpression: 'FK_VendorId = :vendorid AND CreateDateTime < :createdatetime',
       ExpressionAttributeValues: {
-        ':consolno': consolNo,
+        ':consolno': String(consolNo),
         ':vendorid': 'LIVELOGI',
         ':createdatetime': '2024-02-27 16:15:000',
       },
