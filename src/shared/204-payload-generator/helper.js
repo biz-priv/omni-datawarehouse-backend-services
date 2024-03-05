@@ -1367,12 +1367,13 @@ async function getCstTime({ datetime, timezone }) {
     // Combine date and time
     let formattedDateTime = datetime + utcOffset;
     console.info('🚀 ~ file: helper.js:1315 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
-    formattedDateTime = moment(formattedDateTime, 'YYYY-MM-DD HH:mm:ss.SSSZ')
+    formattedDateTime = moment(formattedDateTime, 'YYYY-MM-DD HH:mm:ss.SSSZZ')
       .tz(timezone)
-      .format('YYYYMMDDHHmmssZZ');
-
+      .format('YYYYMMDDHHmmss');
+    const cstOffset = getNormalizedUtcOffset(Date.now(), 'America/Chicago');
+    console.info('🚀 ~ file: helper.js:1374 ~ getCstTime ~ cstOffset:', cstOffset);
     console.info('🚀 ~ file: test.js:25 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
-
+    formattedDateTime += cstOffset;
     return formattedDateTime;
   } catch (error) {
     console.error(error);
