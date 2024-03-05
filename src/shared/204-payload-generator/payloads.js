@@ -9,7 +9,6 @@ const {
   sumNumericValues,
   populateStops,
   mapEquipmentCodeToFkPowerbrokerCode,
-  mapOrderTypeToMcLeod,
   getShipmentHeaderData,
   generateStopforConsole,
   getHousebillData,
@@ -87,7 +86,7 @@ async function nonConsolPayload({
     blnum: _.get(shipmentHeader, 'Housebill', ''),
     entered_user_id: 'apiuser',
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(equipmentCode),
-    order_type_id: mapOrderTypeToMcLeod(equipmentCode),
+    order_type_id: _.get(shipmentHeader, 'FK_ServiceLevelId') === 'PL' ? 'P' : 'LTL',
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -205,7 +204,7 @@ async function consolPayload({
     blnum: _.get(shipmentAparData, 'ConsolNo', ''),
     entered_user_id: 'apiuser',
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(equipmentCode),
-    order_type_id: mapOrderTypeToMcLeod(equipmentCode),
+    order_type_id: _.get(housebillData, '[0]FK_ServiceLevelId') === 'PL' ? 'P' : 'LTL',
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -316,10 +315,7 @@ async function mtPayload(
       _.get(shipmentHeader, '[0]FK_EquipmentCode', '') ||
         _.get(shipmentApar, '[0]FK_EquipmentCode', '')
     ),
-    order_type_id: mapOrderTypeToMcLeod(
-      _.get(shipmentHeader, '[0]FK_EquipmentCode', '') ||
-        _.get(shipmentApar, '[0]FK_EquipmentCode', '')
-    ),
+    order_type_id: _.get(shipmentHeader, '[0]FK_ServiceLevelId') === 'PL' ? 'P' : 'LTL',
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
