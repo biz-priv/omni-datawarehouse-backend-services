@@ -12,7 +12,8 @@ const {
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
-const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, STAGE } = process.env;
+const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, STAGE, SHIPMENT_HEADER_TABLE } =
+  process.env;
 
 let functionName;
 module.exports.handler = async (event, context) => {
@@ -83,12 +84,24 @@ async function queryTableStatusPending() {
 }
 
 async function checkTable(tableData) {
+  const type = get(tableData, "Type");
+  const headerResult = await queryDynamoDB(get(tableData, "FK_OrderNo"));
+  console.info("🙂 -> file: index.js:66 -> headerResult:", headerResult);
+  let handlingStation;
+  if (type === TYPES.NON_CONSOLE) {
+    handlingStation =
+      get(headerResult, "[0]ControllingStation") ??
+      get(tableData, "ShipmentAparData.FK_HandlingStation");
+  } else {
+    handlingStation = get(tableData, "ShipmentAparData.FK_ConsolStationId");
+  }
+
+  console.info(
+    "🚀 ~ file: index.js:84 ~ checkTable ~ handlingStation:",
+    handlingStation
+  );
   try {
-    console.info(
-      "🙂 -> file: index.js:69 -> HandlingStation:",
-      get(tableData, "ShipmentAparData.FK_HandlingStation")
-    );
-    if (get(tableData, "ShipmentAparData.FK_HandlingStation") === "") {
+    if (handlingStation === "") {
       return "  please Handling Station populate HandlingStation";
     }
     console.info("🙂 -> file: index.js:80 -> tableData:", tableData);
@@ -100,7 +113,6 @@ async function checkTable(tableData) {
       )
     );
     console.info("🙂 -> file: index.js:81 -> tableName:", tableNames);
-    const type = get(tableData, "Type");
     console.info("🙂 -> file: index.js:83 -> type:", type);
     const orderNo = get(tableData, "FK_OrderNo");
     console.info("🙂 -> file: index.js:85 -> orderNo:", orderNo);
@@ -152,7 +164,7 @@ async function checkTable(tableData) {
       \n${missingFields}. 
       \n Please check ${STATUS_TABLE} to see which table does not have data. 
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
-        stationCode: get(tableData, "ShipmentAparData.FK_HandlingStation"),
+        stationCode: handlingStation,
       });
       return false;
     }
@@ -203,7 +215,7 @@ async function checkTable(tableData) {
       \n order id: ${get(tableData, "ShipmentAparData.FK_OrderNo")}
       \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
-      stationCode: get(tableData, "ShipmentAparData.FK_HandlingStation"),
+      stationCode: handlingStation,
     });
     return false;
   }
@@ -255,6 +267,25 @@ async function updateStatusTable({
       "🚀 ~ file: index.js:184 ~ updateStatusTable ~ error:",
       error
     );
+    throw error;
+  }
+}
+
+async function queryDynamoDB(orderNo) {
+  const params = {
+    TableName: SHIPMENT_HEADER_TABLE,
+    KeyConditionExpression: "PK_OrderNo = :orderNo",
+    ExpressionAttributeValues: {
+      ":orderNo": orderNo,
+    },
+  };
+
+  try {
+    const result = await dynamoDb.query(params).promise();
+    console.info("🚀 ~ file: index.js:344 ~ queryDynamoDB ~ result:", result);
+    return result.Items;
+  } catch (error) {
+    console.error("Error querying DynamoDB:", error);
     throw error;
   }
 }
