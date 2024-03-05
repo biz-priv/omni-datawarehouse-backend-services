@@ -153,12 +153,10 @@ module.exports.handler = async (event, context) => {
       '🚀 ~ file: shipment_apar_table_stream_processor.js:117 ~ module.exports.handler= ~ e:',
       e
     );
-    return await publishSNSTopic(
-      {
-        message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
-      },
-      controlStation
-    );
+    return await publishSNSTopic({
+      message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
+      stationCode: controlStation,
+    });
   }
 };
 
@@ -186,7 +184,7 @@ async function insertShipmentStatus({ orderNo, status, type, tableStatuses, ship
   }
 }
 
-async function publishSNSTopic(message, stationCode) {
+async function publishSNSTopic({ message, stationCode }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
