@@ -78,11 +78,18 @@ async function queryTableStatusPending() {
 }
 
 async function checkTable(tableData) {
+  const type = get(tableData, 'Type');
   const headerResult = await queryDynamoDB(get(tableData, 'FK_OrderNo'));
   console.info('🙂 -> file: index.js:66 -> headerResult:', headerResult);
-  const handlingStation =
-    get(headerResult, '[0]ControllingStation') ||
-    get(tableData, 'ShipmentAparData.FK_HandlingStation');
+  let handlingStation;
+  if (type === TYPES.NON_CONSOLE) {
+    handlingStation =
+      get(headerResult, '[0]ControllingStation') ??
+      get(tableData, 'ShipmentAparData.FK_HandlingStation');
+  } else {
+    handlingStation = get(tableData, 'ShipmentAparData.FK_ConsolStationId');
+  }
+
   console.info('🚀 ~ file: index.js:84 ~ checkTable ~ handlingStation:', handlingStation);
   try {
     if (handlingStation === '') {
@@ -94,7 +101,6 @@ async function checkTable(tableData) {
       pickBy(get(tableData, 'TableStatuses', {}), (value) => value === STATUSES.PENDING)
     );
     console.info('🙂 -> file: index.js:81 -> tableName:', tableNames);
-    const type = get(tableData, 'Type');
     console.info('🙂 -> file: index.js:83 -> type:', type);
     const orderNo = get(tableData, 'FK_OrderNo');
     console.info('🙂 -> file: index.js:85 -> orderNo:', orderNo);
