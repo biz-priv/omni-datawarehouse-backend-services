@@ -408,7 +408,7 @@ async function updateStatusTablePending({ orderNo }) {
   }
 }
 
-async function fetchOrderNos({ orderNo }) {
+async function fetchOrderNos({ orderId: orderNo }) {
   try {
     const params = {
       TableName: SHIPMENT_APAR_TABLE,
