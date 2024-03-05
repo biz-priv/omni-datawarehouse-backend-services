@@ -51,6 +51,19 @@ module.exports.handler = async (event, context) => {
 
         controlStation = get(shipmentAparData, 'FK_ConsolStationId');
 
+        const createDateTime = get(shipmentAparData, 'CreateDateTime');
+
+        const aparResult = await fetchOrderNos({ orderId });
+        if (aparResult.length > 0) {
+          console.info('A shipment is already created before 2024-02-27. Skipping the process');
+          return true;
+        }
+
+        if (createDateTime < '2024-02-27 16:15:000') {
+          console.info('shipment is created before 2024-02-27. Skipping the process');
+          return true;
+        }
+
         if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
           console.info('Non Console');
           type = TYPES.NON_CONSOLE;
@@ -392,5 +405,27 @@ async function updateStatusTablePending({ orderNo }) {
   } catch (error) {
     console.error('🚀 ~ file: index.js:223 ~ updateStatusTable ~ error:', error);
     throw error;
+  }
+}
+
+async function fetchOrderNos({ orderNo }) {
+  try {
+    const params = {
+      TableName: SHIPMENT_APAR_TABLE,
+      KeyConditionExpression: 'FK_OrderNo = :orderNo',
+      FilterExpression: 'FK_VendorId = :vendorid AND CreateDateTime < :createdatetime',
+      ExpressionAttributeValues: {
+        ':orderNo': orderNo,
+        ':vendorid': 'LIVELOGI',
+        ':createdatetime': '2024-02-27 16:15:000',
+      },
+    };
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
+    const data = await dynamoDb.query(params).promise();
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+    return get(data, 'Items', []);
+  } catch (err) {
+    console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
+    throw err;
   }
 }
