@@ -47,7 +47,7 @@ async function nonConsolPayload({
     throw new Error("Please populate the Controlling Station");
   }
 
-  // Call the function to get customer ID and email based on the station code
+  // Call the function to get customer ID based on the station code
   const customerId = stationCodeInfo(stationCode);
   console.info("🚀 ~ file: payloads.js:53 ~ customerId:", customerId);
 
@@ -175,6 +175,16 @@ async function consolPayload({
     _.get(shipmentHeaderData, "[0].equipmentCode", "") ||
     _.get(shipmentAparData, "FK_EquipmentCode", "NA");
 
+  const stationCode = _.get(shipmentAparData, "FK_ConsolStationId", "");
+  console.info("🚀 ~ file: payloads.js:44 ~ stationCode:", stationCode);
+
+  if (!stationCode) {
+    throw new Error("Please populate the Controlling Station");
+  }
+  // Call the function to get customer ID based on the station code
+  const customerId = stationCodeInfo(stationCode);
+  console.info("🚀 ~ file: payloads.js:53 ~ customerId:", customerId);
+
   const deliveryStop = await generateStopforConsole(
     shipmentHeaderData,
 
@@ -204,7 +214,7 @@ async function consolPayload({
     dispatch_opt: true,
     collection_method: "P",
     commodity: _.get(descData, "[0].Description", ""),
-    customer_id: "OTRODATX",
+    customer_id: customerId,
     blnum: _.get(shipmentAparData, "ConsolNo", ""),
     entered_user_id: "apiuser",
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(equipmentCode),
@@ -307,6 +317,16 @@ async function mtPayload(
   });
   const hazmat = await getHazmat({ shipmentAparConsoleData: shipmentApar }); // Obtain hazmat information
 
+  const stationCode = _.get(shipmentApar, "[0].FK_ConsolStationId", "");
+  console.info("🚀 ~ file: payloads.js:44 ~ stationCode:", stationCode);
+
+  if (!stationCode) {
+    throw new Error("Please populate the Controlling Station");
+  }
+  // Call the function to get customer ID based on the station code
+  const customerId = stationCodeInfo(stationCode);
+  console.info("🚀 ~ file: payloads.js:53 ~ customerId:", customerId);
+
   const payload = {
     __type: "orders",
     company_id: "TMS",
@@ -316,7 +336,7 @@ async function mtPayload(
     dispatch_opt: true,
     collection_method: "P",
     commodity: _.get(shipmentDesc, "[0]Description", ""),
-    customer_id: "OTRODATX",
+    customer_id: customerId,
     blnum: _.get(consolStopHeaders, "[0]FK_ConsolNo", ""),
     entered_user_id: "apiuser",
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
