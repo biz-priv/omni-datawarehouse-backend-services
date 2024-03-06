@@ -125,9 +125,9 @@ module.exports.handler = async (event, context) => {
             );
 
             // Check if createDateTime is before "2024-03-06 16:00:000"
-            if (createDateTime < "2024-03-06T16:00:000") {
+            if (createDateTime < "2024-03-06 17:15:000") {
               console.info(
-                "Shipment is created before 2024-03-06 16:00:000. Skipping the process."
+                "Shipment is created before 2024-03-06 17:15:000. Skipping the process."
               );
               return true;
             }
