@@ -1,0 +1,21 @@
+{
+  "Records": [
+    {
+      "messageId": "2f15ba3c-2479-45ab-a8b5-cf62e8e1f46b",
+      "receiptHandle": "AQEB2QVLdOBmYILhNsJTmdtkCC51fafpnsoW64BTgXUr5Ban//Itxl5/ztoME6TK7CzrFvhmASXD26fZVaggxfOtnlS8/jJELKlC0nbI5KXMtGJr6AEw5jWE0ZMSFNz3DT4I4ORnLpou4FK3NKbS3AQh19RGiSYzhHPw+VkFNX38r+kq8cznEZ0Xm6TS11ZUAize8/YwRuU/XysmOu1+yLMqtls6vy6QslRrbNWTwsv57XlnUs6hhkXvRxtWz37/Yyk9lmkvResjKtfZ6revhkJLgM+TQwwFvjDN2Q4DFPz3nrvwHSTcc9VJPqJ8Lt8rZEVjbIRP7C2UlZpZ/ADWWSqjssjTXVY9Ub0sFtncFfOt+ueb0WIt6xklGz9xJRdJuH8ABjNt3Gpl52iSTGxRnP/FUx/1kGwrD7n+TFqwxMXJM8nGBMWLwdjPs70iMLe1f05P",
+      "body": "{\n \"Type\" : \"Notification\",\n \"MessageId\" : \"49c04523-9261-5838-9685-1b41c96056b9\",\n \"TopicArn\" : \"arn:aws:sns:us-east-1:332281781429:omni-wt-rt-consignee-dev\",\n \"Message\" : \"{\\\"ApproximateCreationDateTime\\\":1709725887,\\\"Keys\\\":{\\\"FK_ConOrderNo\\\":{\\\"S\\\":\\\"2416454\\\"}},\\\"NewImage\\\":{\\\"FK_ConRefTypeId\\\":{\\\"S\\\":\\\"\\\"},\\\"ConAlpha\\\":{\\\"S\\\":\\\"TECH DATA\\\"},\\\"ConPhone\\\":{\\\"S\\\":\\\"\\\"},\\\"ConNo\\\":{\\\"S\\\":\\\"12564\\\"},\\\"ConZone\\\":{\\\"S\\\":\\\"0\\\"},\\\"ConContact\\\":{\\\"S\\\":\\\"\\\"},\\\"ConEmail\\\":{\\\"S\\\":\\\"\\\"},\\\"FK_ConOrderNo\\\":{\\\"S\\\":\\\"2416454\\\"},\\\"ConAddress1\\\":{\\\"S\\\":\\\"13472 MARLAY AVE\\\"},\\\"ConAddress2\\\":{\\\"S\\\":\\\"13472 MARLAY AVENUE\\\"},\\\"ConName\\\":{\\\"S\\\":\\\"TECH DATA PRODUCT MANAGEMENT INC\\\"},\\\"ConCity\\\":{\\\"S\\\":\\\"FONTANA\\\"},\\\"InsertedTimeStamp\\\":{\\\"S\\\":\\\"2023:09:23 12:40:38\\\"},\\\"ConFax\\\":{\\\"S\\\":\\\"\\\"},\\\"ConRefNo\\\":{\\\"S\\\":\\\"\\\"},\\\"FK_ConState\\\":{\\\"S\\\":\\\"CA\\\"},\\\"ConZip\\\":{\\\"S\\\":\\\"92337\\\"},\\\"FK_ConCountry\\\":{\\\"S\\\":\\\"US\\\"}},\\\"OldImage\\\":{\\\"FK_ConRefTypeId\\\":{\\\"S\\\":\\\"\\\"},\\\"ConAlpha\\\":{\\\"S\\\":\\\"TECH DATA\\\"},\\\"ConPhone\\\":{\\\"S\\\":\\\"\\\"},\\\"ConNo\\\":{\\\"S\\\":\\\"12564\\\"},\\\"ConZone\\\":{\\\"S\\\":\\\"0\\\"},\\\"ConContact\\\":{\\\"S\\\":\\\"\\\"},\\\"ConEmail\\\":{\\\"S\\\":\\\"\\\"},\\\"FK_ConOrderNo\\\":{\\\"S\\\":\\\"2416454\\\"},\\\"ConAddress1\\\":{\\\"S\\\":\\\"13472 MARLAY AVE\\\"},\\\"ConAddress2\\\":{\\\"S\\\":\\\"13472 MARLAY AVENUE\\\"},\\\"ConName\\\":{\\\"S\\\":\\\"TECH DATA PRODUCT MANAGEMENT INC\\\"},\\\"ConCity\\\":{\\\"S\\\":\\\"FONTANA\\\"},\\\"InsertedTimeStamp\\\":{\\\"S\\\":\\\"2023:09:23 12:40:39\\\"},\\\"ConFax\\\":{\\\"S\\\":\\\"\\\"},\\\"ConRefNo\\\":{\\\"S\\\":\\\"\\\"},\\\"FK_ConState\\\":{\\\"S\\\":\\\"CA\\\"},\\\"ConZip\\\":{\\\"S\\\":\\\"92337\\\"},\\\"FK_ConCountry\\\":{\\\"S\\\":\\\"US\\\"}},\\\"SequenceNumber\\\":\\\"2650616700000000063560792441\\\",\\\"SizeBytes\\\":610,\\\"StreamViewType\\\":\\\"NEW_AND_OLD_IMAGES\\\",\\\"dynamoTableName\\\":\\\"omni-wt-rt-consignee-dev\\\"}\",\n \"Timestamp\" : \"2024-03-06T11:51:29.261Z\",\n \"SignatureVersion\" : \"1\",\n \"Signature\" : \"pZRiSoIdQ14H8t+zajhuXfH1+4bNHgYLbNR2IQE28HpWqaHVtllJehIYfB7zy93t0UyAy01HByhcYufzqzbnjxfuz3tpF2epnEuvNficYuEGB/D5fMTNOkywPtezpqRZ9ZFU0l6oJ74KxyEgd7gAN7Xwh41bmeVwtB/QXZxjyfe3uyKmPRhmSUl9+0lLls7mciWB57Dg+m+EV/wsr4w9f6fAfEwjeGp+YfAHJ9Khr5y8z7aXJufolUcDgQCjY6fspEC/8WzlFfsjzhyCKg/sfxUwS3Ik5wG1y8e8KbuTgRqK/DeDJfU7/Rn137e9FK6Y9Ck4Ap2sNDH4Fdj+Eat2zw==\",\n \"SigningCertURL\" : \"https://sns.us-east-1.amazonaws.com/SimpleNotificationService-60eadc530605d63b8e62a523676ef735.pem\",\n \"UnsubscribeURL\" : \"https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:332281781429:omni-wt-rt-consignee-dev:b2e724e6-1b87-4875-acae-95b915d93b0c\"\n}",
+      "attributes": {
+        "ApproximateReceiveCount": "1",
+        "AWSTraceHeader": "Root=1-65e858bf-9c506b49ab0404ad1a96464f;Parent=15be52385515ada2;Sampled=0;Lineage=7e1a3ce2:0",
+        "SentTimestamp": "1709725889300",
+        "SenderId": "AIDAIT2UOQQY3AUEKVGXU",
+        "ApproximateFirstReceiveTimestamp": "1709725889308"
+      },
+      "messageAttributes": {},
+      "md5OfBody": "35204a14f0c1865769fc37aa94db226d",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-1:332281781429:omni-dw-backend-204-update-table-stream-queue-dev",
+      "awsRegion": "us-east-1"
+    }
+  ]
+}

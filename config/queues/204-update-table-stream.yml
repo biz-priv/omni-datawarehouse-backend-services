@@ -1,0 +1,34 @@
+204UpdateTableStreamDLQ:
+  Type: AWS::SQS::Queue
+  Properties:
+    QueueName: omni-dw-backend-204-update-table-stream-DLQ-${self:provider.stage}
+
+204UpdateTableStreamQueue:
+  Type: AWS::SQS::Queue
+  Properties:
+    QueueName: omni-dw-backend-204-update-table-stream-queue-${self:provider.stage}
+    VisibilityTimeout: 500
+    RedrivePolicy:
+      deadLetterTargetArn: !GetAtt 204UpdateTableStreamDLQ.Arn
+      maxReceiveCount: 3
+
+204UpdateTableStreamQueuePolicy:
+  Type: AWS::SQS::QueuePolicy
+  Properties:
+    Queues:
+      - !GetAtt 204UpdateTableStreamQueue.QueueUrl
+    PolicyDocument:
+      Id: 204UpdateTableStreamQueuePolicy
+      Version: '2012-10-17'
+      Statement:
+        - Effect: Allow
+          Principal: '*'
+          Action: SQS:SendMessage
+          Resource: '*'
+          Condition:
+            ArnEquals:
+              aws:SourceArn:
+                - 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-shipper-dev'
+                - 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-consignee-dev'
+                - 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-confirmation-cost-dev'
+                - 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-consol-stop-headers-dev'

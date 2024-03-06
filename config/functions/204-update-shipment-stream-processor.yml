@@ -1,0 +1,34 @@
+function:
+  handler: src/204-update-shipment-stream-processor/index.handler
+  name: 204-update-shipment-stream-processor-${self:provider.stage}
+  description: process and filters shipper stream for 204 create shipment - ${self:provider.stage}
+  runtime: nodejs18.x
+  timeout: 500
+  layers:
+    - !Ref DWBackendLambdaLayer
+  events:
+    - sqs:
+        arn: !GetAtt 204UpdateTableStreamQueue.Arn
+  package:
+    patterns:
+      - '!**/*'
+      - 'src/204-update-shipment-stream-processor/**'
+      - 'src/shared/constants/204_create_shipment.js'
+  # environment:
+  #   STAGE: ${self:provider.stage}
+  #   LIVE_SNS_TOPIC_ARN: ${ssm:/omni-power-broker/${self:provider.stage}/error-notification/sns/arn}
+  #   STATUS_TABLE: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.name}
+  #   SHIPMENT_APAR_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.tableName~true}
+  #   SHIPMENT_APAR_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.ConsolNoIndex}
+  #   SHIPMENT_HEADER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.tableName~true}
+  #   CONSIGNEE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consignee/ddb.tableName~true}
+  #   SHIPPER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipper/ddb.tableName~true}
+  #   SHIPMENT_DESC_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-desc/ddb.tableName~true}
+  #   CONFIRMATION_COST: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/confirmation-cost/ddb.tableName~true}
+  #   CONSOL_STOP_ITEMS: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-items/ddb.tableName~true}
+  #   CONFIRMATION_COST_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/confirmation-cost/ddb.orderNoIndex}
+  #   TRACKING_NOTES_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.tableName~true}
+  #   TRACKING_NOTES_CONSOLENO_INDEX_KEY: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.ConsolNoIndex}
+  #   STATUS_TABLE_CONSOLE_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.ConsolNoIndex}
+  #   CONSOLE_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
+  #   ACCEPTED_BILLNOS: ${ssm:/omni-204-create-shipment/${self:provider.stage}/accepted/filterBillNo}

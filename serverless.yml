@@ -89,6 +89,7 @@ functions:
   204-mt-consol-processor: ${file(config/functions/204-mt-consol-processor.yml):function}
   204-mt-consol-payload-processor: ${file(config/functions/204-mt-consol-payload-processor.yml):function}
   204-p2p-payload-processor: ${file(config/functions/204-p2p-payload-processor.yml):function}
+  204-update-shipment-stream-processor: ${file(config/functions/204-update-shipment-stream-processor.yml):function}
 
   cw-to-wt-create-shipment: ${file(config/functions/cw-to-wt-create-shipment.yml):function}
 
@@ -98,6 +99,15 @@ resources:
     ShipmentFileTableStreamDLQ: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamDLQ}
     LtlRatingLogInsertionQueue: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionQueue}
     LtlRatingLogInsertionDLQ: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionDLQ}
+
+    204UpdateTableStreamQueue: ${file(config/queues/204-update-table-stream.yml):204UpdateTableStreamQueue}
+    204UpdateTableStreamDLQ: ${file(config/queues/204-update-table-stream.yml):204UpdateTableStreamDLQ}
+    204UpdateTableStreamQueuePolicy: ${file(config/queues/204-update-table-stream.yml):204UpdateTableStreamQueuePolicy}
+
+    ShipperSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ShipperSNSTopicSubscription}
+    ConsigneeSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ConsigneeSNSTopicSubscription}
+    ConfirmationCostSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ConfirmationCostSNSTopicSubscription}
+    ConsolStopHeaderSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ConsolStopHeaderSNSTopicSubscription}
 
 layers:
   DWBackend:
