@@ -18,6 +18,7 @@ const {
   SHIPMENT_APAR_TABLE,
   SHIPMENT_HEADER_TABLE,
   ACCEPTED_BILLNOS,
+  LGB_ACCEPTED_BILLNOS,
 } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
@@ -57,7 +58,9 @@ module.exports.handler = async (event, context) => {
           console.info('shipment is created before 2024-02-27. Skipping the process');
           return true;
         }
-        const processedRecords = await checkAndSkipOrderTable({ orderNo: orderId });
+        const processedRecords = await checkAndSkipOrderTable({
+          orderNo: orderId,
+        });
 
         if (Object.keys(processedRecords).length > 0) {
           console.info('Records found in the order table with the same orderNo. Skipping process.');
@@ -90,11 +93,34 @@ module.exports.handler = async (event, context) => {
             billNumbers.includes(billNo)
           );
 
-          // If there are no common bill numbers, skip further processing
           if (commonBillNos.length === 0) {
             console.info(
-              'Ignoring shipment, BillNo does not include any of the accepted bill numbers. Skipping process.'
+              'Ignoring shipment, BillNo does not include any of the accepted bill numbers. Checking LGB_ACCEPTED_BILLNOS.'
             );
+
+            // Check for accepted bill numbers in LGB_ACCEPTED_BILLNOS
+            const commonLGBBillNos = LGB_ACCEPTED_BILLNOS.split(',').filter((billNo) =>
+              billNumbers.includes(billNo)
+            );
+
+            // Check if createDateTime is before "2024-03-06 16:00:000"
+            if (createDateTime < '2024-03-06 17:15:000') {
+              console.info(
+                'Shipment is created before 2024-03-06 17:15:000. Skipping the process.'
+              );
+              return true;
+            }
+
+            // If there are no bill numbers satisfying the criteria, skip further processing
+            if (commonLGBBillNos.length === 0) {
+              console.info(
+                'Ignoring shipment, No bill numbers in LGB_ACCEPTED_BILLNOS satisfy the conditions. Skipping process.'
+              );
+              return true;
+            }
+          } else {
+            console.info('Accepted bill numbers found. Skipping LGB_ACCEPTED_BILLNOS check.');
+            // No need to proceed with LGB_ACCEPTED_BILLNOS check
             return true;
           }
         }
@@ -136,12 +162,19 @@ module.exports.handler = async (event, context) => {
               resetCount: get(existingConsol, 'ResetCount', 0),
             });
           } else {
-            await insertConsoleStatusTable({ consolNo, status: STATUSES.PENDING });
+            await insertConsoleStatusTable({
+              consolNo,
+              status: STATUSES.PENDING,
+            });
           }
         }
 
         if (type) {
-          return await checkAndUpdateOrderTable({ orderNo: orderId, type, shipmentAparData });
+          return await checkAndUpdateOrderTable({
+            orderNo: orderId,
+            type,
+            shipmentAparData,
+          });
         }
         return true;
       })
@@ -214,7 +247,9 @@ async function checkAndUpdateOrderTable({ orderNo, type, shipmentAparData }) {
     },
   };
   console.info('🚀 ~ file: index.js:144 ~ existingOrderParam:', existingOrderParam);
-  const existingOrder = await fetchItemFromTable({ params: existingOrderParam });
+  const existingOrder = await fetchItemFromTable({
+    params: existingOrderParam,
+  });
   console.info(
     '🙂 -> file: index.js:65 -> module.exports.handler= -> existingOrder:',
     existingOrder
@@ -478,7 +513,9 @@ async function checkAndSkipOrderTable({ orderNo }) {
       },
     };
     console.info('🚀 ~ file: index.js:144 ~ existingOrderParam:', existingOrderParam);
-    const existingOrder = await fetchItemFromTable({ params: existingOrderParam });
+    const existingOrder = await fetchItemFromTable({
+      params: existingOrderParam,
+    });
     console.info(
       '🙂 -> file: index.js:65 -> module.exports.handler= -> existingOrder:',
       existingOrder
