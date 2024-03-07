@@ -122,6 +122,28 @@ async function checkTable(tableData) {
       })
     );
     console.info('🙂 -> file: index.js:79 -> originalTableStatuses:', originalTableStatuses);
+
+    if (
+      type === TYPES.NON_CONSOLE &&
+      get(originalTableStatuses, 'tbl_ConfirmationCost') === STATUSES.PENDING &&
+      get(originalTableStatuses, 'tbl_Shipper') === STATUSES.READY &&
+      get(originalTableStatuses, 'tbl_Consignee') === STATUSES.READY &&
+      retryCount >= 3 &&
+      Object.keys(
+        pickBy(
+          get(originalTableStatuses, 'TableStatuses', {}),
+          (value) => value === STATUSES.PENDING
+        )
+      ).length === 1
+    ) {
+      return await updateStatusTable({
+        orderNo,
+        originalTableStatuses,
+        retryCount,
+        status: STATUSES.READY,
+      });
+    }
+
     if (Object.values(originalTableStatuses).includes(STATUSES.PENDING) && retryCount >= 5) {
       const pendingTables = Object.keys(originalTableStatuses).filter((table) => {
         return originalTableStatuses[table] === STATUSES.PENDING;
@@ -145,27 +167,6 @@ async function checkTable(tableData) {
         stationCode: handlingStation,
       });
       return false;
-    }
-
-    if (
-      type === TYPES.NON_CONSOLE &&
-      get(originalTableStatuses, 'tbl_ConfirmationCost') === STATUSES.PENDING &&
-      get(originalTableStatuses, 'tbl_Shipper') === STATUSES.READY &&
-      get(originalTableStatuses, 'tbl_Consignee') === STATUSES.READY &&
-      retryCount <= 3 &&
-      Object.keys(
-        pickBy(
-          get(originalTableStatuses, 'TableStatuses', {}),
-          (value) => value === STATUSES.PENDING
-        )
-      ).length === 1
-    ) {
-      return await updateStatusTable({
-        orderNo,
-        originalTableStatuses,
-        retryCount,
-        status: STATUSES.READY,
-      });
     }
 
     if (Object.values(originalTableStatuses).includes(STATUSES.PENDING) && retryCount < 5) {
