@@ -541,7 +541,7 @@ async function fetchLocationId({
     finalConsigneeData.ConCity,
     finalConsigneeData.FK_ConState,
     finalConsigneeData.ConZip,
-    finalShipperData.FK_ConCountry
+    finalConsigneeData.FK_ConCountry
   );
 
   // Use the obtained location IDs to create locations if needed
@@ -578,7 +578,7 @@ async function fetchLocationId({
         zip_code: finalConsigneeData.ConZip,
       },
       orderId,
-      country: finalShipperData.FK_ConCountry,
+      country: finalConsigneeData.FK_ConCountry,
       houseBill,
     });
   }
