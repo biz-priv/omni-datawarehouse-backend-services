@@ -122,7 +122,7 @@ async function nonConsolPayload({
     status: "A",
     swap: true,
     teams_required: false,
-    vessel: _.get(customersData, "CustName", ""),
+    vessel: _.get(customersData, "CustName", "NA"),
     weight: sumNumericValues(shipmentDesc, "Weight", 0),
     weight_um: "LB",
     operational_status: "CLIN",
