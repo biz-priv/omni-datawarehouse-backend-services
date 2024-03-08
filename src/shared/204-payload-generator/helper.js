@@ -27,6 +27,9 @@ const {
   SHIPMENT_APAR_INDEX_KEY_NAME,
   INSTRUCTIONS_INDEX_KEY_NAME,
   INSTRUCTIONS_TABLE,
+  REFERENCES_TABLE,
+  REFERENCES_INDEX_KEY_NAME
+
 } = process.env;
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
@@ -91,6 +94,7 @@ function getPowerBrokerCode(reftypeId) {
 
 async function generateStop(
   shipmentHeader,
+  references,
   orderSequence,
   stopType,
   locationId,
@@ -153,6 +157,8 @@ async function generateStop(
         comments: getNote(stateData, type),
       },
     ],
+    referenceNumbers:
+      type === "shipper" ? generateReferenceNumbers({ references }) : [],
   };
 
   specialInstruction.map((item) => {
@@ -229,6 +235,7 @@ async function processStopDataNonConsol(stopType, shipmentHeader, stateData) {
 
 async function generateStopforConsole(
   shipmentHeaderData,
+  references,
   orderSequence,
   stopType,
   locationId,
@@ -297,7 +304,7 @@ async function generateStopforConsole(
     ],
     referenceNumbers:
       type === "shipper"
-        ? [...populateHousebillNumbers(housebillData, descData)]
+        ? [...populateHousebillNumbers(housebillData, descData), ...generateReferenceNumbers({ references }),]
         : [],
   };
   stopData.stopNotes.push({
@@ -421,6 +428,15 @@ function getParamsByTableName(
         KeyConditionExpression: "PK_OrderNo = :orderNo",
         ExpressionAttributeValues: {
           ":orderNo": orderNo,
+        },
+      };
+    case "omni-wt-rt-references":
+      return {
+        TableName: REFERENCES_TABLE,
+        IndexName: REFERENCES_INDEX_KEY_NAME,
+        KeyConditionExpression: "FK_OrderNo = :FK_OrderNo",
+        ExpressionAttributeValues: {
+          ":FK_OrderNo": orderNo,
         },
       };
     case "omni-wt-rt-shipper":
@@ -657,10 +673,11 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
   try {
     const tables = [
       "omni-wt-rt-shipment-header-non-console",
+      "omni-wt-rt-references",
       "omni-wt-rt-shipment-desc",
     ];
 
-    const [shipmentHeaderData, shipmentDescData] = await Promise.all(
+    const [shipmentHeaderData, referencesData, shipmentDescData] = await Promise.all(
       tables.map(async (table) => {
         const param = getParamsByTableName(
           _.get(shipmentAparData, "FK_OrderNo"),
@@ -714,6 +731,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
     console.info("🚀 ~ file: helper.js:491 ~ userData:", userData);
     return {
       shipmentHeaderData,
+      referencesData,
       shipmentDescData,
       customersData,
       userData,
@@ -722,6 +740,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
     console.error("🙂 -> file: helper.js:494 -> err:", err);
     return {
       shipmentHeaderData: [],
+      referencesData: [],
       shipmentDescData: [],
       customersData: [],
     };
@@ -1048,6 +1067,29 @@ async function getHousebillData({ shipmentAparConsoleData: aparData }) {
   return housebillDataFlatten;
 }
 
+async function getReferencesData({ shipmentAparConsoleData: aparData }) {
+  const refTableData = await Promise.all(
+    aparData.map(async (dataItem) => {
+      const referenceTableParams = {
+        TableName: REFERENCES_TABLE,
+        IndexName: REFERENCES_INDEX_KEY_NAME,
+        KeyConditionExpression: "FK_OrderNo = :FK_OrderNo",
+        ExpressionAttributeValues: {
+          ":FK_OrderNo": _.get(dataItem, "FK_OrderNo"),
+        },
+      };
+
+      const queryResult = await queryDynamoDB(referenceTableParams);
+      return _.get(queryResult, "Items", []);
+    })
+  );
+
+  // Flatten the array of arrays
+  const refTableDataFlatten = _.flatten(refTableData);
+
+  return refTableDataFlatten;
+}
+
 function getPieces({ shipmentDesc }) {
   return _.sumBy(shipmentDesc, (data) =>
     parseInt(_.get(data, "Pieces", 0), 10)
@@ -1186,6 +1228,18 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       );
     }
 
+    const references = [];
+    const refparams = {
+      TableName: REFERENCES_TABLE,
+      IndexName: REFERENCES_INDEX_KEY_NAME,
+      KeyConditionExpression: "FK_OrderNo = :FK_OrderNo",
+      ExpressionAttributeValues: {
+        ":FK_OrderNo": element.FK_OrderNo.toString(),
+      },
+    };
+    const refResult = await dynamoDB.query(refparams).promise();
+    references.push(...refResult.Items);
+
     const tnparams = {
       TableName: TRACKING_NOTES_TABLE,
       IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
@@ -1230,6 +1284,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       consolStopHeaders: uniqueConsolStopHeaders,
       consolStopItems,
       customer,
+      references,
       users,
     };
   } catch (error) {
@@ -1240,6 +1295,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
 
 async function populateStops(
   consolStopHeaders,
+  references,
   users,
   shipmentHeader,
   shipmentDesc,
@@ -1266,6 +1322,7 @@ async function populateStops(
     });
 
     const referenceNumbersArray = [
+      generateReferenceNumbers({ references }),
       populateHousebillNumbers(shipmentHeader, shipmentDesc),
     ];
     const dims = populateDims(shipmentHeader, shipmentDesc);
@@ -1697,6 +1754,22 @@ async function getTimezone({ stopCity, state, country, address1 }) {
   return timezone;
 }
 
+function generateReferenceNumbers({ references }) {
+  return getUniqueObjects(
+    _.map(references, (ref) => ({
+      __type: "reference_number",
+      __name: "referenceNumbers",
+      company_id: "TMS",
+      element_id: "128",
+      partner_id: "TMS",
+      reference_number: _.get(ref, "ReferenceNo", "NA"),
+      reference_qual: getPowerBrokerCode(_.get(ref, "FK_RefTypeId", "NA")),
+      send_to_driver: true,
+      version: "004010",
+    }))
+  );
+}
+
 module.exports = {
   getPowerBrokerCode,
   getCstTime,
@@ -1725,4 +1798,5 @@ module.exports = {
   descDataForConsole,
   getTimezone,
   stationCodeInfo,
+  getReferencesData
 };

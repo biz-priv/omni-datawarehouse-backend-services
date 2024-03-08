@@ -55,6 +55,7 @@ module.exports.handler = async (event, context) => {
           shipmentDesc,
           consolStopHeaders,
           customer,
+          references,
           users,
         } = await fetchDataFromTablesList(consolNo);
         orderId = _.map(shipmentApar, "FK_OrderNo"); // comma separated orderNo's
@@ -79,6 +80,7 @@ module.exports.handler = async (event, context) => {
           shipmentDesc,
           consolStopHeaders,
           customer,
+          references,
           users
         );
         console.info(

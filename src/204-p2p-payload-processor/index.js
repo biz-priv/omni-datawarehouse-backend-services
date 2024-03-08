@@ -135,7 +135,6 @@ module.exports.handler = async (event, context) => {
           );
           const {
             shipmentHeaderData: [shipmentHeaderData],
-            referencesData,
             shipmentDescData,
             trackingNotesData: [trackingNotesData],
             customersData: [customersData],
@@ -153,10 +152,6 @@ module.exports.handler = async (event, context) => {
           console.info(
             "🙂 -> file: index.js:121 -> shipmentDescData:",
             shipmentDescData
-          );
-          console.info(
-            "🙂 -> file: index.js:122 -> referencesData:",
-            referencesData
           );
           console.info(
             "🙂 -> file: index.js:123 -> shipmentHeaderData:",
@@ -194,7 +189,6 @@ module.exports.handler = async (event, context) => {
             houseBill: houseBill.join(","),
           });
           const ConsolPayloadData = await consolPayload({
-            referencesData,
             customersData,
             consigneeLocationId,
             finalConsigneeData,
