@@ -143,8 +143,6 @@ module.exports.handler = async (event, context) => {
             console.info(
               "Accepted bill numbers found. Skipping LGB_ACCEPTED_BILLNOS check."
             );
-            // No need to proceed with LGB_ACCEPTED_BILLNOS check
-            return true;
           }
         }
 

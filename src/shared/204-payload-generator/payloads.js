@@ -16,11 +16,13 @@ const {
   getCstTime,
   getTimezone,
   stationCodeInfo,
+  getReferencesData,
 } = require("./helper");
 
 async function nonConsolPayload({
   shipmentHeader,
   shipmentDesc,
+  referencesData,
   shipperLocationId,
   consigneeLocationId,
   finalShipperData,
@@ -57,6 +59,7 @@ async function nonConsolPayload({
 
   const deliveryStop = await generateStop(
     shipmentHeader,
+    referencesData,
     2,
     "SO",
     consigneeLocationId,
@@ -86,8 +89,9 @@ async function nonConsolPayload({
     blnum: _.get(shipmentHeader, "Housebill", ""),
     entered_user_id: "apiuser",
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(equipmentCode),
+    order_mode: _.get(shipmentHeader, "FK_ServiceLevelId") === "PL" ? "P" : "T",
     order_type_id:
-      _.get(shipmentHeader, "FK_ServiceLevelId") === "PL" ? "P" : "LTL",
+      _.get(shipmentHeader, "FK_ServiceLevelId") === "PL" ? "PAR" : "NA",
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -99,7 +103,7 @@ async function nonConsolPayload({
     is_container: false,
     is_dedicated: false,
     ltl: _.includes(["FT", "HS"], _.get(shipmentHeader, "FK_ServiceLevelId")),
-    on_hold: false,
+    on_hold: true,
     ordered_date: await getCstTime({
       datetime: _.get(shipmentHeader, "OrderDate", ""),
       timezone,
@@ -121,7 +125,6 @@ async function nonConsolPayload({
     vessel: _.get(customersData, "CustName", ""),
     weight: sumNumericValues(shipmentDesc, "Weight", 0),
     weight_um: "LB",
-    order_mode: "T",
     operational_status: "CLIN",
     lock_miles: false,
     def_move_type: "A",
@@ -134,6 +137,7 @@ async function nonConsolPayload({
   payload.stops.push(
     await generateStop(
       shipmentHeader,
+      referencesData,
       1,
       "PU",
       shipperLocationId,
@@ -171,6 +175,10 @@ async function consolPayload({
   console.info("🚀 ~ file: payloads.js:145 ~ housebillData:", housebillData);
   const descData = await descDataForConsole({ shipmentAparConsoleData });
   console.info("🚀 ~ file: payloads.js:147 ~ descData:", descData);
+
+  const referencesData = await getReferencesData({ shipmentAparConsoleData })
+  console.info('🙂 -> file: payloads.js:180 -> referencesData:', referencesData);
+  
   const equipmentCode =
     _.get(shipmentHeaderData, "[0].equipmentCode", "") ||
     _.get(shipmentAparData, "FK_EquipmentCode", "NA");
@@ -187,7 +195,7 @@ async function consolPayload({
 
   const deliveryStop = await generateStopforConsole(
     shipmentHeaderData,
-
+    referencesData,
     2,
     "SO",
     consigneeLocationId,
@@ -218,8 +226,8 @@ async function consolPayload({
     blnum: _.get(shipmentAparData, "ConsolNo", ""),
     entered_user_id: "apiuser",
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(equipmentCode),
-    order_type_id:
-      _.get(housebillData, "[0]FK_ServiceLevelId") === "PL" ? "P" : "LTL",
+    order_mode: 'T',
+    order_type_id: "NA",
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -234,7 +242,7 @@ async function consolPayload({
       ["FT", "HS"],
       _.get(shipmentHeaderData, "[0].serviceLevelId", "")
     ),
-    on_hold: false,
+    on_hold: true,
     ordered_date: await getCstTime({
       datetime: _.get(shipmentAparData, "CreateDateTime", ""),
       timezone,
@@ -259,7 +267,6 @@ async function consolPayload({
     vessel: await getVesselForConsole({ shipmentAparConsoleData }),
     weight: sumNumericValues(descData, "Weight"),
     weight_um: "LB",
-    order_mode: "T",
     operational_status: "CLIN",
     lock_miles: false,
     def_move_type: "A",
@@ -272,7 +279,7 @@ async function consolPayload({
   payload.stops.push(
     await generateStopforConsole(
       shipmentHeaderData,
-
+      referencesData,
       1,
       "PU",
       shipperLocationId,
@@ -295,6 +302,7 @@ async function mtPayload(
   shipmentDesc,
   consolStopHeaders,
   customer,
+  references,
   users
 ) {
   console.info("entered payload function");
@@ -302,6 +310,7 @@ async function mtPayload(
   // Populate stops
   const stops = await populateStops(
     consolStopHeaders,
+    references,
     users,
     shipmentHeader,
     shipmentDesc,
@@ -341,10 +350,10 @@ async function mtPayload(
     entered_user_id: "apiuser",
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
       _.get(shipmentHeader, "[0]FK_EquipmentCode", "") ||
-        _.get(shipmentApar, "[0]FK_EquipmentCode", "")
+      _.get(shipmentApar, "[0]FK_EquipmentCode", "")
     ),
-    order_type_id:
-      _.get(shipmentHeader, "[0]FK_ServiceLevelId") === "PL" ? "P" : "LTL",
+    order_mode: 'T',
+    order_type_id: "NA",
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -359,7 +368,7 @@ async function mtPayload(
       ["FT", "HS"],
       _.get(shipmentHeader, "[0]FK_ServiceLevelId")
     ),
-    on_hold: false,
+    on_hold: true,
     ordered_date: await getCstTime({
       datetime: _.get(shipmentApar, "[0]CreateDateTime", ""),
       timezone,
@@ -381,7 +390,6 @@ async function mtPayload(
     vessel: _.get(customer, "[0]CustName"),
     weight: sumNumericValues(shipmentDesc, "Weight"),
     weight_um: "LB",
-    order_mode: "T",
     operational_status: "CLIN",
     lock_miles: false,
     def_move_type: "A",
