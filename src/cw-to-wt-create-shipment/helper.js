@@ -79,7 +79,7 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
       BillToAcct: get(CONSTANTS, `billToAcc.${orgCode}`, ''),
     };
 
-    if (orgCode === 'ROYENFMKE') {
+    if (orgCode === 'ROYENFMKE' || orgCode === 'DUCATI') {
       // If the status code is not 'DEP', we can ignore the event.
       if (statusCode !== 'ATP') {
         console.info('Status Code: ', statusCode);
@@ -88,10 +88,14 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
         );
       }
 
+      if (orgCode === 'ROYENFMKE') {
+        headerData.ShipperName = 'ROYAL ENFIELD NA LTD-EULESS';
+      } else {
+        headerData.ShipperName = 'DUCATI';
+      }
       headerData.ShipperAddress1 = '1010 S INDUSTRIAL BLVD BLDG B';
       headerData.ShipperAddress2 = '';
       headerData.ShipperCity = 'EULESS';
-      headerData.ShipperName = 'ROYAL ENFIELD NA LTD-EULESS';
       headerData.ShipperCountry = 'US';
       headerData.ShipperEmail = '';
       headerData.ShipperPhone = '';
@@ -173,6 +177,7 @@ const CONSTANTS = {
     WATERBECP: '23131',
     CIRKLIPHX: '52664',
     ARXIUMORD: '8907',
+    DUCATI: '52380',
   },
 };
 
@@ -185,7 +190,7 @@ async function prepareShipmentListData(xmlObj) {
       {}
     );
 
-    if (orgCode === 'ROYENFMKE') {
+    if (orgCode === 'ROYENFMKE' || orgCode === 'DUCATI') {
       if (Array.isArray(orderLineArray)) {
         ShipmentLineList.NewShipmentDimLineV3 = [];
         await Promise.all(
