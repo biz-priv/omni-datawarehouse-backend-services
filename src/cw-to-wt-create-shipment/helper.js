@@ -60,7 +60,6 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
     }
 
     const headerData = {
-      DeclaredType: 'LL',
       ServiceLevel: 'EC',
       PayType: 3,
       ShipmentType: 'Shipment',
@@ -89,8 +88,11 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
       }
 
       if (orgCode === 'ROYENFMKE') {
+        headerData.DeclaredType = 'LL';
         headerData.ShipperName = 'ROYAL ENFIELD NA LTD-EULESS';
       } else {
+        headerData.DeclaredType = 'INSP';
+        headerData.DeclaredValue = 15000;
         headerData.ShipperName = 'DUCATI';
       }
       headerData.ShipperAddress1 = '1010 S INDUSTRIAL BLVD BLDG B';
@@ -191,6 +193,18 @@ async function prepareShipmentListData(xmlObj) {
     );
 
     if (orgCode === 'ROYENFMKE' || orgCode === 'DUCATI') {
+      // values for royal enfield.
+      let lengthValue = 89;
+      let widthValue = 48;
+      let heightValue = 31;
+      let pieceTypeValue = 'UNT';
+
+      if (orgCode === 'DUCATI') {
+        lengthValue = 90;
+        widthValue = 30;
+        heightValue = 50;
+        pieceTypeValue = 'CRT';
+      }
       if (Array.isArray(orderLineArray)) {
         ShipmentLineList.NewShipmentDimLineV3 = [];
         await Promise.all(
@@ -199,12 +213,12 @@ async function prepareShipmentListData(xmlObj) {
               WeightUOMV3: 'lb',
               Description: get(line, 'PartAttribute1', ''),
               DimUOMV3: 'in',
-              PieceType: 'UNT',
+              PieceType: pieceTypeValue,
               Pieces: Number(get(line, 'QuantityMet', 0)),
               Weigth: 600,
-              Length: 89,
-              Width: 48,
-              Height: 31,
+              Length: lengthValue,
+              Width: widthValue,
+              Height: heightValue,
             };
             ShipmentLineList.NewShipmentDimLineV3.push(data);
           })
@@ -216,12 +230,12 @@ async function prepareShipmentListData(xmlObj) {
               WeightUOMV3: 'lb',
               Description: get(orderLineArray, 'PartAttribute1', ''),
               DimUOMV3: 'in',
-              PieceType: 'UNT',
+              PieceType: pieceTypeValue,
               Pieces: Number(get(orderLineArray, 'QuantityMet', 0)),
               Weigth: 600,
-              Length: 89,
-              Width: 48,
-              Height: 31,
+              Length: lengthValue,
+              Width: widthValue,
+              Height: heightValue,
             },
           ],
         };
