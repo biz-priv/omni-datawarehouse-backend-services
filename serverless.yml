@@ -104,8 +104,8 @@ resources:
     204UpdateTableStreamDLQ: ${file(config/queues/204-update-table-stream.yml):204UpdateTableStreamDLQ}
     204UpdateTableStreamQueuePolicy: ${file(config/queues/204-update-table-stream.yml):204UpdateTableStreamQueuePolicy}
 
-    ShipperSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ShipperSNSTopicSubscription}
-    ConsigneeSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ConsigneeSNSTopicSubscription}
+    # ShipperSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ShipperSNSTopicSubscription}
+    # ConsigneeSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ConsigneeSNSTopicSubscription}
     ConfirmationCostSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ConfirmationCostSNSTopicSubscription}
     ConsolStopHeaderSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ConsolStopHeaderSNSTopicSubscription}
 
