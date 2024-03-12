@@ -48,7 +48,6 @@ function getChangedFields(newImage, oldImage) {
       changedFields[key] = newImage[key];
     }
   }
-  console.info('Changed fields:', changedFields);
   return changedFields;
 }
 
