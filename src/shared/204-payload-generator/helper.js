@@ -1502,6 +1502,7 @@ function stationCodeInfo(stationCode) {
 }
 
 async function getTimezoneFormGoogleApi({ address }) {
+  console.info('🚀 ~ file: helper.js:1505 ~ getTimezoneFormGoogleApi ~ address:', address);
   const { lat, lng } = await checkAddressByGoogleApi(address);
   const googleRes = await getTimezoneByGoogleApi(lat, lng);
   return googleRes;
@@ -1510,6 +1511,7 @@ async function getTimezoneFormGoogleApi({ address }) {
 async function getTimezone({ stopCity, state, country, address1 }) {
   const address = `${address1}, ${stopCity}, ${state}, ${country}`;
 
+  console.info('🚀 ~ file: helper.js:1513 ~ getTimezone ~ address:', address);
   const cityListForState = timezoneInfo[state];
   let timezone = null;
 
