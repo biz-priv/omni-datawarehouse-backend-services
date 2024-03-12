@@ -197,13 +197,13 @@ async function prepareShipmentListData(xmlObj) {
       let lengthValue = 89;
       let widthValue = 48;
       let heightValue = 31;
-      let PieceTypeValue = 'UNT';
+      let pieceTypeValue = 'UNT';
 
       if (orgCode === 'DUCATI') {
         lengthValue = 90;
         widthValue = 30;
         heightValue = 50;
-        PieceTypeValue = 'CRT';
+        pieceTypeValue = 'CRT';
       }
       if (Array.isArray(orderLineArray)) {
         ShipmentLineList.NewShipmentDimLineV3 = [];
@@ -213,7 +213,7 @@ async function prepareShipmentListData(xmlObj) {
               WeightUOMV3: 'lb',
               Description: get(line, 'PartAttribute1', ''),
               DimUOMV3: 'in',
-              PieceType: PieceTypeValue,
+              PieceType: pieceTypeValue,
               Pieces: Number(get(line, 'QuantityMet', 0)),
               Weigth: 600,
               Length: lengthValue,
@@ -230,7 +230,7 @@ async function prepareShipmentListData(xmlObj) {
               WeightUOMV3: 'lb',
               Description: get(orderLineArray, 'PartAttribute1', ''),
               DimUOMV3: 'in',
-              PieceType: PieceTypeValue,
+              PieceType: pieceTypeValue,
               Pieces: Number(get(orderLineArray, 'QuantityMet', 0)),
               Weigth: 600,
               Length: lengthValue,
