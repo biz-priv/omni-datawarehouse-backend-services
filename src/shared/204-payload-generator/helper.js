@@ -607,7 +607,7 @@ async function fetchCommonTableData({ shipmentAparData }) {
         const param = getParamsByTableName(_.get(shipmentAparData, 'FK_OrderNo'), table);
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
-        return _.get(response, 'Items', false);
+        return _.get(response, 'Items', []);
       })
     );
     return { confirmationCostData, shipperData, consigneeData };
@@ -626,7 +626,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
         const param = getParamsByTableName(_.get(shipmentAparData, 'FK_OrderNo'), table);
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
-        return _.get(response, 'Items', false);
+        return _.get(response, 'Items', []);
       })
     );
     if (shipmentHeaderData.length === 0) {
@@ -652,7 +652,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
         );
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
-        return _.get(response, 'Items', false);
+        return _.get(response, 'Items', []);
       })
     );
     console.info('🚀 ~ file: helper.js:491 ~ userData:', userData);
@@ -693,10 +693,10 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
         console.info('🚀 ~ file: helper.js:510 ~ response:', response);
-        return _.get(response, 'Items', false);
+        return _.get(response, 'Items', []);
       })
     );
-    if (shipmentHeaderData === 0 || trackingNotesData === 0) {
+    if (shipmentHeaderData.length === 0 || trackingNotesData.length === 0) {
       throw new Error('Missing data in customers or users');
     }
     const tables2 = ['omni-wt-rt-customers'];
@@ -711,7 +711,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
         console.info('🚀 ~ file: helper.js:529 ~ response:', response);
-        return _.get(response, 'Items', false);
+        return _.get(response, 'Items', []);
       })
     );
     let userData = await Promise.all(
