@@ -71,8 +71,20 @@ async function updateChangedFields(orderNo, changedFields) {
   } else if (logQueryResult.length > 0 && logQueryResult[0].Status === STATUSES.SENT) {
     const response = logQueryResult[0].Response;
     const updatedStops = await updateStopsFromChangedFields(response.stops, changedFields);
+    console.info('🚀 ~ file: index.js:74 ~ updateChangedFields ~ updatedStops:', updatedStops);
     const updatedResponse = { ...response, stops: updatedStops };
+    console.info(
+      '🚀 ~ file: index.js:75 ~ updateChangedFields ~ updatedResponse:',
+      updatedResponse
+    );
     await updateOrders({ payload: updatedResponse });
+    // Compare oldPayload with payload constructed now
+    if (isEqual(response, updatedResponse)) {
+      console.info('Payload is the same as the old payload. Skipping further processing.');
+      throw new Error(`Payload is the same as the old payload. Skipping further processing.
+              \n Payload: ${JSON.stringify(updatedResponse)}
+              `);
+    }
     // UPDATE updatecount in orderstatus table - new columns - UpdatePayload, UpdateCount
     await setUpdateCount({
       orderNo,
