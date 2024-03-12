@@ -28,7 +28,5 @@
           Condition:
             ArnEquals:
               aws:SourceArn:
-                - 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-shipper-dev'
-                - 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-consignee-dev'
                 - 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-confirmation-cost-dev'
                 - 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-consol-stop-headers-dev'

@@ -1,17 +1,3 @@
-ShipperSNSTopicSubscription:
-  Type: 'AWS::SNS::Subscription'
-  Properties:
-    Protocol: 'sqs'
-    TopicArn: 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-shipper-dev'
-    Endpoint: !GetAtt 204UpdateTableStreamQueue.Arn
-
-ConsigneeSNSTopicSubscription:
-  Type: 'AWS::SNS::Subscription'
-  Properties:
-    Protocol: 'sqs'
-    TopicArn: 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-consignee-dev'
-    Endpoint: !GetAtt 204UpdateTableStreamQueue.Arn
-
 ConfirmationCostSNSTopicSubscription:
   Type: 'AWS::SNS::Subscription'
   Properties:
