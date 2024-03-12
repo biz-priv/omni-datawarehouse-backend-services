@@ -91,7 +91,7 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
         headerData.DeclaredType = 'LL';
         headerData.ShipperName = 'ROYAL ENFIELD NA LTD-EULESS';
       } else {
-        headerData.DeclaredType = 'LL';
+        headerData.DeclaredType = 'INSP';
         headerData.DeclaredValue = 15000;
         headerData.ShipperName = 'DUCATI';
       }
