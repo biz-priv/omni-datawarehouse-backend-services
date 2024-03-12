@@ -124,6 +124,7 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
           `Status Code is invalid, Status Code we recieved: ${statusCode}\nPlease correct the status code and send the request again.`
         );
       }
+      headerData.DeclaredType = 'LL';
       headerData.ShipperAddress1 = get(shipperData, '[0].Address1', '');
       headerData.ShipperAddress2 = get(shipperData, '[0].Address2', '');
       headerData.ShipperCity = get(shipperData, '[0].City', '');
