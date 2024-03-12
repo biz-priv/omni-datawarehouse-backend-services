@@ -88,8 +88,20 @@ module.exports.handler = async (event) => {
           console.info('🚀 ~ file: index.js:54 ~ event.Records.map ~ updatedStops:', updatedStops);
           // In the response we need to update the stops array and need to send the entire response with the updates stops array
           const updatedResponse = { ...response, stops: updatedStops };
+          if (isEqual(response, updatedResponse)) {
+            console.info('Payload is the same as the old payload. Skipping further processing.');
+            throw new Error(`Payload is the same as the old payload. Skipping further processing.
+              \n Payload: ${JSON.stringify(updatedResponse)}
+              `);
+          }
           // Send update
           await updateOrders({ payload: updatedResponse });
+          // UPDATE updatecount in orderstatus table - new columns - UpdatePayload, UpdateCount
+          await setUpdateCount({
+            orderNo,
+            UpdateCount: get(logQueryResult, '[0].UpdateCount', 0),
+            updatedResponse,
+          });
         }
       } else {
         console.info('Update not found in log table.');
@@ -117,21 +129,42 @@ const queryOrderStatusTable = async (orderNo) => {
 };
 
 async function updateOrderStatusTable({ orderNo }) {
+  const updateParams = {
+    TableName: STATUS_TABLE,
+    Key: { FK_OrderNo: orderNo },
+    UpdateExpression: 'set #Status = :status, ResetCount = :resetCount',
+    ExpressionAttributeNames: { '#Status': 'Status' },
+    ExpressionAttributeValues: {
+      ':status': STATUSES.PENDING,
+      ':resetCount': 0,
+    },
+  };
+  console.info('Update status table parameters:', updateParams);
   try {
-    const updateParam = {
-      TableName: STATUS_TABLE,
-      Key: { FK_OrderNo: orderNo },
-      UpdateExpression: 'set #Status = :status',
-      ExpressionAttributeNames: { '#Status': 'Status' },
-      ExpressionAttributeValues: {
-        ':status': STATUSES.READY,
-      },
-    };
-    console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
-    return await dynamoDb.update(updateParam).promise();
-  } catch (err) {
-    console.info('🙂 -> file: index.js:224 -> err:', err);
-    throw err;
+    await dynamoDb.update(updateParams).promise();
+  } catch (error) {
+    console.error('Error updating status table:', error);
+    throw error;
+  }
+}
+
+async function setUpdateCount({ orderNo, UpdateCount, updatedResponse }) {
+  const updateParams = {
+    TableName: STATUS_TABLE,
+    Key: { FK_OrderNo: orderNo },
+    UpdateExpression: 'set UpdateCount = :updatecount, UpdatePayload = :updatepayload',
+    ExpressionAttributeValues: {
+      ':updatepayload': updatedResponse,
+      ':updatecount': UpdateCount + 1,
+    },
+  };
+  console.info('🚀 ~ file: index.js:145 ~ setUpdateCount ~ updateParams:', updateParams);
+  console.info('Update status table parameters:', updateParams);
+  try {
+    await dynamoDb.update(updateParams).promise();
+  } catch (error) {
+    console.error('Error updating status table:', error);
+    throw error;
   }
 }
 
