@@ -96,15 +96,16 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
           'UniversalShipment.Shipment.Order.OrderLineCollection.OrderLine',
           {}
         );
-        let orderLineArrayLength = 0;
-
+        let PeiceCount = 0;
         if (Array.isArray(orderLineArray)) {
-          orderLineArrayLength = orderLineArray.length;
+          for (const i of orderLineArray) {
+            PeiceCount += Number(get(i, 'QuantityMet', 0));
+          }
         } else {
-          orderLineArrayLength = 1;
+          PeiceCount = Number(get(orderLineArray, 'QuantityMet', 0));
         }
         headerData.DeclaredType = 'INSP';
-        headerData.DeclaredValue = 15000 * orderLineArrayLength;
+        headerData.DeclaredValue = 15000 * PeiceCount;
         headerData.ShipperName = 'DUCATI';
       }
       headerData.ShipperAddress1 = '1010 S INDUSTRIAL BLVD BLDG B';
