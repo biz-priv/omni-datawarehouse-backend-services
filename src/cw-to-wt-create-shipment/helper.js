@@ -91,8 +91,20 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
         headerData.DeclaredType = 'LL';
         headerData.ShipperName = 'ROYAL ENFIELD NA LTD-EULESS';
       } else {
+        const orderLineArray = get(
+          xmlObj,
+          'UniversalShipment.Shipment.Order.OrderLineCollection.OrderLine',
+          {}
+        );
+        let orderLineArrayLength = 0;
+
+        if (Array.isArray(orderLineArray)) {
+          orderLineArrayLength = orderLineArray.length;
+        } else {
+          orderLineArrayLength = 1;
+        }
         headerData.DeclaredType = 'INSP';
-        headerData.DeclaredValue = 15000;
+        headerData.DeclaredValue = 15000 * orderLineArrayLength;
         headerData.ShipperName = 'DUCATI';
       }
       headerData.ShipperAddress1 = '1010 S INDUSTRIAL BLVD BLDG B';

@@ -4,21 +4,21 @@
       "eventVersion": "2.1",
       "eventSource": "aws:s3",
       "awsRegion": "us-east-1",
-      "eventTime": "2024-02-23T13:47:27.436Z",
+      "eventTime": "2024-03-12T17:08:55.603Z",
       "eventName": "ObjectCreated:Put",
       "userIdentity": {
-        "principalId": "AWS:AROAU2XMJTS2T67LQAZTF:madhava.matta@bizcloudexperts.com"
+        "principalId": "AWS:AROATPFB4BIRNSIMJFJEI:eadaptor-mft-eAdaptor-master-dev-EAdaptorRouter"
       },
       "requestParameters": {
-        "sourceIPAddress": "122.178.62.133"
+        "sourceIPAddress": "44.197.102.56"
       },
       "responseElements": {
-        "x-amz-request-id": "543AF4QPG42A8WH2",
-        "x-amz-id-2": "d/6hfjiqcp6WZZZEGb2J48SKlJxamQU/mCgzi80NZlEKFLyXONF4+SzFwVnjfCHrETovqn7FjAafyl9ciseREspsy8d5qulw"
+        "x-amz-request-id": "E2BNZX6G5M3KC3FJ",
+        "x-amz-id-2": "IDf/CN9K0OGsMDnRIMXUq0h19BlaWur+woekfPh+fY+H371FvprPZW0Tk38oucZ0dVm744PiYaj6oIkSB/4jvn9MtAcaE2qQ3tgewFGpQOo="
       },
       "s3": {
         "s3SchemaVersion": "1.0",
-        "configurationId": "exS3-v2--efd598a9121b43c44faed0107206b8a7",
+        "configurationId": "exS3-v2--80aba13a482b048458c4057975d239b4",
         "bucket": {
           "name": "dev-cargowise-to-datawarehouse",
           "ownerIdentity": {
@@ -27,10 +27,10 @@
           "arn": "arn:aws:s3:::dev-cargowise-to-datawarehouse"
         },
         "object": {
-          "key": "CargoWiseOutbound/RoyalEnfield/TRXELPTS2_WOU_RLS_W00229650_ROYENFMKET_ROYENFMKET_202402131247442370.xml",
-          "size": 18564,
-          "eTag": "061d321c8887a1aab1036dad7e401256",
-          "sequencer": "0065D8A1EF5644AAA5"
+          "key": "CargoWiseOutbound/Ducati/TRXELPTS2_WOU_RLS_W00229732_DUCATIT_DUCATIT_202403121208488530.xml",
+          "size": 21533,
+          "eTag": "ac11658494e155028c64bfd577132ef0",
+          "sequencer": "0065F08C27836BA119"
         }
       }
     }
