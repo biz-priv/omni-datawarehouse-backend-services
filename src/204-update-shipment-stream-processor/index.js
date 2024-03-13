@@ -10,6 +10,7 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const { STATUS_TABLE, CONFIRMATION_COST, CONFIRMATION_COST_INDEX_KEY_NAME } = process.env;
 
 module.exports.handler = async (event) => {
+  console.info('event:', event);
   await Promise.all(
     event.Records.map(async (record) => {
       const body = JSON.parse(get(record, 'body', ''));
@@ -69,40 +70,38 @@ module.exports.handler = async (event) => {
           });
         }
       }
+      console.info('🚀 ~ file: index.js:66 ~ event.Records.map ~ changedFields:', changedFields);
 
       // Query log table
       const logQueryResult = await queryOrderStatusTable(orderNo);
-      if (logQueryResult.length > 0) {
-        if (get(logQueryResult, '[0]Status') === STATUSES.FAILED) {
-          // retrigger the process by updating the status to 'READY'
-          await updateOrderStatusTable({ orderNo });
-        } else {
-          const response = get(logQueryResult, '[0]Response');
-          console.info('🚀 ~ file: index.js:42 ~ event.Records.map ~ Response:', response);
-          const stopsFromResponse = get(response, 'stops', []);
-          console.info(
-            '🚀 ~ file: index.js:45 ~ event.Records.map ~ stopsFromResponse:',
-            stopsFromResponse
-          );
-          const updatedStops = await updateStopsFromChangedFields(stopsFromResponse, changedFields);
-          console.info('🚀 ~ file: index.js:54 ~ event.Records.map ~ updatedStops:', updatedStops);
-          // In the response we need to update the stops array and need to send the entire response with the updates stops array
-          const updatedResponse = { ...response, stops: updatedStops };
-          if (isEqual(response, updatedResponse)) {
-            console.info('Payload is the same as the old payload. Skipping further processing.');
-            throw new Error(`Payload is the same as the old payload. Skipping further processing.
-              \n Payload: ${JSON.stringify(updatedResponse)}
-              `);
-          }
-          // Send update
-          await updateOrders({ payload: updatedResponse });
-          // UPDATE updatecount in orderstatus table - new columns - UpdatePayload, UpdateCount
-          await setUpdateCount({
-            orderNo,
-            UpdateCount: get(logQueryResult, '[0].UpdateCount', 0),
-            updatedResponse,
-          });
+      if (logQueryResult.length > 0 && logQueryResult[0].Status === STATUSES.FAILED) {
+        // retrigger the process by updating the status to 'PENDING'
+        await updateOrderStatusTable({ orderNo });
+      } else if (logQueryResult.length > 0 && logQueryResult[0].Status === STATUSES.SENT) {
+        const response = get(logQueryResult, '[0]Response');
+        console.info('🚀 ~ file: index.js:42 ~ event.Records.map ~ Response:', response);
+        const stopsFromResponse = get(response, 'stops', []);
+        console.info(
+          '🚀 ~ file: index.js:45 ~ event.Records.map ~ stopsFromResponse:',
+          stopsFromResponse
+        );
+        const updatedStops = await updateStopsFromChangedFields(stopsFromResponse, changedFields);
+        console.info('🚀 ~ file: index.js:54 ~ event.Records.map ~ updatedStops:', updatedStops);
+        // In the response we need to update the stops array and need to send the entire response with the updates stops array
+        const updatedResponse = { ...response, stops: updatedStops };
+        if (isEqual(response, updatedResponse)) {
+          console.info(`Payload is the same as the old payload. Skipping further processing.
+                        \n Payload: ${JSON.stringify(updatedResponse)}`);
+          return; // Skip further processing if the payload is the same as the old payload
         }
+        // Send update
+        await updateOrders({ payload: updatedResponse });
+        // UPDATE updatecount in orderstatus table - new columns - UpdatePayload, UpdateCount
+        await setUpdateCount({
+          orderNo,
+          UpdateCount: get(logQueryResult, '[0].UpdateCount', 0),
+          updatedResponse,
+        });
       } else {
         console.info('Update not found in log table.');
       }
@@ -270,15 +269,15 @@ async function getShipperAndConsigneeTimezones(orderNo) {
   const stateData = await dynamoDb.query(Params).promise();
 
   // Extract required data from stateData for shipper
-  const shipperCity = get(stateData, 'Items[0].ShipCity', '');
-  const shipperState = get(stateData, 'Items[0].FK_ShipState', '');
-  const shipperCountry = get(stateData, 'Items[0].FK_ShipCountry', '');
-  const shipperAddress1 = get(stateData, 'Items[0].ShipAddress1', '');
+  const shipperCity = get(stateData, 'Items[0].ShipCity');
+  const shipperState = get(stateData, 'Items[0].FK_ShipState');
+  const shipperCountry = get(stateData, 'Items[0].FK_ShipCountry');
+  const shipperAddress1 = get(stateData, 'Items[0].ShipAddress1');
   // Extract required data from stateData for consignee
-  const consigneeCity = get(stateData, 'Items[0].ConCity', '');
-  const consigneeState = get(stateData, 'Items[0].FK_ConState', '');
-  const consigneeCountry = get(stateData, 'Items[0].FK_ConCountry', '');
-  const consigneeAddress1 = get(stateData, 'Items[0].ConAddress1', '');
+  const consigneeCity = get(stateData, 'Items[0].ConCity');
+  const consigneeState = get(stateData, 'Items[0].FK_ConState');
+  const consigneeCountry = get(stateData, 'Items[0].FK_ConCountry');
+  const consigneeAddress1 = get(stateData, 'Items[0].ConAddress1');
 
   // Call getTimezone function with extracted data for shipper
   const shipperTimeZone = await getTimezone({
