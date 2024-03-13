@@ -28,8 +28,8 @@ const {
   INSTRUCTIONS_INDEX_KEY_NAME,
   INSTRUCTIONS_TABLE,
   REFERENCES_TABLE,
-  REFERENCES_INDEX_KEY_NAME
-
+  REFERENCES_INDEX_KEY_NAME,
+  TRACKING_NOTES_ORDERNO_INDEX_KEY,
 } = process.env;
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
@@ -304,7 +304,10 @@ async function generateStopforConsole(
     ],
     referenceNumbers:
       type === "shipper"
-        ? [...populateHousebillNumbers(housebillData, descData), ...generateReferenceNumbers({ references }),]
+        ? [
+            ...populateHousebillNumbers(housebillData, descData),
+            ...generateReferenceNumbers({ references }),
+          ]
         : [],
   };
   stopData.stopNotes.push({
@@ -671,21 +674,22 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
       "omni-wt-rt-shipment-desc",
     ];
 
-    const [shipmentHeaderData, referencesData, shipmentDescData] = await Promise.all(
-      tables.map(async (table) => {
-        const param = getParamsByTableName(
-          _.get(shipmentAparData, "FK_OrderNo"),
-          table
-        );
-        console.info(
-          "🙂 -> file: index.js:35 -> tables.map -> param:",
-          table,
-          param
-        );
-        const response = await queryDynamoDB(param);
-        return _.get(response, "Items", []);
-      })
-    );
+    const [shipmentHeaderData, referencesData, shipmentDescData] =
+      await Promise.all(
+        tables.map(async (table) => {
+          const param = getParamsByTableName(
+            _.get(shipmentAparData, "FK_OrderNo"),
+            table
+          );
+          console.info(
+            "🙂 -> file: index.js:35 -> tables.map -> param:",
+            table,
+            param
+          );
+          const response = await queryDynamoDB(param);
+          return _.get(response, "Items", []);
+        })
+      );
     if (shipmentHeaderData.length === 0) {
       throw new Error("Missing data in shipment header");
     }
@@ -703,15 +707,14 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
       "🙂 -> file: index.js:61 -> customersParams:",
       customersParams
     );
-    const tables2 = ["omni-wt-rt-customers", "omni-wt-rt-users"];
-    const [customersData, userData] = await Promise.all(
+    const tables2 = ["omni-wt-rt-customers"];
+    const [customersData] = await Promise.all(
       tables2.map(async (table) => {
         const param = getParamsByTableName(
           _.get(shipmentAparData, "FK_OrderNo"),
           table,
           "",
-          _.get(shipmentHeaderData, "[0].BillNo", ""),
-          _.get(shipmentHeaderData, "[0].AcctManager")
+          _.get(shipmentHeaderData, "[0].BillNo", "")
         );
         console.info(
           "🙂 -> file: index.js:35 -> tables.map -> param:",
@@ -722,6 +725,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
         return _.get(response, "Items", []);
       })
     );
+    const userData = await getUserData({ shipmentHeaderData });
     console.info("🚀 ~ file: helper.js:491 ~ userData:", userData);
     return {
       shipmentHeaderData,
@@ -737,7 +741,89 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
       referencesData: [],
       shipmentDescData: [],
       customersData: [],
+      userData: [],
     };
+  }
+}
+
+async function getUserData({ shipmentHeaderData }) {
+  try {
+    console.info(
+      "🚀 ~ file: test.js:720 ~ getUserId ~ shipmentHeaderData:",
+      shipmentHeaderData
+    );
+
+    let userId = _.get(shipmentHeaderData, "[0].AcctManager", "");
+    console.info("🚀 ~ file: test.js:723 ~ getUserId ~ userId:", userId);
+    if (userId === "") {
+      userId = _.get(shipmentHeaderData, "[0].UserId", "");
+      console.info("🚀 ~ file: test.js:727 ~ getUserId ~ userId:", userId);
+      if (userId) {
+        const result1 = await queryUserTable({ userId });
+        if (result1.length === 0) {
+          userId = await queryTrackingNotes({
+            orderNo: _.get(shipmentHeaderData, "[0].PK_OrderNo"),
+          });
+        } else {
+          return result1;
+        }
+      }
+    }
+    return await queryUserTable({ userId });
+  } catch (error) {
+    console.error("🚀 ~ file: helper.js:770 ~ getUserData ~ error:", error);
+    throw error;
+  }
+}
+
+async function queryTrackingNotes({ orderNo }) {
+  try {
+    const params = {
+      TableName: TRACKING_NOTES_TABLE,
+      IndexName: TRACKING_NOTES_ORDERNO_INDEX_KEY,
+      KeyConditionExpression: "FK_OrderNo = :orderno",
+      ExpressionAttributeValues: {
+        ":orderno": String(orderNo),
+      },
+      Limit: 1,
+    };
+    console.info(
+      "🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:",
+      params
+    );
+    const response = await dynamoDB.query(params).promise();
+    console.info(
+      "🚀 ~ file: test.js:757 ~ queryTrackingNotes ~ response:",
+      response
+    );
+    return _.get(response, "Items[0].FK_UserId", []);
+  } catch (error) {
+    console.error(
+      "🚀 ~ file: helper.js:792 ~ queryTrackingNotes ~ error:",
+      error
+    );
+    throw error;
+  }
+}
+
+async function queryUserTable({ userId }) {
+  try {
+    const params = {
+      TableName: USERS_TABLE,
+      KeyConditionExpression: "PK_UserId = :PK_UserId",
+      ExpressionAttributeValues: {
+        ":PK_UserId": userId,
+      },
+    };
+    console.info(
+      "🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:",
+      params
+    );
+    const response = await dynamoDB.query(params).promise();
+    return _.get(response, "Items", []);
+  } catch (error) {
+    console.error("🙂 -> file: helper.js:759 -> error:", error);
+    throw error;
   }
 }
 
@@ -1601,7 +1687,6 @@ function getNormalizedUtcOffset(formattedDate, timezone) {
   }
 }
 
-
 function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
   const equipmentCodeMapping = {
     "22 BOX": "SBT",
@@ -1789,5 +1874,5 @@ module.exports = {
   descDataForConsole,
   getTimezone,
   stationCodeInfo,
-  getReferencesData
+  getReferencesData,
 };
