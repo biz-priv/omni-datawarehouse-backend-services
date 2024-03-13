@@ -18,9 +18,7 @@ const {
 const apiKey = ADDRESS_MAPPING_G_API_KEY;
 
 async function getLocationId(name, address1, address2, state) {
-  const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${
-    address2 ?? ''
-  }&state=${state}`;
+  const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${address2 ?? ''}&state=${state}`;
 
   const headers = {
     Accept: 'application/json',
