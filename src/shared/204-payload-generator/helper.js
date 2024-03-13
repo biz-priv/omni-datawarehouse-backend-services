@@ -28,8 +28,8 @@ const {
   INSTRUCTIONS_INDEX_KEY_NAME,
   INSTRUCTIONS_TABLE,
   REFERENCES_TABLE,
-  REFERENCES_INDEX_KEY_NAME
-
+  REFERENCES_INDEX_KEY_NAME,
+  TRACKING_NOTES_ORDERNO_INDEX_KEY,
 } = process.env;
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
@@ -711,7 +711,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
           table,
           "",
           _.get(shipmentHeaderData, "[0].BillNo", ""),
-          _.get(shipmentHeaderData, "[0].AcctManager")
+          await getUserId({ shipmentHeaderData })
         );
         console.info(
           "🙂 -> file: index.js:35 -> tables.map -> param:",
@@ -739,6 +739,67 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
       customersData: [],
     };
   }
+}
+
+async function getUserId({ shipmentHeaderData }) {
+  console.info(
+    "🚀 ~ file: test.js:720 ~ getUserId ~ shipmentHeaderData:",
+    shipmentHeaderData
+  );
+
+  let userId = _.get(shipmentHeaderData, "[0].AcctManager", "");
+  console.info("🚀 ~ file: test.js:723 ~ getUserId ~ userId:", userId);
+  if (userId === "") {
+    userId = _.get(shipmentHeaderData, "[0].UserId", "");
+    console.info("🚀 ~ file: test.js:727 ~ getUserId ~ userId:", userId);
+    if (userId) {
+      const result1 = await queryUserTable({ userId });
+      if (result1.length === 0) {
+        userId = await queryTrackingNotes({
+          orderNo: _.get(shipmentHeaderData, "[0].PK_OrderNo"),
+        });
+      }
+    }
+  }
+  return userId;
+}
+
+async function queryTrackingNotes({ orderNo }) {
+  const params = {
+    TableName: TRACKING_NOTES_TABLE,
+    IndexName: TRACKING_NOTES_ORDERNO_INDEX_KEY,
+    KeyConditionExpression: "FK_OrderNo = :orderno",
+    ExpressionAttributeValues: {
+      ":orderno": String(orderNo),
+    },
+    Limit: 1,
+  };
+  console.info(
+    "🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:",
+    params
+  );
+  const response = await dynamoDB.query(params).promise();
+  console.info(
+    "🚀 ~ file: test.js:757 ~ queryTrackingNotes ~ response:",
+    response
+  );
+  return _.get(response, "Items[0].FK_UserId", []);
+}
+
+async function queryUserTable({ userId }) {
+  const params = {
+    TableName: USERS_TABLE,
+    KeyConditionExpression: "PK_UserId = :PK_UserId",
+    ExpressionAttributeValues: {
+      ":PK_UserId": userId,
+    },
+  };
+  console.info(
+    "🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:",
+    params
+  );
+  const response = await dynamoDB.query(params).promise();
+  return _.get(response, "Items", []);
 }
 
 async function fetchConsoleTableData({ shipmentAparData }) {
@@ -1601,7 +1662,6 @@ function getNormalizedUtcOffset(formattedDate, timezone) {
   }
 }
 
-
 function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
   const equipmentCodeMapping = {
     "22 BOX": "SBT",
@@ -1789,5 +1849,5 @@ module.exports = {
   descDataForConsole,
   getTimezone,
   stationCodeInfo,
-  getReferencesData
+  getReferencesData,
 };

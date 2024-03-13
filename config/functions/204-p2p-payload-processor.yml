@@ -32,6 +32,7 @@ function:
     USERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/users/ddb.tableName~true}
     TRACKING_NOTES_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.tableName~true}
     TRACKING_NOTES_CONSOLENO_INDEX_KEY: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.ConsolNoIndex}
+    TRACKING_NOTES_ORDERNO_INDEX_KEY: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.OrderNoIndex}
     AUTH: ${ssm:/omni-204-create-shipment/${self:provider.stage}/apis.auth}
     GET_LOC_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/get-location.url}
     CREATE_LOC_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/create-location.url}
