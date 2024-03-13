@@ -510,10 +510,7 @@ async function fetchLocationId({ finalShipperData, finalConsigneeData, orderId, 
     finalShipperData.ShipName,
     finalShipperData.ShipAddress1,
     finalShipperData.ShipAddress2,
-    finalShipperData.ShipCity,
-    finalShipperData.FK_ShipState,
-    finalShipperData.ShipZip,
-    finalShipperData.FK_ShipCountry
+    finalShipperData.FK_ShipState
   );
 
   // Get location ID for consignee
@@ -521,10 +518,7 @@ async function fetchLocationId({ finalShipperData, finalConsigneeData, orderId, 
     finalConsigneeData.ConName,
     finalConsigneeData.ConAddress1,
     finalConsigneeData.ConAddress2,
-    finalConsigneeData.ConCity,
-    finalConsigneeData.FK_ConState,
-    finalConsigneeData.ConZip,
-    finalConsigneeData.FK_ConCountry
+    finalConsigneeData.FK_ConState
   );
 
   // Use the obtained location IDs to create locations if needed
@@ -607,7 +601,7 @@ async function fetchCommonTableData({ shipmentAparData }) {
         const param = getParamsByTableName(_.get(shipmentAparData, 'FK_OrderNo'), table);
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
-        return _.get(response, 'Items', false);
+        return _.get(response, 'Items', []);
       })
     );
     return { confirmationCostData, shipperData, consigneeData };
@@ -626,7 +620,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
         const param = getParamsByTableName(_.get(shipmentAparData, 'FK_OrderNo'), table);
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
-        return _.get(response, 'Items', false);
+        return _.get(response, 'Items', []);
       })
     );
     if (shipmentHeaderData.length === 0) {
@@ -652,7 +646,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
         );
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
-        return _.get(response, 'Items', false);
+        return _.get(response, 'Items', []);
       })
     );
     console.info('🚀 ~ file: helper.js:491 ~ userData:', userData);
@@ -693,7 +687,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
         console.info('🚀 ~ file: helper.js:510 ~ response:', response);
-        return _.get(response, 'Items', false);
+        return _.get(response, 'Items', []);
       })
     );
     if (shipmentHeaderData === 0 || trackingNotesData === 0) {
@@ -711,7 +705,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
         console.info('🚀 ~ file: helper.js:529 ~ response:', response);
-        return _.get(response, 'Items', false);
+        return _.get(response, 'Items', []);
       })
     );
     let userData = await Promise.all(
@@ -1319,10 +1313,7 @@ async function fetchLocationIds(stopsData, orderId, houseBill) {
       stopData.ConsolStopName,
       stopData.ConsolStopAddress1,
       stopData.ConsolStopAddress2,
-      stopData.ConsolStopCity,
-      stopData.FK_ConsolStopState,
-      stopData.ConsolStopZip,
-      stopData.FK_ConsolStopCountry
+      stopData.FK_ConsolStopState
     );
 
     if (!locationId) {

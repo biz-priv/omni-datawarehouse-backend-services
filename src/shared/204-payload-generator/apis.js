@@ -17,13 +17,10 @@ const {
 
 const apiKey = ADDRESS_MAPPING_G_API_KEY;
 
-async function getLocationId(name, address1, address2, cityName, state, zipCode, country) {
-  if (country.toLowerCase() === 'us' && zipCode.length > 5) {
-    zipCode = zipCode.slice(0, 5);
-  }
+async function getLocationId(name, address1, address2, state) {
   const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${
     address2 ?? ''
-  }&city_name=${cityName}&state=${state}&zip_code=${zipCode}`;
+  }&state=${state}`;
 
   const headers = {
     Accept: 'application/json',
