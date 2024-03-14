@@ -23,8 +23,21 @@ async function getLocationId(
   address2,
   state,
 ) {
+  let address1Words = address1.split(" ");
+
+  // Check if address1 has more than two words
+  if (address1Words.length > 2) {
+    // Append an asterisk to the end of the second word
+    address1Words[1] += "*";
+    // Remove the third word
+    address1Words.splice(2, 1);
+  }
+
+  // Join the modified words back into address1
+  address1 = address1Words.join(" ");
   const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${ address2 ?? ""}&state=${state}`;
 
+  console.info('🚀 ~ file: apis.js:40 ~ apiUrl:', apiUrl)
   const headers = {
     Accept: "application/json",
     Authorization: AUTH,
