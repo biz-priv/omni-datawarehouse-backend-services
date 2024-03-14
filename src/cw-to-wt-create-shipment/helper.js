@@ -60,7 +60,6 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
     }
 
     const headerData = {
-      DeclaredType: 'LL',
       ServiceLevel: 'EC',
       PayType: 3,
       ShipmentType: 'Shipment',
@@ -79,7 +78,7 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
       BillToAcct: get(CONSTANTS, `billToAcc.${orgCode}`, ''),
     };
 
-    if (orgCode === 'ROYENFMKE') {
+    if (orgCode === 'ROYENFMKE' || orgCode === 'DUCATI') {
       // If the status code is not 'DEP', we can ignore the event.
       if (statusCode !== 'ATP') {
         console.info('Status Code: ', statusCode);
@@ -88,10 +87,31 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
         );
       }
 
+      if (orgCode === 'ROYENFMKE') {
+        headerData.DeclaredType = 'LL';
+        headerData.ShipperName = 'ROYAL ENFIELD NA LTD-EULESS';
+      } 
+      if(orgCode === 'DUCATI') {
+        const orderLineArray = get(
+          xmlObj,
+          'UniversalShipment.Shipment.Order.OrderLineCollection.OrderLine',
+          {}
+        );
+        let PeiceCount = 0;
+        if (Array.isArray(orderLineArray)) {
+          for (const i of orderLineArray) {
+            PeiceCount += Number(get(i, 'QuantityMet', 0));
+          }
+        } else {
+          PeiceCount = Number(get(orderLineArray, 'QuantityMet', 0));
+        }
+        headerData.DeclaredType = 'INSP';
+        headerData.DeclaredValue = 15000 * PeiceCount;
+        headerData.ShipperName = 'DUCATI';
+      }
       headerData.ShipperAddress1 = '1010 S INDUSTRIAL BLVD BLDG B';
       headerData.ShipperAddress2 = '';
       headerData.ShipperCity = 'EULESS';
-      headerData.ShipperName = 'ROYAL ENFIELD NA LTD-EULESS';
       headerData.ShipperCountry = 'US';
       headerData.ShipperEmail = '';
       headerData.ShipperPhone = '';
@@ -118,6 +138,7 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
           `Status Code is invalid, Status Code we recieved: ${statusCode}\nPlease correct the status code and send the request again.`
         );
       }
+      headerData.DeclaredType = 'LL';
       headerData.ShipperAddress1 = get(shipperData, '[0].Address1', '');
       headerData.ShipperAddress2 = get(shipperData, '[0].Address2', '');
       headerData.ShipperCity = get(shipperData, '[0].City', '');
@@ -173,6 +194,7 @@ const CONSTANTS = {
     WATERBECP: '23131',
     CIRKLIPHX: '52664',
     ARXIUMORD: '8907',
+    DUCATI: '52380',
   },
 };
 
@@ -185,19 +207,31 @@ async function prepareShipmentListData(xmlObj) {
       {}
     );
 
-    if (orgCode === 'ROYENFMKE') {
+    if (orgCode === 'ROYENFMKE' || orgCode === 'DUCATI') {
+      // values for royal enfield.
+      let lengthValue = 89;
+      let widthValue = 48;
+      let heightValue = 31;
+      let pieceTypeValue = 'UNT';
+
+      if (orgCode === 'DUCATI') {
+        lengthValue = 90;
+        widthValue = 30;
+        heightValue = 50;
+        pieceTypeValue = 'CRT';
+      }
       if (Array.isArray(orderLineArray)) {
         ShipmentLineList.NewShipmentDimLineV3 = orderLineArray.map((line) => {
           return {
             WeightUOMV3: 'lb',
             Description: get(line, 'PartAttribute1', ''),
             DimUOMV3: 'in',
-            PieceType: 'UNT',
+            PieceType: pieceTypeValue,
             Pieces: Number(get(line, 'QuantityMet', 0)),
             Weigth: 600,
-            Length: 89,
-            Width: 48,
-            Height: 31,
+            Length: lengthValue,
+            Width: widthValue,
+            Height: heightValue,
           };
         });
       } else {
@@ -207,12 +241,12 @@ async function prepareShipmentListData(xmlObj) {
               WeightUOMV3: 'lb',
               Description: get(orderLineArray, 'PartAttribute1', ''),
               DimUOMV3: 'in',
-              PieceType: 'UNT',
+              PieceType: pieceTypeValue,
               Pieces: Number(get(orderLineArray, 'QuantityMet', 0)),
               Weigth: 600,
-              Length: 89,
-              Width: 48,
-              Height: 31,
+              Length: lengthValue,
+              Width: widthValue,
+              Height: heightValue,
             },
           ],
         };
