@@ -25,3 +25,4 @@ function:
     ADDRESS_MAPPING_G_API_KEY: ${ssm:/omni-ivia/${self:provider.stage}/google/api.Key~true}
     AUTH: ${ssm:/omni-204-create-shipment/${self:provider.stage}/apis.auth}
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
+    GET_ORDERS_API_ENDPOINT: ${ssm:/omni-204-create-shipment/${self:provider.stage}/get-orders.url}
