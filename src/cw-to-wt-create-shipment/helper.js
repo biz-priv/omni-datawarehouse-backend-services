@@ -220,23 +220,19 @@ async function prepareShipmentListData(xmlObj) {
         pieceTypeValue = 'CRT';
       }
       if (Array.isArray(orderLineArray)) {
-        ShipmentLineList.NewShipmentDimLineV3 = [];
-        await Promise.all(
-          orderLineArray.map(async (line) => {
-            const data = {
-              WeightUOMV3: 'lb',
-              Description: get(line, 'PartAttribute1', ''),
-              DimUOMV3: 'in',
-              PieceType: pieceTypeValue,
-              Pieces: Number(get(line, 'QuantityMet', 0)),
-              Weigth: 600,
-              Length: lengthValue,
-              Width: widthValue,
-              Height: heightValue,
-            };
-            ShipmentLineList.NewShipmentDimLineV3.push(data);
-          })
-        );
+        ShipmentLineList.NewShipmentDimLineV3 = orderLineArray.map((line) => {
+          return {
+            WeightUOMV3: 'lb',
+            Description: get(line, 'PartAttribute1', ''),
+            DimUOMV3: 'in',
+            PieceType: pieceTypeValue,
+            Pieces: Number(get(line, 'QuantityMet', 0)),
+            Weigth: 600,
+            Length: lengthValue,
+            Width: widthValue,
+            Height: heightValue,
+          };
+        });
       } else {
         ShipmentLineList = {
           NewShipmentDimLineV3: [
@@ -255,23 +251,19 @@ async function prepareShipmentListData(xmlObj) {
         };
       }
     } else if (Array.isArray(orderLineArray)) {
-      ShipmentLineList.NewShipmentDimLineV3 = [];
-      await Promise.all(
-        orderLineArray.map(async (line) => {
-          const data = {
-            WeightUOMV3: 'lb',
-            Description: get(line, 'Product.Description', ''),
-            DimUOMV3: 'in',
-            PieceType: 'UNT',
-            Pieces: Number(get(line, 'QuantityMet', 0)),
-            Weigth: 1,
-            Length: 1,
-            Width: 1,
-            Height: 1,
-          };
-          ShipmentLineList.NewShipmentDimLineV3.push(data);
-        })
-      );
+      ShipmentLineList.NewShipmentDimLineV3 = orderLineArray.map((line) => {
+        return {
+          WeightUOMV3: 'lb',
+          Description: get(line, 'Product.Description', ''),
+          DimUOMV3: 'in',
+          PieceType: 'UNT',
+          Pieces: Number(get(line, 'QuantityMet', 0)),
+          Weigth: 1,
+          Length: 1,
+          Width: 1,
+          Height: 1,
+        };
+      });
     } else {
       ShipmentLineList = {
         NewShipmentDimLineV3: [
