@@ -62,7 +62,7 @@ module.exports.handler = async (event, context) => {
         xmlWTObjResponse,
         'soap:Envelope.soap:Body.AddNewShipmentV3Response.AddNewShipmentV3Result.ErrorMessage',
         ''
-      ) !== '' &&
+      ) !== '' ||
       get(
         xmlWTObjResponse,
         'soap:Envelope.soap:Body.AddNewShipmentV3Response.AddNewShipmentV3Result.Housebill',
