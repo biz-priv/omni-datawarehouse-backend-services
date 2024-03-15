@@ -30,7 +30,7 @@ async function getLocationId(
     // Append an asterisk to the end of the second word
     address1Words[1] += "*";
     // Remove the third word
-    address1Words.splice(2, 1);
+    address1Words.splice(2);
   }
 
   // Join the modified words back into address1
