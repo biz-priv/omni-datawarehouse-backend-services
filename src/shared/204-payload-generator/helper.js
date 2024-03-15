@@ -29,7 +29,7 @@ const {
   INSTRUCTIONS_TABLE,
   REFERENCES_TABLE,
   REFERENCES_INDEX_KEY_NAME,
-  TRACKING_NOTES_ORDERNO_INDEX_KEY,
+  TRACKING_NOTES_ORDERNO_INDEX,
 } = process.env;
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
@@ -780,7 +780,7 @@ async function queryTrackingNotes({ orderNo }) {
   try {
     const params = {
       TableName: TRACKING_NOTES_TABLE,
-      IndexName: TRACKING_NOTES_ORDERNO_INDEX_KEY,
+      IndexName: TRACKING_NOTES_ORDERNO_INDEX,
       KeyConditionExpression: "FK_OrderNo = :orderno",
       ExpressionAttributeValues: {
         ":orderno": String(orderNo),
