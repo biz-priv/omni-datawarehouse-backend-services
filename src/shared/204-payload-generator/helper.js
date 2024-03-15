@@ -510,10 +510,7 @@ async function fetchLocationId({ finalShipperData, finalConsigneeData, orderId, 
     finalShipperData.ShipName,
     finalShipperData.ShipAddress1,
     finalShipperData.ShipAddress2,
-    finalShipperData.ShipCity,
-    finalShipperData.FK_ShipState,
-    finalShipperData.ShipZip,
-    finalShipperData.FK_ShipCountry
+    finalShipperData.FK_ShipState
   );
 
   // Get location ID for consignee
@@ -521,10 +518,7 @@ async function fetchLocationId({ finalShipperData, finalConsigneeData, orderId, 
     finalConsigneeData.ConName,
     finalConsigneeData.ConAddress1,
     finalConsigneeData.ConAddress2,
-    finalConsigneeData.ConCity,
-    finalConsigneeData.FK_ConState,
-    finalConsigneeData.ConZip,
-    finalConsigneeData.FK_ConCountry
+    finalConsigneeData.FK_ConState
   );
 
   // Use the obtained location IDs to create locations if needed
@@ -1319,10 +1313,7 @@ async function fetchLocationIds(stopsData, orderId, houseBill) {
       stopData.ConsolStopName,
       stopData.ConsolStopAddress1,
       stopData.ConsolStopAddress2,
-      stopData.ConsolStopCity,
-      stopData.FK_ConsolStopState,
-      stopData.ConsolStopZip,
-      stopData.FK_ConsolStopCountry
+      stopData.FK_ConsolStopState
     );
 
     if (!locationId) {
