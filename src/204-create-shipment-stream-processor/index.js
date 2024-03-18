@@ -124,7 +124,7 @@ module.exports.handler = async (event, context) => {
               );
 
               // Check if createDateTime is before "2024-03-18 13:30:000" for COMCAST_BILLNOS
-              if (createDateTime < '2024-03-18 13:30:000') {
+              if (createDateTime < '2024-03-18 14:00:000') {
                 console.info(
                   'Shipment is created before 2024-03-18 14:00:000 for COMCAST_BILLNOS. Skipping the process.'
                 );
