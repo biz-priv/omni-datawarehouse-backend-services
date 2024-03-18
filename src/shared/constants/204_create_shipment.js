@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 const {
   SHIPMENT_HEADER_TABLE,
@@ -15,17 +15,17 @@ const {
 } = process.env;
 
 const STATUSES = {
-  PENDING: "PENDING",
-  READY: "READY",
-  SENT: "SENT",
-  FAILED: "FAILED",
-  SKIPPED: "SKIPPED",
+  PENDING: 'PENDING',
+  READY: 'READY',
+  SENT: 'SENT',
+  FAILED: 'FAILED',
+  SKIPPED: 'SKIPPED',
 };
 
 const TYPES = {
-  CONSOLE: "CONSOLE",
-  NON_CONSOLE: "NON_CONSOLE",
-  MULTI_STOP: "MULTI_STOP",
+  CONSOLE: 'CONSOLE',
+  NON_CONSOLE: 'NON_CONSOLE',
+  MULTI_STOP: 'MULTI_STOP',
 };
 
 const CONSOLE_WISE_TABLES = {
@@ -53,17 +53,17 @@ const TABLE_PARAMS = {
     tbl_ConfirmationCost: ({ orderNo }) => ({
       TableName: CONFIRMATION_COST,
       IndexName: CONFIRMATION_COST_INDEX_KEY_NAME,
-      KeyConditionExpression: "FK_OrderNo = :orderNo",
+      KeyConditionExpression: 'FK_OrderNo = :orderNo',
       ExpressionAttributeValues: {
-        ":orderNo": orderNo,
+        ':orderNo': orderNo,
       },
     }),
     tbl_TrackingNotes: ({ consoleNo }) => ({
       TableName: TRACKING_NOTES_TABLE,
       IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
-      KeyConditionExpression: "ConsolNo = :ConsolNo",
+      KeyConditionExpression: 'ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
-        ":ConsolNo": String(consoleNo),
+        ':ConsolNo': String(consoleNo),
       },
     }),
   },
@@ -71,69 +71,69 @@ const TABLE_PARAMS = {
     tbl_ConfirmationCost: ({ orderNo }) => ({
       TableName: CONFIRMATION_COST,
       IndexName: CONFIRMATION_COST_INDEX_KEY_NAME,
-      KeyConditionExpression: "FK_OrderNo = :orderNo",
+      KeyConditionExpression: 'FK_OrderNo = :orderNo',
       ExpressionAttributeValues: {
-        ":orderNo": orderNo,
+        ':orderNo': orderNo,
       },
     }),
     tbl_Shipper: ({ orderNo }) => ({
       TableName: SHIPPER_TABLE,
-      KeyConditionExpression: "FK_ShipOrderNo = :orderNo",
+      KeyConditionExpression: 'FK_ShipOrderNo = :orderNo',
       ExpressionAttributeValues: {
-        ":orderNo": orderNo,
+        ':orderNo': orderNo,
       },
     }),
     tbl_Consignee: ({ orderNo }) => ({
       TableName: CONSIGNEE_TABLE,
-      KeyConditionExpression: "FK_ConOrderNo = :orderNo",
+      KeyConditionExpression: 'FK_ConOrderNo = :orderNo',
       ExpressionAttributeValues: {
-        ":orderNo": orderNo,
+        ':orderNo': orderNo,
       },
     }),
     tbl_ShipmentHeader: ({ orderNo }) => ({
       TableName: SHIPMENT_HEADER_TABLE,
-      KeyConditionExpression: "PK_OrderNo = :orderNo",
+      KeyConditionExpression: 'PK_OrderNo = :orderNo',
       ExpressionAttributeValues: {
-        ":orderNo": orderNo,
+        ':orderNo': orderNo,
       },
     }),
   },
   [TYPES.MULTI_STOP]: {
     tbl_ShipmentHeader: ({ orderNo }) => ({
       TableName: SHIPMENT_HEADER_TABLE,
-      KeyConditionExpression: "PK_OrderNo = :PK_OrderNo",
+      KeyConditionExpression: 'PK_OrderNo = :PK_OrderNo',
       ExpressionAttributeValues: {
-        ":PK_OrderNo": orderNo,
+        ':PK_OrderNo': orderNo,
       },
     }),
     tbl_ConsolStopItems: ({ orderNo }) => ({
       TableName: CONSOL_STOP_ITEMS,
-      KeyConditionExpression: "FK_OrderNo = :FK_OrderNo",
+      KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
       ExpressionAttributeValues: {
-        ":FK_OrderNo": orderNo,
+        ':FK_OrderNo': orderNo,
       },
     }),
     tbl_ShipmentDesc: ({ orderNo }) => ({
       TableName: SHIPMENT_DESC_TABLE,
-      KeyConditionExpression: "FK_OrderNo = :FK_OrderNo",
+      KeyConditionExpression: 'FK_OrderNo = :FK_OrderNo',
       ExpressionAttributeValues: {
-        ":FK_OrderNo": orderNo,
+        ':FK_OrderNo': orderNo,
       },
     }),
     tbl_TrackingNotes: ({ consoleNo }) => ({
       TableName: TRACKING_NOTES_TABLE,
       IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
-      KeyConditionExpression: "ConsolNo = :ConsolNo",
+      KeyConditionExpression: 'ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
-        ":ConsolNo": String(consoleNo),
+        ':ConsolNo': String(consoleNo),
       },
     }),
     tbl_ConsolStopHeaders: ({ consoleNo }) => ({
       TableName: CONSOL_STOP_HEADERS,
       IndexName: CONSOL_STOP_HEADERS_CONSOL_INDEX,
-      KeyConditionExpression: "FK_ConsolNo = :ConsolNo",
+      KeyConditionExpression: 'FK_ConsolNo = :ConsolNo',
       ExpressionAttributeValues: {
-        ":ConsolNo": String(consoleNo),
+        ':ConsolNo': String(consoleNo),
       },
     }),
   },
@@ -142,89 +142,76 @@ const TABLE_PARAMS = {
 const CONSOLE_WISE_REQUIRED_FIELDS = {
   [TYPES.CONSOLE]: {
     tbl_ConfirmationCost: [
-      "Consignee Name",
-      "Consignee Address1",
-      "Consignee City",
-      "Consignee State",
-      "Consignee Country",
-      "Shipper Address1",
-      "Shipper City",
-      "Shipper Name",
-      "Shipper State",
-      "Shipper Country",
+      'Consignee Name',
+      'Consignee Address1',
+      'Consignee City',
+      'Consignee State',
+      'Consignee Country',
+      'Shipper Address1',
+      'Shipper City',
+      'Shipper Name',
+      'Shipper State',
+      'Shipper Country',
     ],
-    tbl_TrackingNotes: ["UserId"],
+    tbl_TrackingNotes: ['UserId'],
   },
   [TYPES.NON_CONSOLE]: {
     tbl_ConfirmationCost: [
-      "Consignee Name",
-      "Consignee Address1",
-      "Consignee City",
-      "Consignee State",
-      "Consignee Country",
-      "Shipper Address1",
-      "Shipper City",
-      "Shipper Name",
-      "Shipper State",
-      "Shipper Country",
+      'Consignee Name',
+      'Consignee Address1',
+      'Consignee City',
+      'Consignee State',
+      'Consignee Country',
+      'Shipper Address1',
+      'Shipper City',
+      'Shipper Name',
+      'Shipper State',
+      'Shipper Country',
     ],
     tbl_Shipper: [
-      "Shipper Address1",
-      "Shipper City",
-      "Shipper Name",
-      "Shipper State",
-      "Shipper Country",
+      'Shipper Address1',
+      'Shipper City',
+      'Shipper Name',
+      'Shipper State',
+      'Shipper Country',
     ],
     tbl_Consignee: [
-      "Consignee Name",
-      "Consignee Address1",
-      "Consignee City",
-      "Consignee State",
-      "Consignee Country",
+      'Consignee Name',
+      'Consignee Address1',
+      'Consignee City',
+      'Consignee State',
+      'Consignee Country',
     ],
     tbl_ShipmentHeader: [
-      "EquipmentCode",
-      "Insurance",
-      "ServiceLevelId",
-      "OrderDate",
-      "ReadyDateTime",
-      "ReadyDateTimeRange",
-      "ScheduledDateTime",
-      "ScheduledDateTimeRange",
+      'EquipmentCode',
+      'Insurance',
+      'ServiceLevelId',
+      'OrderDate',
+      'ReadyDateTime',
+      'ReadyDateTimeRange',
+      'ScheduledDateTime',
+      'ScheduledDateTimeRange',
     ],
   },
   [TYPES.MULTI_STOP]: {
-    tbl_ShipmentHeader: [
-      "EquipmentCode",
-      "Insurance",
-      "ServiceLevelId",
-      "Housebill",
-    ],
-    tbl_ShipmentDesc: [
-      "Hazmat",
-      "Pieces",
-      "Weight",
-      "Length",
-      "Width",
-      "Height",
-      "Description",
-    ],
-    tbl_TrackingNotes: ["UserId"],
+    tbl_ShipmentHeader: ['EquipmentCode', 'Insurance', 'ServiceLevelId', 'Housebill'],
+    tbl_ShipmentDesc: ['Hazmat', 'Pieces', 'Weight', 'Length', 'Width', 'Height', 'Description'],
+    tbl_TrackingNotes: ['UserId'],
     tbl_ConsolStopHeaders: [
-      "Consol Number",
-      "ConsolStop Name",
-      "ConsolStop Address1",
-      "ConsolStop Address2",
-      "ConsolStop City",
-      "ConsolStop State",
-      "ConsolStop TimeBegin",
-      "ConsolStop TimeEnd",
-      "ConsolStop Date",
+      'Consol Number',
+      'ConsolStop Name',
+      'ConsolStop Address1',
+      'ConsolStop Address2',
+      'ConsolStop City',
+      'ConsolStop State',
+      'ConsolStop TimeBegin',
+      'ConsolStop TimeEnd',
+      'ConsolStop Date',
     ],
   },
 };
 
-const VENDOR = "LIVELOGI";
+const VENDOR = 'LIVELOGI';
 
 module.exports = {
   STATUSES,

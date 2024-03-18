@@ -26,10 +26,7 @@ const sns = new AWS.SNS();
 let functionName;
 
 module.exports.handler = async (event, context) => {
-  console.info(
-    '🙂 -> file: index.js:14 -> module.exports.handler= -> event:',
-    event
-  );
+  console.info('🙂 -> file: index.js:14 -> module.exports.handler= -> event:', event);
   try {
     functionName = get(context, 'functionName');
     console.info('🙂 -> file: index.js:8 -> functionName:', functionName);
@@ -94,10 +91,7 @@ async function checkMultiStop(tableData) {
   const consolNo = get(tableData, 'ConsolNo');
   const aparResult = await queryDynamoDB(consolNo);
   const stationCode = get(aparResult, '[0].FK_ConsolStationId');
-  console.info(
-    '🚀 ~ file: index.js:93 ~ checkMultiStop ~ stationCode:',
-    stationCode
-  );
+  console.info('🚀 ~ file: index.js:93 ~ checkMultiStop ~ stationCode:', stationCode);
   if (stationCode === '') {
     throw new Error('Please populate handling Station code');
   }
@@ -112,10 +106,7 @@ async function checkMultiStop(tableData) {
     const orderNumbersForConsol = Object.keys(get(tableData, 'TableStatuses'));
     await Promise.all(
       orderNumbersForConsol.map(async (orderNoForConsol) => {
-        console.info(
-          '🙂 -> file: index.js:160 -> orderNoForConsol:',
-          orderNoForConsol
-        );
+        console.info('🙂 -> file: index.js:160 -> orderNoForConsol:', orderNoForConsol);
         const tableNames = Object.keys(
           pickBy(
             get(tableData, `TableStatuses.${orderNoForConsol}`, {}),
@@ -131,10 +122,9 @@ async function checkMultiStop(tableData) {
                 orderNo: orderNoForConsol,
                 consoleNo: consolNo,
               });
-              originalTableStatuses[`${orderNoForConsol}`][tableName] =
-                await fetchItemFromTable({
-                  params: param,
-                });
+              originalTableStatuses[`${orderNoForConsol}`][tableName] = await fetchItemFromTable({
+                params: param,
+              });
             } catch (error) {
               console.info('🙂 -> file: index.js:182 -> error:', error);
               throw error;
@@ -147,18 +137,12 @@ async function checkMultiStop(tableData) {
         });
       })
     );
-    console.info(
-      '🙂 -> file: index.js:149 -> originalTableStatuses:',
-      originalTableStatuses
-    );
+    console.info('🙂 -> file: index.js:149 -> originalTableStatuses:', originalTableStatuses);
 
     for (const key in originalTableStatuses) {
       if (Object.hasOwn(originalTableStatuses, key)) {
         const tableStatuses = originalTableStatuses[key];
-        if (
-          Object.values(tableStatuses).includes(STATUSES.PENDING) &&
-          retryCount < 5
-        ) {
+        if (Object.values(tableStatuses).includes(STATUSES.PENDING) && retryCount < 5) {
           return await updateConosleStatusTable({
             consolNo,
             originalTableStatuses,
@@ -167,10 +151,7 @@ async function checkMultiStop(tableData) {
           });
         }
 
-        if (
-          Object.values(tableStatuses).includes(STATUSES.PENDING) &&
-          retryCount >= 5
-        ) {
+        if (Object.values(tableStatuses).includes(STATUSES.PENDING) && retryCount >= 5) {
           const pendingTables = Object.keys(tableStatuses).filter((table) => {
             return tableStatuses[table] === STATUSES.PENDING;
           });
@@ -220,10 +201,7 @@ async function fetchItemFromTable({ params }) {
     console.info('🙂 -> file: index.js:135 -> params:', params);
     if (get(params, 'TableName', '') === CONSOL_STOP_HEADERS) {
       const data = await dynamoDb.query(params).promise();
-      console.info(
-        '🙂 -> file: index.js:138 -> fetchItemFromTable -> data:',
-        data
-      );
+      console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
       const stopHeaders = get(data, 'Items', []);
       if (
         stopHeaders.every(
@@ -243,13 +221,8 @@ async function fetchItemFromTable({ params }) {
     }
     // For other tables, proceed with regular logic
     const data = await dynamoDb.query(params).promise();
-    console.info(
-      '🙂 -> file: index.js:138 -> fetchItemFromTable -> data:',
-      data
-    );
-    return get(data, 'Items', []).length > 0
-      ? STATUSES.READY
-      : STATUSES.PENDING;
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+    return get(data, 'Items', []).length > 0 ? STATUSES.READY : STATUSES.PENDING;
   } catch (err) {
     console.error('error in fetchItemFromTable function - index.js 153:', err);
     if (err.code === 'ResourceNotFoundException') {
@@ -259,12 +232,7 @@ async function fetchItemFromTable({ params }) {
   }
 }
 
-async function updateConosleStatusTable({
-  consolNo,
-  originalTableStatuses,
-  retryCount,
-  status,
-}) {
+async function updateConosleStatusTable({ consolNo, originalTableStatuses, retryCount, status }) {
   try {
     const updateParam = {
       TableName: CONSOLE_STATUS_TABLE,
@@ -283,10 +251,7 @@ async function updateConosleStatusTable({
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
     return await dynamoDb.update(updateParam).promise();
   } catch (error) {
-    console.error(
-      'error in updateConosleStatusTable - index.js ~ 180: ',
-      error
-    );
+    console.error('error in updateConosleStatusTable - index.js ~ 180: ', error);
     throw error;
   }
 }
@@ -313,10 +278,7 @@ async function updateOrderStatusTable({ orderNo, originalTableStatuses }) {
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
     return await dynamoDb.update(updateParam).promise();
   } catch (error) {
-    console.error(
-      '🚀 ~ file: index.js:207 ~ error in updateOrderStatusTable:',
-      error
-    );
+    console.error('🚀 ~ file: index.js:207 ~ error in updateOrderStatusTable:', error);
     throw error;
   }
 }
@@ -355,10 +317,7 @@ async function checkAndUpdateOrderTable({ orderNo, originalTableStatuses }) {
     }
     return true;
   } catch (error) {
-    console.error(
-      '🚀 ~ file: index.js:240 ~ checkAndUpdateOrderTable ~ error:',
-      error
-    );
+    console.error('🚀 ~ file: index.js:240 ~ checkAndUpdateOrderTable ~ error:', error);
     throw error;
   }
 }

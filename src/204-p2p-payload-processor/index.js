@@ -3,10 +3,7 @@ const AWS = require('aws-sdk');
 const _ = require('lodash');
 const moment = require('moment-timezone');
 const { v4: uuidv4 } = require('uuid');
-const {
-  nonConsolPayload,
-  consolPayload,
-} = require('../shared/204-payload-generator/payloads');
+const { nonConsolPayload, consolPayload } = require('../shared/204-payload-generator/payloads');
 const {
   fetchLocationId,
   getFinalShipperAndConsigneeData,
@@ -49,15 +46,10 @@ module.exports.handler = async (event, context) => {
       let houseBillString = '';
 
       try {
-        const newImage = AWS.DynamoDB.Converter.unmarshall(
-          record.dynamodb.NewImage
-        );
+        const newImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
         const shipmentAparData = _.get(newImage, 'ShipmentAparData');
         orderId = _.get(shipmentAparData, 'FK_OrderNo', 0);
-        console.info(
-          '🙂 -> file: index.js:30 -> shipmentAparData:',
-          shipmentAparData
-        );
+        console.info('🙂 -> file: index.js:30 -> shipmentAparData:', shipmentAparData);
         type = _.get(newImage, 'Type', '');
         if (type === TYPES.MULTI_STOP) return 'Skipping for Multi Stops';
 
@@ -77,10 +69,7 @@ module.exports.handler = async (event, context) => {
             return 'Shipment header data is missing.';
           }
           houseBill = _.get(shipmentHeaderData, 'Housebill', 0);
-          console.info(
-            '🚀 ~ file: index.js:71 ~ promises ~ houseBill:',
-            houseBill
-          );
+          console.info('🚀 ~ file: index.js:71 ~ promises ~ houseBill:', houseBill);
           stationCode =
             _.get(shipmentHeaderData, 'ControllingStation', '') ||
             _.get(shipmentAparData, 'FK_HandlingStation', '');
@@ -88,17 +77,13 @@ module.exports.handler = async (event, context) => {
           if (!stationCode) {
             throw new Error('Please populate the Controlling Station');
           }
-          const {
-            shipperLocationId,
-            consigneeLocationId,
-            finalConsigneeData,
-            finalShipperData,
-          } = await consolNonConsolCommonData({
-            shipmentAparData,
-            orderId,
-            consolNo,
-            houseBill,
-          });
+          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
+            await consolNonConsolCommonData({
+              shipmentAparData,
+              orderId,
+              consolNo,
+              houseBill,
+            });
           const nonConsolPayloadData = await nonConsolPayload({
             referencesData,
             customersData,
@@ -141,22 +126,10 @@ module.exports.handler = async (event, context) => {
             userData: [userData],
           } = await fetchConsoleTableData({ shipmentAparData });
           console.info('🙂 -> file: index.js:118 -> userData:', userData);
-          console.info(
-            '🙂 -> file: index.js:119 -> customersData:',
-            customersData
-          );
-          console.info(
-            '🙂 -> file: index.js:120 -> trackingNotesData:',
-            trackingNotesData
-          );
-          console.info(
-            '🙂 -> file: index.js:121 -> shipmentDescData:',
-            shipmentDescData
-          );
-          console.info(
-            '🙂 -> file: index.js:123 -> shipmentHeaderData:',
-            shipmentHeaderData
-          );
+          console.info('🙂 -> file: index.js:119 -> customersData:', customersData);
+          console.info('🙂 -> file: index.js:120 -> trackingNotesData:', trackingNotesData);
+          console.info('🙂 -> file: index.js:121 -> shipmentDescData:', shipmentDescData);
+          console.info('🙂 -> file: index.js:123 -> shipmentHeaderData:', shipmentHeaderData);
           const shipmentAparConsoleData = await getAparDataByConsole({
             shipmentAparData,
           });
@@ -170,24 +143,15 @@ module.exports.handler = async (event, context) => {
           if (!stationCode) {
             throw new Error('Please populate the Controlling Station');
           }
-          houseBill = shipmentHeader.flatMap(
-            (headerData) => headerData.housebills
-          );
-          console.info(
-            '🚀 ~ file: index.js:123 ~ promises ~ houseBill:',
-            houseBill
-          );
-          const {
-            shipperLocationId,
-            consigneeLocationId,
-            finalConsigneeData,
-            finalShipperData,
-          } = await consolNonConsolCommonData({
-            shipmentAparData,
-            consolNo,
-            orderId,
-            houseBill: houseBill.join(','),
-          });
+          houseBill = shipmentHeader.flatMap((headerData) => headerData.housebills);
+          console.info('🚀 ~ file: index.js:123 ~ promises ~ houseBill:', houseBill);
+          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
+            await consolNonConsolCommonData({
+              shipmentAparData,
+              consolNo,
+              orderId,
+              houseBill: houseBill.join(','),
+            });
           const ConsolPayloadData = await consolPayload({
             customersData,
             consigneeLocationId,
@@ -218,9 +182,7 @@ module.exports.handler = async (event, context) => {
 
             // Compare oldPayload with payload constructed now
             if (_.isEqual(oldPayload, payload)) {
-              console.info(
-                'Payload is the same as the old payload. Skipping further processing.'
-              );
+              console.info('Payload is the same as the old payload. Skipping further processing.');
               throw new Error(`Payload is the same as the old payload. Skipping further processing.
               \n Payload: ${JSON.stringify(payload)}
               `);
@@ -238,10 +200,7 @@ module.exports.handler = async (event, context) => {
           consolNo,
           houseBillString,
         });
-        console.info(
-          '🙂 -> file: index.js:149 -> createPayloadResponse:',
-          createPayloadResponse
-        );
+        console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
         const shipmentId = _.get(createPayloadResponse, 'id', 0);
         if (type === 'NON_CONSOLE') {
           await liveSendUpdate(houseBill, shipmentId);
@@ -335,12 +294,7 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function consolNonConsolCommonData({
-  shipmentAparData,
-  orderId,
-  consolNo,
-  houseBill,
-}) {
+async function consolNonConsolCommonData({ shipmentAparData, orderId, consolNo, houseBill }) {
   try {
     const {
       confirmationCostData: [confirmationCostData],
@@ -352,17 +306,13 @@ async function consolNonConsolCommonData({
 
     console.info('🙂 -> file: index.js:35 -> consigneeData:', consigneeData);
     console.info('🙂 -> file: index.js:36 -> shipperData:', shipperData);
-    console.info(
-      '🙂 -> file: index.js:37 -> confirmationCostData:',
-      confirmationCostData
-    );
+    console.info('🙂 -> file: index.js:37 -> confirmationCostData:', confirmationCostData);
 
-    const { finalConsigneeData, finalShipperData } =
-      getFinalShipperAndConsigneeData({
-        confirmationCostData,
-        consigneeData,
-        shipperData,
-      });
+    const { finalConsigneeData, finalShipperData } = getFinalShipperAndConsigneeData({
+      confirmationCostData,
+      consigneeData,
+      shipperData,
+    });
 
     const { shipperLocationId, consigneeLocationId } = await fetchLocationId({
       finalConsigneeData,
@@ -394,13 +344,7 @@ async function consolNonConsolCommonData({
   }
 }
 
-async function updateStatusTable({
-  orderNo,
-  status,
-  response,
-  payload,
-  Housebill,
-}) {
+async function updateStatusTable({ orderNo, status, response, payload, Housebill }) {
   try {
     const updateParam = {
       TableName: STATUS_TABLE,
@@ -426,13 +370,7 @@ async function updateStatusTable({
   }
 }
 
-async function insertInOutputTable({
-  orderNo,
-  status,
-  response,
-  payload,
-  Housebill,
-}) {
+async function insertInOutputTable({ orderNo, status, response, payload, Housebill }) {
   try {
     const params = {
       TableName: OUTPUT_TABLE,
@@ -490,10 +428,7 @@ async function fetch204TableDataForConsole({ orderNo }) {
     };
     return await dynamoDb.query(params).promise();
   } catch (error) {
-    console.info(
-      '🚀 ~ file: index.js:324 ~ fetch204TableDataForConsole ~ error:',
-      error
-    );
+    console.info('🚀 ~ file: index.js:324 ~ fetch204TableDataForConsole ~ error:', error);
     throw error;
   }
 }

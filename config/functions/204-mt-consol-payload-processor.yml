@@ -49,7 +49,6 @@ function:
     INSTRUCTIONS_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.orderNoIndex}
     REFERENCES_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.tableName~true}
     REFERENCES_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.orderNoIndex}
-    
 
   events:
     - stream:

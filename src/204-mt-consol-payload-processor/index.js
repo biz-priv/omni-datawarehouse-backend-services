@@ -5,9 +5,7 @@ const moment = require('moment-timezone');
 const { v4: uuidv4 } = require('uuid');
 
 const { mtPayload } = require('../shared/204-payload-generator/payloads');
-const {
-  fetchDataFromTablesList,
-} = require('../shared/204-payload-generator/helper');
+const { fetchDataFromTablesList } = require('../shared/204-payload-generator/helper');
 const {
   sendPayload,
   updateOrders,
@@ -15,13 +13,7 @@ const {
 } = require('../shared/204-payload-generator/apis');
 const { STATUSES, TYPES } = require('../shared/constants/204_create_shipment');
 
-const {
-  LIVE_SNS_TOPIC_ARN,
-  CONSOL_STATUS_TABLE,
-  OUTPUT_TABLE,
-  STAGE,
-  STATUS_TABLE,
-} = process.env;
+const { LIVE_SNS_TOPIC_ARN, CONSOL_STATUS_TABLE, OUTPUT_TABLE, STAGE, STATUS_TABLE } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
@@ -44,9 +36,7 @@ module.exports.handler = async (event, context) => {
       let payload = '';
 
       try {
-        const newImage = AWS.DynamoDB.Converter.unmarshall(
-          record.dynamodb.NewImage
-        );
+        const newImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
         consolNo = _.get(newImage, 'ConsolNo', 0);
 
         const {
@@ -67,10 +57,7 @@ module.exports.handler = async (event, context) => {
             break; // Stop iterating once a non-empty value is found
           }
         }
-        console.info(
-          '🚀 ~ file: index.js:53 ~ promises ~ stationCode:',
-          stationCode
-        );
+        console.info('🚀 ~ file: index.js:53 ~ promises ~ stationCode:', stationCode);
         if (stationCode === '') {
           throw new Error('No station code found in shipmentApar');
         }
@@ -83,10 +70,7 @@ module.exports.handler = async (event, context) => {
           references,
           users
         );
-        console.info(
-          '🙂 -> file: index.js:114 -> mtPayloadData:',
-          JSON.stringify(mtPayloadData)
-        );
+        console.info('🙂 -> file: index.js:114 -> mtPayloadData:', JSON.stringify(mtPayloadData));
         payload = mtPayloadData;
         // Check if payload is not null
         if (payload) {
@@ -101,9 +85,7 @@ module.exports.handler = async (event, context) => {
 
             // Compare oldPayload with payload constructed now
             if (_.isEqual(oldPayload, payload)) {
-              console.info(
-                'Payload is the same as the old payload. Skipping further processing.'
-              );
+              console.info('Payload is the same as the old payload. Skipping further processing.');
               return 'Payload is the same as the old payload. Skipping further processing.';
             }
           }
@@ -117,10 +99,7 @@ module.exports.handler = async (event, context) => {
           orderId: _.join(orderId),
           houseBillString,
         });
-        console.info(
-          '🙂 -> file: index.js:149 -> createPayloadResponse:',
-          createPayloadResponse
-        );
+        console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
         const shipmentId = _.get(createPayloadResponse, 'id', 0);
 
         // Call liveSendUpdate for each Housebill
@@ -233,13 +212,7 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function updateStatusTable({
-  ConsolNo,
-  status,
-  response,
-  payload,
-  Housebill,
-}) {
+async function updateStatusTable({ ConsolNo, status, response, payload, Housebill }) {
   try {
     const updateParam = {
       TableName: CONSOL_STATUS_TABLE,
@@ -265,13 +238,7 @@ async function updateStatusTable({
   }
 }
 
-async function updateOrderStatusTable({
-  orderNo,
-  status,
-  response,
-  payload,
-  Housebill,
-}) {
+async function updateOrderStatusTable({ orderNo, status, response, payload, Housebill }) {
   try {
     const updateParam = {
       TableName: STATUS_TABLE,
@@ -297,13 +264,7 @@ async function updateOrderStatusTable({
   }
 }
 
-async function insertInOutputTable({
-  ConsolNo,
-  status,
-  response,
-  payload,
-  Housebill,
-}) {
+async function insertInOutputTable({ ConsolNo, status, response, payload, Housebill }) {
   try {
     const params = {
       TableName: OUTPUT_TABLE,

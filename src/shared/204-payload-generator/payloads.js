@@ -90,8 +90,7 @@ async function nonConsolPayload({
     entered_user_id: 'apiuser',
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(equipmentCode),
     order_mode: _.get(shipmentHeader, 'FK_ServiceLevelId') === 'PL' ? 'P' : 'T',
-    order_type_id:
-      _.get(shipmentHeader, 'FK_ServiceLevelId') === 'PL' ? 'PAR' : 'NA',
+    order_type_id: _.get(shipmentHeader, 'FK_ServiceLevelId') === 'PL' ? 'PAR' : 'NA',
     excise_disable_update: false,
     excise_taxable: false,
     force_assign: true,
@@ -167,18 +166,15 @@ async function consolPayload({
   const shipmentHeaderData = await getShipmentHeaderData({
     shipmentAparConsoleData,
   });
-  console.info(
-    '🚀 ~ file: payloads.js:143 ~ shipmentHeaderData:',
-    shipmentHeaderData
-  );
+  console.info('🚀 ~ file: payloads.js:143 ~ shipmentHeaderData:', shipmentHeaderData);
   const housebillData = await getHousebillData({ shipmentAparConsoleData });
   console.info('🚀 ~ file: payloads.js:145 ~ housebillData:', housebillData);
   const descData = await descDataForConsole({ shipmentAparConsoleData });
   console.info('🚀 ~ file: payloads.js:147 ~ descData:', descData);
 
-  const referencesData = await getReferencesData({ shipmentAparConsoleData })
+  const referencesData = await getReferencesData({ shipmentAparConsoleData });
   console.info('🙂 -> file: payloads.js:180 -> referencesData:', referencesData);
-  
+
   const equipmentCode =
     _.get(shipmentHeaderData, '[0].equipmentCode', '') ||
     _.get(shipmentAparData, 'FK_EquipmentCode', 'NA');
@@ -238,10 +234,7 @@ async function consolPayload({
     is_autorate_dist: false,
     is_container: false,
     is_dedicated: false,
-    ltl: _.includes(
-      ['FT', 'HS'],
-      _.get(shipmentHeaderData, '[0].serviceLevelId', '')
-    ),
+    ltl: _.includes(['FT', 'HS'], _.get(shipmentHeaderData, '[0].serviceLevelId', '')),
     on_hold: true,
     ordered_date: await getCstTime({
       datetime: _.get(shipmentAparData, 'CreateDateTime', ''),
@@ -350,7 +343,7 @@ async function mtPayload(
     entered_user_id: 'apiuser',
     equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
       _.get(shipmentHeader, '[0]FK_EquipmentCode', '') ||
-      _.get(shipmentApar, '[0]FK_EquipmentCode', '')
+        _.get(shipmentApar, '[0]FK_EquipmentCode', '')
     ),
     order_mode: 'T',
     order_type_id: 'NA',
@@ -364,10 +357,7 @@ async function mtPayload(
     is_autorate_dist: false,
     is_container: false,
     is_dedicated: false,
-    ltl: _.includes(
-      ['FT', 'HS'],
-      _.get(shipmentHeader, '[0]FK_ServiceLevelId')
-    ),
+    ltl: _.includes(['FT', 'HS'], _.get(shipmentHeader, '[0]FK_ServiceLevelId')),
     on_hold: true,
     ordered_date: await getCstTime({
       datetime: _.get(shipmentApar, '[0]CreateDateTime', ''),

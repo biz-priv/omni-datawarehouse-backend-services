@@ -17,12 +17,7 @@ const {
 
 const apiKey = ADDRESS_MAPPING_G_API_KEY;
 
-async function getLocationId(
-  name,
-  address1,
-  address2,
-  state,
-) {
+async function getLocationId(name, address1, address2, state) {
   const address1Words = address1.split(' ');
 
   // Check if address1 has more than two words
@@ -35,9 +30,9 @@ async function getLocationId(
 
   // Join the modified words back into address1
   address1 = address1Words.join(' ');
-  const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${ address2 ?? ''}&state=${state}`;
+  const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${address2 ?? ''}&state=${state}`;
 
-  console.info('🚀 ~ file: apis.js:40 ~ apiUrl:', apiUrl)
+  console.info('🚀 ~ file: apis.js:40 ~ apiUrl:', apiUrl);
   const headers = {
     Accept: 'application/json',
     Authorization: AUTH,
@@ -51,10 +46,7 @@ async function getLocationId(
 
     // Handle the response using lodash or other methods as needed
     const responseData = _.get(response, 'data', {});
-    console.info(
-      '🙂 -> file: apis.js:30 -> getLocationId -> responseData:',
-      responseData
-    );
+    console.info('🙂 -> file: apis.js:30 -> getLocationId -> responseData:', responseData);
     // Return the location ID or perform additional processing as needed
     return _.get(responseData, '[0].id', false);
   } catch (error) {
@@ -63,13 +55,7 @@ async function getLocationId(
   }
 }
 
-async function createLocation({
-  data,
-  orderId,
-  consolNo = 0,
-  country,
-  houseBill,
-}) {
+async function createLocation({ data, orderId, consolNo = 0, country, houseBill }) {
   if (country.toLowerCase() === 'us' && _.get(data, 'zip_code', 0).length > 5) {
     data.zip_code = data.zip_code.slice(0, 5);
   }
@@ -87,10 +73,7 @@ async function createLocation({
 
     // Handle the response using lodash or other methods as needed
     const responseData = _.get(response, 'data', {});
-    console.info(
-      '🙂 -> file: apis.js:54 -> createLocation -> responseData:',
-      responseData
-    );
+    console.info('🙂 -> file: apis.js:54 -> createLocation -> responseData:', responseData);
     // Return the created location data or perform additional processing as needed
     return _.get(responseData, 'id', false);
   } catch (error) {
@@ -106,12 +89,7 @@ async function createLocation({
   }
 }
 
-async function sendPayload({
-  payload: data,
-  orderId,
-  consolNo = 0,
-  houseBillString,
-}) {
+async function sendPayload({ payload: data, orderId, consolNo = 0, houseBillString }) {
   const apiUrl = SEND_PAYLOAD_URL;
 
   const headers = {
@@ -142,12 +120,7 @@ async function sendPayload({
   }
 }
 
-async function updateOrders({
-  payload: data,
-  orderId,
-  consolNo = 0,
-  houseBillString,
-}) {
+async function updateOrders({ payload: data, orderId, consolNo = 0, houseBillString }) {
   const apiUrl = UPDATE_PAYLOAD_URL;
 
   const headers = {
@@ -162,10 +135,7 @@ async function updateOrders({
 
     // Handle the response using lodash or other methods as needed
     const responseData = _.get(response, 'data', {});
-    console.info(
-      '🙂 -> file: apis.js:54 -> updateOrders -> responseData:',
-      responseData
-    );
+    console.info('🙂 -> file: apis.js:54 -> updateOrders -> responseData:', responseData);
     // Return the created location data or perform additional processing as needed
     return responseData;
   } catch (error) {
@@ -214,7 +184,7 @@ async function liveSendUpdate(houseBill, shipmentId) {
     const response = await axios.post(TRACKING_NOTES_API_URL, requestBody, {
       headers: {
         'Content-Type': 'text/xml',
-        Accept: 'text/xml',
+        'Accept': 'text/xml',
       },
     });
 
@@ -226,14 +196,11 @@ async function liveSendUpdate(houseBill, shipmentId) {
         .WriteTrackingNoteResult;
 
     if (result === 'Success') {
-      console.info(
-        `updated in tracking notes API with shipmentId: ${shipmentId}`
-      );
+      console.info(`updated in tracking notes API with shipmentId: ${shipmentId}`);
       return parsedResponse;
     }
-    parsedResponse['soap:Envelope'][
-      'soap:Body'
-    ].WriteTrackingNoteResponse.WriteTrackingNoteResult = 'Failed';
+    parsedResponse['soap:Envelope']['soap:Body'].WriteTrackingNoteResponse.WriteTrackingNoteResult =
+      'Failed';
     return parsedResponse;
   } catch (error) {
     console.error('Error in liveSendUpdate:', error);
@@ -251,11 +218,7 @@ async function checkAddressByGoogleApi(address) {
       throw new Error(`Unable to geocode ${address}`);
     }
 
-    const { lat, lng } = _.get(
-      geocodeResponse,
-      'data.results[0].geometry.location',
-      {}
-    );
+    const { lat, lng } = _.get(geocodeResponse, 'data.results[0].geometry.location', {});
     return { lat, lng };
   } catch (error) {
     console.error(`Error geocoding address "${address}":`, error.message);
@@ -271,18 +234,13 @@ async function getTimezoneByGoogleApi(lat, long) {
     );
 
     if (timezoneResponse.data.status !== 'OK') {
-      throw new Error(
-        `Unable to fetch timezone for coordinates (${lat}, ${long})`
-      );
+      throw new Error(`Unable to fetch timezone for coordinates (${lat}, ${long})`);
     }
 
     const timeZoneId = _.get(timezoneResponse, 'data.timeZoneId');
     return timeZoneId;
   } catch (error) {
-    console.error(
-      `Error fetching timezone for coordinates (${lat}, ${long}):`,
-      error.message
-    );
+    console.error(`Error fetching timezone for coordinates (${lat}, ${long}):`, error.message);
     throw error;
   }
 }

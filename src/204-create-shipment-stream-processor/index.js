@@ -33,13 +33,8 @@ module.exports.handler = async (event, context) => {
     let type;
     await Promise.all(
       get(event, 'Records', []).map(async (record) => {
-        const shipmentAparData = AWS.DynamoDB.Converter.unmarshall(
-          record.dynamodb.NewImage
-        );
-        console.info(
-          '🙂 -> file: index.js:17 -> shipmentAparData:',
-          shipmentAparData
-        );
+        const shipmentAparData = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
+        console.info('🙂 -> file: index.js:17 -> shipmentAparData:', shipmentAparData);
 
         orderId = get(shipmentAparData, 'FK_OrderNo');
         console.info('🙂 -> file: index.js:23 -> orderId:', orderId);
@@ -48,10 +43,7 @@ module.exports.handler = async (event, context) => {
         console.info('🙂 -> file: index.js:23 -> consolNo:', consolNo);
 
         const serviceLevelId = get(shipmentAparData, 'FK_ServiceId');
-        console.info(
-          '🙂 -> file: index.js:26 -> serviceLevelId:',
-          serviceLevelId
-        );
+        console.info('🙂 -> file: index.js:26 -> serviceLevelId:', serviceLevelId);
 
         const vendorId = get(shipmentAparData, 'FK_VendorId', '').toUpperCase();
         console.info('🙂 -> file: index.js:33 -> vendorId:', vendorId);
@@ -63,9 +55,7 @@ module.exports.handler = async (event, context) => {
         const createDateTime = get(shipmentAparData, 'CreateDateTime');
 
         if (createDateTime < '2024-02-27 16:15:000') {
-          console.info(
-            'shipment is created before 2024-02-27. Skipping the process'
-          );
+          console.info('shipment is created before 2024-02-27. Skipping the process');
           return true;
         }
         const processedRecords = await checkAndSkipOrderTable({
@@ -73,25 +63,17 @@ module.exports.handler = async (event, context) => {
         });
 
         if (Object.keys(processedRecords).length > 0) {
-          console.info(
-            'Records found in the order table with the same orderNo. Skipping process.'
-          );
+          console.info('Records found in the order table with the same orderNo. Skipping process.');
           return true;
         }
 
-        if (
-          consolNo === 0 &&
-          includes(['HS', 'TL'], serviceLevelId) &&
-          vendorId === VENDOR
-        ) {
+        if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
           console.info('Non Console');
           type = TYPES.NON_CONSOLE;
 
           const aparResult = await fetchOrderNos({ orderId });
           if (aparResult.length > 0) {
-            console.info(
-              'A shipment is already created before 2024-02-27. Skipping the process'
-            );
+            console.info('A shipment is already created before 2024-02-27. Skipping the process');
             return true;
           }
 
@@ -104,10 +86,7 @@ module.exports.handler = async (event, context) => {
 
           // Extract bill numbers from the result
           const billNumbers = shipmentHeaderResult.map((item) => item.BillNo);
-          console.info(
-            '🚀 ~ file: index.js:65 ~ get ~ billNumbers:',
-            billNumbers
-          );
+          console.info('🚀 ~ file: index.js:65 ~ get ~ billNumbers:', billNumbers);
 
           // Check if any of the bill numbers are in the accepted list
           const commonBillNos = ACCEPTED_BILLNOS.split(',').filter((billNo) =>
@@ -120,8 +99,8 @@ module.exports.handler = async (event, context) => {
             );
 
             // Check for accepted bill numbers in LGB_ACCEPTED_BILLNOS
-            const commonLGBBillNos = LGB_ACCEPTED_BILLNOS.split(',').filter(
-              (billNo) => billNumbers.includes(billNo)
+            const commonLGBBillNos = LGB_ACCEPTED_BILLNOS.split(',').filter((billNo) =>
+              billNumbers.includes(billNo)
             );
 
             // Check if createDateTime is before "2024-03-06 16:00:000"
@@ -140,9 +119,7 @@ module.exports.handler = async (event, context) => {
               return true;
             }
           } else {
-            console.info(
-              'Accepted bill numbers found. Skipping LGB_ACCEPTED_BILLNOS check.'
-            );
+            console.info('Accepted bill numbers found. Skipping LGB_ACCEPTED_BILLNOS check.');
           }
         }
 
@@ -157,9 +134,7 @@ module.exports.handler = async (event, context) => {
           type = TYPES.CONSOLE;
           const aparResult = await fetchPreviousOrderNos({ consolNo });
           if (aparResult.length > 0) {
-            console.info(
-              'A shipment is already created before 2024-02-27. Skipping the process'
-            );
+            console.info('A shipment is already created before 2024-02-27. Skipping the process');
             return true;
           }
         }
@@ -175,9 +150,7 @@ module.exports.handler = async (event, context) => {
           type = TYPES.MULTI_STOP;
           const aparResult = await fetchPreviousOrderNos({ consolNo });
           if (aparResult.length > 0) {
-            console.info(
-              'A shipment is already created before 2024-02-27. Skipping the process'
-            );
+            console.info('A shipment is already created before 2024-02-27. Skipping the process');
             return true;
           }
           const existingConsol = await fetchConsoleStatusTable({ consolNo });
@@ -218,13 +191,7 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function insertShipmentStatus({
-  orderNo,
-  status,
-  type,
-  tableStatuses,
-  shipmentAparData,
-}) {
+async function insertShipmentStatus({ orderNo, status, type, tableStatuses, shipmentAparData }) {
   try {
     const params = {
       TableName: STATUS_TABLE,
@@ -243,10 +210,7 @@ async function insertShipmentStatus({
     await dynamoDb.put(params).promise();
     console.info('Record created successfully.');
   } catch (error) {
-    console.error(
-      '🚀 ~ file: index.js:121 ~ insertShipmentStatus ~ error:',
-      error
-    );
+    console.error('🚀 ~ file: index.js:121 ~ insertShipmentStatus ~ error:', error);
     throw error;
   }
 }
@@ -280,10 +244,7 @@ async function checkAndUpdateOrderTable({ orderNo, type, shipmentAparData }) {
       ':orderNo': orderNo,
     },
   };
-  console.info(
-    '🚀 ~ file: index.js:144 ~ existingOrderParam:',
-    existingOrderParam
-  );
+  console.info('🚀 ~ file: index.js:144 ~ existingOrderParam:', existingOrderParam);
   const existingOrder = await fetchItemFromTable({
     params: existingOrderParam,
   });
@@ -301,18 +262,12 @@ async function checkAndUpdateOrderTable({ orderNo, type, shipmentAparData }) {
       shipmentAparData,
     });
   }
-  if (
-    Object.keys(existingOrder).length > 0 &&
-    get(existingOrder, 'Status') !== STATUSES.SENT
-  ) {
+  if (Object.keys(existingOrder).length > 0 && get(existingOrder, 'Status') !== STATUSES.SENT) {
     return await updateStatusTablePending({
       orderNo: orderId,
     });
   }
-  if (
-    Object.keys(existingOrder).length > 0 &&
-    get(existingOrder, 'Status') === STATUSES.SENT
-  ) {
+  if (Object.keys(existingOrder).length > 0 && get(existingOrder, 'Status') === STATUSES.SENT) {
     return await updateStatusTable({
       orderNo: orderId,
       resetCount: get(existingOrder, 'ResetCount', 0),
@@ -325,10 +280,7 @@ async function insertConsoleStatusTable({ consolNo, status }) {
   try {
     let orderData = await fetchOrderData({ consolNo });
     orderData = orderData.map((data) => get(data, 'FK_OrderNo'));
-    console.info(
-      '🙂 -> file: index.js:159 -> insertConsoleStatusTable -> orderData:',
-      orderData
-    );
+    console.info('🙂 -> file: index.js:159 -> insertConsoleStatusTable -> orderData:', orderData);
     const TableStatuses = {};
     orderData.map((singleOrderId) => {
       TableStatuses[singleOrderId] = CONSOLE_WISE_TABLES[TYPES.MULTI_STOP];
@@ -353,10 +305,7 @@ async function insertConsoleStatusTable({ consolNo, status }) {
     await dynamoDb.put(params).promise();
     console.info('Record created successfully.');
   } catch (error) {
-    console.error(
-      '🚀 ~ file: index.js:202 ~ insertConsoleStatusTable ~ error:',
-      error
-    );
+    console.error('🚀 ~ file: index.js:202 ~ insertConsoleStatusTable ~ error:', error);
     throw error;
   }
 }
@@ -377,10 +326,7 @@ async function updateStatusTable({ orderNo, resetCount }) {
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
     return await dynamoDb.update(updateParam).promise();
   } catch (error) {
-    console.error(
-      '🚀 ~ file: index.js:223 ~ updateStatusTable ~ error:',
-      error
-    );
+    console.error('🚀 ~ file: index.js:223 ~ updateStatusTable ~ error:', error);
     throw error;
   }
 }
@@ -389,10 +335,7 @@ async function fetchItemFromTable({ params }) {
   try {
     console.info('🙂 -> file: index.js:135 -> params:', params);
     const data = await dynamoDb.query(params).promise();
-    console.info(
-      '🙂 -> file: index.js:138 -> fetchItemFromTable -> data:',
-      data
-    );
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items.[0]', {});
   } catch (err) {
     console.error('🚀 ~ file: index.js:235 ~ fetchItemFromTable ~ err:', err);
@@ -418,15 +361,9 @@ async function fetchOrderData({ consolNo }) {
         ':FK_OrderNo': String(consolNo),
       },
     };
-    console.info(
-      '🙂 -> file: index.js:216 -> fetchOrderData -> params:',
-      params
-    );
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
     const data = await dynamoDb.query(params).promise();
-    console.info(
-      '🙂 -> file: index.js:138 -> fetchItemFromTable -> data:',
-      data
-    );
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items', []);
   } catch (err) {
     console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
@@ -445,15 +382,9 @@ async function fetchBillNos({ orderNo }) {
         ':shipquote': 'S',
       },
     };
-    console.info(
-      '🙂 -> file: index.js:216 -> fetchOrderData -> params:',
-      params
-    );
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
     const data = await dynamoDb.query(params).promise();
-    console.info(
-      '🙂 -> file: index.js:138 -> fetchItemFromTable -> data:',
-      data
-    );
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items', []);
   } catch (err) {
     console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
@@ -476,10 +407,7 @@ async function fetchConsoleStatusTable({ consolNo }) {
 
     return await fetchItemFromTable({ params: existingOrderParam });
   } catch (error) {
-    console.error(
-      '🚀 ~ file: index.js:283 ~ fetchConsoleStatusTable ~ error:',
-      error
-    );
+    console.error('🚀 ~ file: index.js:283 ~ fetchConsoleStatusTable ~ error:', error);
     throw error;
   }
 }
@@ -500,10 +428,7 @@ async function updateConsolStatusTable({ consolNo, resetCount }) {
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
     return await dynamoDb.update(updateParam).promise();
   } catch (error) {
-    console.error(
-      '🚀 ~ file: index.js:304 ~ updateConsolStatusTable ~ error:',
-      error
-    );
+    console.error('🚀 ~ file: index.js:304 ~ updateConsolStatusTable ~ error:', error);
     throw error;
   }
 }
@@ -526,10 +451,7 @@ async function updateStatusTablePending({ orderNo }) {
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
     return await dynamoDb.update(updateParam).promise();
   } catch (error) {
-    console.error(
-      '🚀 ~ file: index.js:223 ~ updateStatusTable ~ error:',
-      error
-    );
+    console.error('🚀 ~ file: index.js:223 ~ updateStatusTable ~ error:', error);
     throw error;
   }
 }
@@ -539,23 +461,16 @@ async function fetchOrderNos({ orderId: orderNo }) {
     const params = {
       TableName: SHIPMENT_APAR_TABLE,
       KeyConditionExpression: 'FK_OrderNo = :orderNo',
-      FilterExpression:
-        'FK_VendorId = :vendorid AND CreateDateTime < :createdatetime',
+      FilterExpression: 'FK_VendorId = :vendorid AND CreateDateTime < :createdatetime',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
         ':vendorid': 'LIVELOGI',
         ':createdatetime': '2024-02-27 16:15:000',
       },
     };
-    console.info(
-      '🙂 -> file: index.js:216 -> fetchOrderData -> params:',
-      params
-    );
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
     const data = await dynamoDb.query(params).promise();
-    console.info(
-      '🙂 -> file: index.js:138 -> fetchItemFromTable -> data:',
-      data
-    );
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items', []);
   } catch (err) {
     console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
@@ -569,23 +484,16 @@ async function fetchPreviousOrderNos({ consolNo }) {
       TableName: SHIPMENT_APAR_TABLE,
       IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
       KeyConditionExpression: 'ConsolNo = :consolno',
-      FilterExpression:
-        'FK_VendorId = :vendorid AND CreateDateTime < :createdatetime',
+      FilterExpression: 'FK_VendorId = :vendorid AND CreateDateTime < :createdatetime',
       ExpressionAttributeValues: {
         ':consolno': String(consolNo),
         ':vendorid': 'LIVELOGI',
         ':createdatetime': '2024-02-27 16:15:000',
       },
     };
-    console.info(
-      '🙂 -> file: index.js:216 -> fetchOrderData -> params:',
-      params
-    );
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
     const data = await dynamoDb.query(params).promise();
-    console.info(
-      '🙂 -> file: index.js:138 -> fetchItemFromTable -> data:',
-      data
-    );
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items', []);
   } catch (err) {
     console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
@@ -602,10 +510,7 @@ async function checkAndSkipOrderTable({ orderNo }) {
         ':orderNo': orderNo,
       },
     };
-    console.info(
-      '🚀 ~ file: index.js:144 ~ existingOrderParam:',
-      existingOrderParam
-    );
+    console.info('🚀 ~ file: index.js:144 ~ existingOrderParam:', existingOrderParam);
     const existingOrder = await fetchItemFromTable({
       params: existingOrderParam,
     });

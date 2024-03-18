@@ -37,54 +37,54 @@ const dynamoDB = new AWS.DynamoDB.DocumentClient({
 });
 
 const refTypeMap = {
-  ACT: '11',
-  AWB: 'AW',
-  ASP: 'ASP',
-  AUT: 'BB',
-  BOL: 'BM',
-  BOO: 'BN',
-  CHA: '80',
-  CTN: 'OC',
-  CUS: 'IT',
-  APD: 'AO',
+  'ACT': '11',
+  'AWB': 'AW',
+  'ASP': 'ASP',
+  'AUT': 'BB',
+  'BOL': 'BM',
+  'BOO': 'BN',
+  'CHA': '80',
+  'CTN': 'OC',
+  'CUS': 'IT',
+  'APD': 'AO',
   'DBL#': 'KK',
   'DL#': 'KK',
-  DO: 'DO',
-  DEP: 'DP',
-  GLC: 'GZ',
-  INV: 'IK',
-  IN1: 'IK',
-  JOB: '9R',
-  LOA: 'LO',
-  LOT: 'LT',
-  MAN: 'MA',
-  ORD: 'OQ',
-  PU: 'P8',
-  APP: 'AO',
-  PRO: '2I',
-  PRD: 'OZ',
-  PRJ: 'JB',
-  PO: 'PO',
-  QUO: 'Q1',
-  REF: 'CR',
-  REG: 'ACB',
-  RO: 'Q9',
-  RID: 'ACE',
-  RMA: 'QJ',
-  ROU: 'RU',
-  SO: 'SW',
-  SAL: 'SA',
-  SEA: 'SN',
-  SN: 'SE',
-  SID: '2I',
-  SKU: 'S6',
-  ST: 'ST',
-  STR: 'ST',
+  'DO': 'DO',
+  'DEP': 'DP',
+  'GLC': 'GZ',
+  'INV': 'IK',
+  'IN1': 'IK',
+  'JOB': '9R',
+  'LOA': 'LO',
+  'LOT': 'LT',
+  'MAN': 'MA',
+  'ORD': 'OQ',
+  'PU': 'P8',
+  'APP': 'AO',
+  'PRO': '2I',
+  'PRD': 'OZ',
+  'PRJ': 'JB',
+  'PO': 'PO',
+  'QUO': 'Q1',
+  'REF': 'CR',
+  'REG': 'ACB',
+  'RO': 'Q9',
+  'RID': 'ACE',
+  'RMA': 'QJ',
+  'ROU': 'RU',
+  'SO': 'SW',
+  'SAL': 'SA',
+  'SEA': 'SN',
+  'SN': 'SE',
+  'SID': '2I',
+  'SKU': 'S6',
+  'ST': 'ST',
+  'STR': 'ST',
   'TN#': 'TF',
-  TRL: 'EQ',
-  TO: 'TF',
-  WOR: 'WO',
-  ZON: '6K',
+  'TRL': 'EQ',
+  'TO': 'TF',
+  'WOR': 'WO',
+  'ZON': '6K',
 };
 
 // Function to get powerbroker code based on reftypeId
@@ -104,14 +104,14 @@ async function generateStop(
   shipmentAparData,
   shipmentDesc
 ) {
-  const { schedArriveEarly, schedArriveLate, timeZone } =
-    await processStopDataNonConsol(stopType, shipmentHeader, stateData);
+  const { schedArriveEarly, schedArriveLate, timeZone } = await processStopDataNonConsol(
+    stopType,
+    shipmentHeader,
+    stateData
+  );
 
   const instructions = await queryDynamoDB(
-    getParamsByTableName(
-      _.get(shipmentHeader, 'PK_OrderNo', ''),
-      'omni-wt-rt-instructions'
-    )
+    getParamsByTableName(_.get(shipmentHeader, 'PK_OrderNo', ''), 'omni-wt-rt-instructions')
   );
 
   const specialInstruction = _.filter(_.get(instructions, 'Items'), {
@@ -131,9 +131,7 @@ async function generateStop(
         ? _.get(stateData, 'ShipContact', 'NA')
         : _.get(stateData, 'ConContact', 'NA'),
     phone:
-      type === 'shipper'
-        ? _.get(stateData, 'ShipPhone', 'NA')
-        : _.get(stateData, 'ConPhone', 'NA'),
+      type === 'shipper' ? _.get(stateData, 'ShipPhone', 'NA') : _.get(stateData, 'ConPhone', 'NA'),
     sched_arrive_early: await getCstTime({
       datetime: schedArriveEarly,
       timezone: timeZone,
@@ -157,8 +155,7 @@ async function generateStop(
         comments: getNote(stateData, type),
       },
     ],
-    referenceNumbers:
-      type === 'shipper' ? generateReferenceNumbers({ references }) : [],
+    referenceNumbers: type === 'shipper' ? generateReferenceNumbers({ references }) : [],
   };
 
   specialInstruction.map((item) => {
@@ -319,8 +316,7 @@ async function generateStopforConsole(
   });
   if (type === 'shipper') {
     const userEmail = _.get(userData, 'UserEmail', '') || 'NA';
-    const equipmentCode =
-      _.get(shipmentHeaderData, '[0].equipmentCode', '') || 'NA';
+    const equipmentCode = _.get(shipmentHeaderData, '[0].equipmentCode', '') || 'NA';
     const total = sumNumericValues(shipmentAparConsoleData, 'Total');
     const dims = populateDims(housebillData, descData);
 
@@ -397,14 +393,7 @@ function getNote(confirmationCostData, type) {
   return note;
 }
 
-function getParamsByTableName(
-  orderNo,
-  tableName,
-  timezone,
-  billno,
-  userId,
-  consoleNo
-) {
+function getParamsByTableName(orderNo, tableName, timezone, billno, userId, consoleNo) {
   switch (tableName) {
     case 'omni-wt-rt-confirmation-cost':
       return {
@@ -535,12 +524,7 @@ async function queryDynamoDB(params) {
   }
 }
 
-async function fetchLocationId({
-  finalShipperData,
-  finalConsigneeData,
-  orderId,
-  houseBill,
-}) {
+async function fetchLocationId({ finalShipperData, finalConsigneeData, orderId, houseBill }) {
   // Get location ID for shipper
   let shipperLocationId = await getLocationId(
     finalShipperData.ShipName,
@@ -599,11 +583,7 @@ async function fetchLocationId({
   return { shipperLocationId, consigneeLocationId };
 }
 
-function getFinalShipperAndConsigneeData({
-  confirmationCostData,
-  shipperData,
-  consigneeData,
-}) {
+function getFinalShipperAndConsigneeData({ confirmationCostData, shipperData, consigneeData }) {
   // Check if required fields are present and non-empty in confirmationCostData
   let finalShipperData;
   if (_.get(confirmationCostData, 'ShipName', '') === '') {
@@ -624,10 +604,7 @@ function getFinalShipperAndConsigneeData({
 
 async function fetchAparTableForConsole({ orderNo }) {
   try {
-    const aparParamsForConsole = getParamsByTableName(
-      orderNo,
-      'omni-wt-rt-shipment-apar-console'
-    );
+    const aparParamsForConsole = getParamsByTableName(orderNo, 'omni-wt-rt-shipment-apar-console');
     return _.get(await queryDynamoDB(aparParamsForConsole), 'Items', false);
   } catch (e) {
     console.error('🙂 -> file: helper.js:415 -> e:', e);
@@ -636,29 +613,17 @@ async function fetchAparTableForConsole({ orderNo }) {
 }
 
 async function fetchCommonTableData({ shipmentAparData }) {
-  const tables = [
-    'omni-wt-rt-confirmation-cost',
-    'omni-wt-rt-shipper',
-    'omni-wt-rt-consignee',
-  ];
+  const tables = ['omni-wt-rt-confirmation-cost', 'omni-wt-rt-shipper', 'omni-wt-rt-consignee'];
 
   try {
-    const [confirmationCostData, shipperData, consigneeData] =
-      await Promise.all(
-        tables.map(async (table) => {
-          const param = getParamsByTableName(
-            _.get(shipmentAparData, 'FK_OrderNo'),
-            table
-          );
-          console.info(
-            '🙂 -> file: index.js:35 -> tables.map -> param:',
-            table,
-            param
-          );
-          const response = await queryDynamoDB(param);
-          return _.get(response, 'Items', []);
-        })
-      );
+    const [confirmationCostData, shipperData, consigneeData] = await Promise.all(
+      tables.map(async (table) => {
+        const param = getParamsByTableName(_.get(shipmentAparData, 'FK_OrderNo'), table);
+        console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
+        const response = await queryDynamoDB(param);
+        return _.get(response, 'Items', []);
+      })
+    );
     return { confirmationCostData, shipperData, consigneeData };
   } catch (err) {
     console.error('🙂 -> file: helper.js:438 -> err:', err);
@@ -674,22 +639,14 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
       'omni-wt-rt-shipment-desc',
     ];
 
-    const [shipmentHeaderData, referencesData, shipmentDescData] =
-      await Promise.all(
-        tables.map(async (table) => {
-          const param = getParamsByTableName(
-            _.get(shipmentAparData, 'FK_OrderNo'),
-            table
-          );
-          console.info(
-            '🙂 -> file: index.js:35 -> tables.map -> param:',
-            table,
-            param
-          );
-          const response = await queryDynamoDB(param);
-          return _.get(response, 'Items', []);
-        })
-      );
+    const [shipmentHeaderData, referencesData, shipmentDescData] = await Promise.all(
+      tables.map(async (table) => {
+        const param = getParamsByTableName(_.get(shipmentAparData, 'FK_OrderNo'), table);
+        console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
+        const response = await queryDynamoDB(param);
+        return _.get(response, 'Items', []);
+      })
+    );
     if (shipmentHeaderData.length === 0) {
       throw new Error('Missing data in shipment header');
     }
@@ -699,14 +656,8 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
       '',
       _.get(shipmentHeaderData, '[0].BillNo', '')
     );
-    console.info(
-      '🚀 ~ file: helper.js:471 ~ BillNo:',
-      _.get(shipmentHeaderData, '[0].BillNo', '')
-    );
-    console.info(
-      '🙂 -> file: index.js:61 -> customersParams:',
-      customersParams
-    );
+    console.info('🚀 ~ file: helper.js:471 ~ BillNo:', _.get(shipmentHeaderData, '[0].BillNo', ''));
+    console.info('🙂 -> file: index.js:61 -> customersParams:', customersParams);
     const tables2 = ['omni-wt-rt-customers'];
     const [customersData] = await Promise.all(
       tables2.map(async (table) => {
@@ -716,11 +667,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
           '',
           _.get(shipmentHeaderData, '[0].BillNo', '')
         );
-        console.info(
-          '🙂 -> file: index.js:35 -> tables.map -> param:',
-          table,
-          param
-        );
+        console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
         return _.get(response, 'Items', []);
       })
@@ -748,10 +695,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
 
 async function getUserData({ shipmentHeaderData }) {
   try {
-    console.info(
-      '🚀 ~ file: test.js:720 ~ getUserId ~ shipmentHeaderData:',
-      shipmentHeaderData
-    );
+    console.info('🚀 ~ file: test.js:720 ~ getUserId ~ shipmentHeaderData:', shipmentHeaderData);
 
     let userId = _.get(shipmentHeaderData, '[0].AcctManager', '');
     console.info('🚀 ~ file: test.js:723 ~ getUserId ~ userId:', userId);
@@ -787,21 +731,12 @@ async function queryTrackingNotes({ orderNo }) {
       },
       Limit: 1,
     };
-    console.info(
-      '🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:',
-      params
-    );
+    console.info('🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:', params);
     const response = await dynamoDB.query(params).promise();
-    console.info(
-      '🚀 ~ file: test.js:757 ~ queryTrackingNotes ~ response:',
-      response
-    );
+    console.info('🚀 ~ file: test.js:757 ~ queryTrackingNotes ~ response:', response);
     return _.get(response, 'Items[0].FK_UserId', []);
   } catch (error) {
-    console.error(
-      '🚀 ~ file: helper.js:792 ~ queryTrackingNotes ~ error:',
-      error
-    );
+    console.error('🚀 ~ file: helper.js:792 ~ queryTrackingNotes ~ error:', error);
     throw error;
   }
 }
@@ -815,10 +750,7 @@ async function queryUserTable({ userId }) {
         ':PK_UserId': userId,
       },
     };
-    console.info(
-      '🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:',
-      params
-    );
+    console.info('🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:', params);
     const response = await dynamoDB.query(params).promise();
     return _.get(response, 'Items', []);
   } catch (error) {
@@ -835,27 +767,22 @@ async function fetchConsoleTableData({ shipmentAparData }) {
       'omni-wt-rt-tracking-notes',
     ];
 
-    const [shipmentHeaderData, shipmentDescData, trackingNotesData] =
-      await Promise.all(
-        tables.map(async (table) => {
-          const param = getParamsByTableName(
-            _.get(shipmentAparData, 'FK_OrderNo'),
-            table,
-            '',
-            '',
-            '',
-            _.get(shipmentAparData, 'ConsolNo')
-          );
-          console.info(
-            '🙂 -> file: index.js:35 -> tables.map -> param:',
-            table,
-            param
-          );
-          const response = await queryDynamoDB(param);
-          console.info('🚀 ~ file: helper.js:510 ~ response:', response);
-          return _.get(response, 'Items', []);
-        })
-      );
+    const [shipmentHeaderData, shipmentDescData, trackingNotesData] = await Promise.all(
+      tables.map(async (table) => {
+        const param = getParamsByTableName(
+          _.get(shipmentAparData, 'FK_OrderNo'),
+          table,
+          '',
+          '',
+          '',
+          _.get(shipmentAparData, 'ConsolNo')
+        );
+        console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
+        const response = await queryDynamoDB(param);
+        console.info('🚀 ~ file: helper.js:510 ~ response:', response);
+        return _.get(response, 'Items', []);
+      })
+    );
     if (shipmentHeaderData === 0 || trackingNotesData === 0) {
       throw new Error('Missing data in customers or users');
     }
@@ -868,11 +795,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
           '',
           _.get(shipmentHeaderData, '[0].BillNo', '')
         );
-        console.info(
-          '🙂 -> file: index.js:35 -> tables.map -> param:',
-          table,
-          param
-        );
+        console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
         console.info('🚀 ~ file: helper.js:529 ~ response:', response);
         return _.get(response, 'Items', []);
@@ -930,10 +853,7 @@ async function getAparDataByConsole({ shipmentAparData }) {
         ':consolidation': 'N',
       },
     };
-    console.info(
-      '🙂 -> file: helper.js:551 -> shipmentAparParams:',
-      shipmentAparParams
-    );
+    console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentAparParams);
     const result = _.get(await queryDynamoDB(shipmentAparParams), 'Items', []);
     console.info('🙂 -> file: helper.js:573 -> result:', result);
     if (result.length <= 0) {
@@ -950,28 +870,11 @@ async function getAparDataByConsole({ shipmentAparData }) {
 
 async function getVesselForConsole({ shipmentAparConsoleData }) {
   const orderNo = _.get(shipmentAparConsoleData, '[0].FK_OrderNo');
-  const shipmentHeaderParam = getParamsByTableName(
-    orderNo,
-    'omni-wt-rt-shipment-header-console'
-  );
-  console.info(
-    '🙂 -> file: helper.js:555 -> shipmentHeaderParam:',
-    shipmentHeaderParam
-  );
-  const billno = _.get(
-    await queryDynamoDB(shipmentHeaderParam),
-    'Items.[0].BillNo'
-  );
-  const customersParams = getParamsByTableName(
-    '',
-    'omni-wt-rt-customers',
-    '',
-    billno
-  );
-  console.info(
-    '🙂 -> file: helper.js:558 -> customersParams:',
-    customersParams
-  );
+  const shipmentHeaderParam = getParamsByTableName(orderNo, 'omni-wt-rt-shipment-header-console');
+  console.info('🙂 -> file: helper.js:555 -> shipmentHeaderParam:', shipmentHeaderParam);
+  const billno = _.get(await queryDynamoDB(shipmentHeaderParam), 'Items.[0].BillNo');
+  const customersParams = getParamsByTableName('', 'omni-wt-rt-customers', '', billno);
+  console.info('🙂 -> file: helper.js:558 -> customersParams:', customersParams);
   return _.get(await queryDynamoDB(customersParams), 'Items.[0].CustName', '');
 }
 
@@ -985,18 +888,12 @@ async function getWeightPiecesForConsole({ shipmentAparConsoleData }) {
           ':orderNo': _.get(data, 'FK_OrderNo'),
         },
       };
-      console.info(
-        '🙂 -> file: helper.js:551 -> shipmentAparParams:',
-        shipmentDescParams
-      );
+      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentDescParams);
 
       return _.get(await queryDynamoDB(shipmentDescParams), 'Items', []);
     })
   );
-  console.info(
-    '🚀 ~ file: helper.js:795 ~ getWeightPiecesForConsole ~ descData:',
-    descData
-  );
+  console.info('🚀 ~ file: helper.js:795 ~ getWeightPiecesForConsole ~ descData:', descData);
   return descData;
 }
 
@@ -1035,10 +932,7 @@ async function getHazmat({ shipmentAparConsoleData: aparData }) {
           ':orderNo': _.get(data, 'FK_OrderNo'),
         },
       };
-      console.info(
-        '🙂 -> file: helper.js:551 -> shipmentAparParams:',
-        shipmentDescParams
-      );
+      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentDescParams);
 
       return _.get(await queryDynamoDB(shipmentDescParams), 'Items');
     })
@@ -1054,10 +948,7 @@ async function getHazmat({ shipmentAparConsoleData: aparData }) {
   return filteredDescData;
 }
 
-async function getHighValue({
-  shipmentAparConsoleData: aparData,
-  type = 'high_value',
-}) {
+async function getHighValue({ shipmentAparConsoleData: aparData, type = 'high_value' }) {
   const descData = await Promise.all(
     aparData.map(async (data) => {
       const shipmentHeaderParams = {
@@ -1067,10 +958,7 @@ async function getHighValue({
           ':orderNo': _.get(data, 'FK_OrderNo'),
         },
       };
-      console.info(
-        '🙂 -> file: helper.js:551 -> shipmentAparParams:',
-        shipmentHeaderParams
-      );
+      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentHeaderParams);
 
       return _.get(await queryDynamoDB(shipmentHeaderParams), 'Items');
     })
@@ -1098,10 +986,7 @@ async function getShipmentHeaderData({ shipmentAparConsoleData: aparData }) {
           ':orderNo': _.get(data, 'FK_OrderNo'),
         },
       };
-      console.info(
-        '🙂 -> file: helper.js:551 -> shipmentAparParams:',
-        shipmentHeaderParams
-      );
+      console.info('🙂 -> file: helper.js:551 -> shipmentAparParams:', shipmentHeaderParams);
 
       const queryResult = await queryDynamoDB(shipmentHeaderParams);
       const items = _.get(queryResult, 'Items', []);
@@ -1171,9 +1056,7 @@ async function getReferencesData({ shipmentAparConsoleData: aparData }) {
 }
 
 function getPieces({ shipmentDesc }) {
-  return _.sumBy(shipmentDesc, (data) =>
-    parseInt(_.get(data, 'Pieces', 0), 10)
-  );
+  return _.sumBy(shipmentDesc, (data) => parseInt(_.get(data, 'Pieces', 0), 10));
 }
 
 // Reusable function to convert string values to numbers and sum them
@@ -1262,9 +1145,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       const cst = await dynamoDB.query(cstparams).promise();
       consolStopItems.push(...cst.Items);
       if (consolStopItems.length === 0) {
-        throw new Error(
-          `No consol stop items data found for FK_OrderNo:${element.FK_OrderNo}`
-        );
+        throw new Error(`No consol stop items data found for FK_OrderNo:${element.FK_OrderNo}`);
       }
       const uniqueConsolStopItems = getUniqueObjects(consolStopItems);
 
@@ -1284,9 +1165,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       }
     }
     if (consolStopHeaders.length === 0) {
-      throw new Error(
-        `No consol stop headers data found for CONSOL_NO:${CONSOL_NO}`
-      );
+      throw new Error(`No consol stop headers data found for CONSOL_NO:${CONSOL_NO}`);
     }
     const uniqueConsolStopHeaders = getUniqueObjects(consolStopHeaders);
 
@@ -1303,9 +1182,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
       customer = customerResult.Items;
     }
     if (customer.length === 0) {
-      throw new Error(
-        `No customer data found for BillNo:${shipmentHeader[0].BillNo}`
-      );
+      throw new Error(`No customer data found for BillNo:${shipmentHeader[0].BillNo}`);
     }
 
     const references = [];
@@ -1330,15 +1207,10 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     };
 
     const trackingNotesResult = await dynamoDB.query(tnparams).promise();
-    console.info(
-      '🚀 ~ file: helper.js:777 ~ trackingNotesResult:',
-      trackingNotesResult
-    );
+    console.info('🚀 ~ file: helper.js:777 ~ trackingNotesResult:', trackingNotesResult);
 
     if (trackingNotesResult.Items.length === 0) {
-      throw new Error(
-        `No data found in tracking notes table for ConsolNo:${CONSOL_NO}`
-      );
+      throw new Error(`No data found in tracking notes table for ConsolNo:${CONSOL_NO}`);
     }
     let users = [];
     const userparams = {
@@ -1384,11 +1256,7 @@ async function populateStops(
   const stops = [];
   const orderId = _.join(_.map(shipmentApar, 'FK_OrderNo'));
   const houseBill = _.join(_.map(shipmentHeader, 'Housebill'));
-  const locationIds = await fetchLocationIds(
-    consolStopHeaders,
-    orderId,
-    houseBill
-  );
+  const locationIds = await fetchLocationIds(consolStopHeaders, orderId, houseBill);
 
   for (const [index, stopHeader] of consolStopHeaders.entries()) {
     const locationId = locationIds[index];
@@ -1453,8 +1321,7 @@ async function populateStops(
     const retrievedTimeLate = stopHeader.ConsolStopTimeEnd.split(' ')[1];
     const lateDatetime = `${retrievedDateLate} ${retrievedTimeLate}`;
     // Populate special instructions
-    const specialInstructions =
-      await populateSpecialInstructions(shipmentHeader);
+    const specialInstructions = await populateSpecialInstructions(shipmentHeader);
     stopNotes = [...stopNotes, ...specialInstructions.flat()];
 
     const stop = {
@@ -1498,10 +1365,7 @@ async function populateSpecialInstructions(shipmentHeader) {
   const specialInstructions = await Promise.all(
     shipmentHeader.map(async (header) => {
       const instructions = await queryDynamoDB(
-        getParamsByTableName(
-          _.get(header, 'PK_OrderNo', ''),
-          'omni-wt-rt-instructions'
-        )
+        getParamsByTableName(_.get(header, 'PK_OrderNo', ''), 'omni-wt-rt-instructions')
       );
 
       const specialInstruction = _.filter(_.get(instructions, 'Items'), {
@@ -1523,10 +1387,7 @@ async function populateSpecialInstructions(shipmentHeader) {
 
 function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
   return _.map(shipmentHeader, (header) => {
-    const matchingDesc = _.find(
-      shipmentDesc,
-      (desc) => desc.FK_OrderNo === header.PK_OrderNo
-    );
+    const matchingDesc = _.find(shipmentDesc, (desc) => desc.FK_OrderNo === header.PK_OrderNo);
     return {
       __type: 'reference_number',
       __name: 'referenceNumbers',
@@ -1548,18 +1409,13 @@ function populateDims(shipmentHeader, shipmentDesc) {
   if (!Array.isArray(shipmentHeader)) {
     shipmentHeader = [shipmentHeader];
   }
-  console.info(
-    '🚀 ~ file: test.js:627 ~ populateDims ~ shipmentHeader:',
-    shipmentHeader
-  );
+  console.info('🚀 ~ file: test.js:627 ~ populateDims ~ shipmentHeader:', shipmentHeader);
 
   const combinedDims = {};
 
   // Iterate over each shipment header
   shipmentHeader.forEach((header) => {
-    const matchingDesc = shipmentDesc.filter(
-      (desc) => desc.FK_OrderNo === header.PK_OrderNo
-    );
+    const matchingDesc = shipmentDesc.filter((desc) => desc.FK_OrderNo === header.PK_OrderNo);
 
     matchingDesc.forEach((desc) => {
       const housebill = header.Housebill;
@@ -1574,17 +1430,12 @@ function populateDims(shipmentHeader, shipmentDesc) {
   });
 
   // Generate comments for each housebill
-  const comments = Object.entries(combinedDims).map(
-    ([housebill, dimsArray]) => {
-      const dimsComments = dimsArray
-        .map(
-          (dim) =>
-            `Pieces: ${dim.pieces}, Dims: L/W/H: ${dim.length}/${dim.width}/${dim.height}`
-        )
-        .join(', ');
-      return `Housebill: ${housebill} ~ ${dimsComments}`;
-    }
-  );
+  const comments = Object.entries(combinedDims).map(([housebill, dimsArray]) => {
+    const dimsComments = dimsArray
+      .map((dim) => `Pieces: ${dim.pieces}, Dims: L/W/H: ${dim.length}/${dim.width}/${dim.height}`)
+      .join(', ');
+    return `Housebill: ${housebill} ~ ${dimsComments}`;
+  });
 
   return {
     __type: 'stop_note',
@@ -1645,25 +1496,13 @@ async function getCstTime({ datetime, timezone }) {
 
     // Combine date and time
     let formattedDateTime = datetime + utcOffset;
-    console.info(
-      '🚀 ~ file: helper.js:1315 ~ getCstTime ~ formattedDateTime:',
-      formattedDateTime
-    );
+    console.info('🚀 ~ file: helper.js:1315 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
     formattedDateTime = moment(formattedDateTime, 'YYYY-MM-DD HH:mm:ss.SSSZZ')
       .tz(timezone)
       .format('YYYYMMDDHHmmss');
-    const cstOffset = getNormalizedUtcOffset(
-      new Date(datetime),
-      'America/Chicago'
-    );
-    console.info(
-      '🚀 ~ file: helper.js:1374 ~ getCstTime ~ cstOffset:',
-      cstOffset
-    );
-    console.info(
-      '🚀 ~ file: test.js:25 ~ getCstTime ~ formattedDateTime:',
-      formattedDateTime
-    );
+    const cstOffset = getNormalizedUtcOffset(new Date(datetime), 'America/Chicago');
+    console.info('🚀 ~ file: helper.js:1374 ~ getCstTime ~ cstOffset:', cstOffset);
+    console.info('🚀 ~ file: test.js:25 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
     formattedDateTime += cstOffset;
     return formattedDateTime;
   } catch (error) {
@@ -1674,11 +1513,7 @@ async function getCstTime({ datetime, timezone }) {
 
 function getNormalizedUtcOffset(formattedDate, timezone) {
   try {
-    const momentTimezone = moment.tz(
-      formattedDate,
-      'YYYY-MM-DD HH:mm:ss.SSS',
-      timezone
-    );
+    const momentTimezone = moment.tz(formattedDate, 'YYYY-MM-DD HH:mm:ss.SSS', timezone);
 
     const offsetFormatted = momentTimezone.format('ZZ');
     console.info('🚀 ~ offset:', offsetFormatted);
@@ -1695,47 +1530,47 @@ function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
     '22 BOX': 'SBT',
     '24 BOX': 'SBT',
     '26 BOX': 'SBT',
-    48: 'TT',
+    '48': 'TT',
     '48 FT AIR': 'TT',
-    53: 'V',
+    '53': 'V',
     '53 FT AIR': 'VA',
-    C: 'C',
+    'C': 'C',
     'CARGO VAN': 'V',
-    CN: 'CN',
-    DD: 'DD',
-    F: 'F',
-    FA: 'FA',
-    FC: 'FC',
-    FD: 'FD',
-    FH: 'FH',
-    FM: 'FM',
-    FN: 'FN',
-    FO: 'FO',
-    FS: 'O',
-    FT: 'FT',
-    LB: 'LB',
+    'CN': 'CN',
+    'DD': 'DD',
+    'F': 'F',
+    'FA': 'FA',
+    'FC': 'FC',
+    'FD': 'FD',
+    'FH': 'FH',
+    'FM': 'FM',
+    'FN': 'FN',
+    'FO': 'FO',
+    'FS': 'O',
+    'FT': 'FT',
+    'LB': 'LB',
     'LFT PJ BOX': 'O',
     'LFTG BOX': 'O',
     'LG SPRINT': 'SPNT',
-    PO: 'PO',
-    R: 'R',
-    RG: 'RG',
-    RM: 'RM',
-    SB: 'SB',
-    SD: 'SD',
+    'PO': 'PO',
+    'R': 'R',
+    'RG': 'RG',
+    'RM': 'RM',
+    'SB': 'SB',
+    'SD': 'SD',
     'SM SPRINT': 'SPNT',
-    SR: 'SR',
-    STRAIGHT: 'SBT',
+    'SR': 'SR',
+    'STRAIGHT': 'SBT',
     'TM BOX': 'SBM',
     'TM SPINT': 'SPNT',
-    V: 'V',
-    VA: 'VA',
-    VF: 'VF',
-    VL: 'VL',
-    VM: 'VM',
-    VN: 'VN',
-    VR: 'VR',
-    VZ: 'VZ',
+    'V': 'V',
+    'VA': 'VA',
+    'VF': 'VF',
+    'VL': 'VL',
+    'VM': 'VM',
+    'VN': 'VN',
+    'VR': 'VR',
+    'VZ': 'VZ',
   };
 
   // Convert the input to uppercase for case-insensitive comparison
