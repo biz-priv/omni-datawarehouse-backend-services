@@ -38,3 +38,4 @@ function:
     CONSOLE_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
     ACCEPTED_BILLNOS: ${ssm:/omni-204-create-shipment/${self:provider.stage}/accepted/filterBillNo}
     LGB_ACCEPTED_BILLNOS: ${ssm:/omni-204-create-shipment/${self:provider.stage}/lgb-accepted/filterBillNo}
+    COMCAST_BILLNOS: ${ssm:/omni-204-create-shipment/${self:provider.stage}/comcast/filterBillNo}
