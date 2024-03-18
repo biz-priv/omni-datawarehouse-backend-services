@@ -90,8 +90,8 @@ async function prepareHeaderLevelAndReferenceListData(xmlObj, statusCode) {
       if (orgCode === 'ROYENFMKE') {
         headerData.DeclaredType = 'LL';
         headerData.ShipperName = 'ROYAL ENFIELD NA LTD-EULESS';
-      } 
-      if(orgCode === 'DUCATI') {
+      }
+      if (orgCode === 'DUCATI') {
         const orderLineArray = get(
           xmlObj,
           'UniversalShipment.Shipment.Order.OrderLineCollection.OrderLine',

@@ -1,7 +1,7 @@
-"use strict";
-const axios = require("axios");
-const _ = require("lodash");
-const xml2js = require("xml2js");
+'use strict';
+const axios = require('axios');
+const _ = require('lodash');
+const xml2js = require('xml2js');
 
 const {
   AUTH,
@@ -17,29 +17,24 @@ const {
 
 const apiKey = ADDRESS_MAPPING_G_API_KEY;
 
-async function getLocationId(
-  name,
-  address1,
-  address2,
-  state,
-) {
-  let address1Words = address1.split(" ");
+async function getLocationId(name, address1, address2, state) {
+  const address1Words = address1.split(' ');
 
   // Check if address1 has more than two words
   if (address1Words.length > 2) {
     // Append an asterisk to the end of the second word
-    address1Words[1] += "*";
+    address1Words[1] += '*';
     // Remove the third word
     address1Words.splice(2);
   }
 
   // Join the modified words back into address1
-  address1 = address1Words.join(" ");
-  const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${ address2 ?? ""}&state=${state}`;
+  address1 = address1Words.join(' ');
+  const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${address2 ?? ''}&state=${state}`;
 
-  console.info('🚀 ~ file: apis.js:40 ~ apiUrl:', apiUrl)
+  console.info('🚀 ~ file: apis.js:40 ~ apiUrl:', apiUrl);
   const headers = {
-    Accept: "application/json",
+    Accept: 'application/json',
     Authorization: AUTH,
   };
 
@@ -50,33 +45,24 @@ async function getLocationId(
     });
 
     // Handle the response using lodash or other methods as needed
-    const responseData = _.get(response, "data", {});
-    console.info(
-      "🙂 -> file: apis.js:30 -> getLocationId -> responseData:",
-      responseData
-    );
+    const responseData = _.get(response, 'data', {});
+    console.info('🙂 -> file: apis.js:30 -> getLocationId -> responseData:', responseData);
     // Return the location ID or perform additional processing as needed
-    return _.get(responseData, "[0].id", false);
+    return _.get(responseData, '[0].id', false);
   } catch (error) {
-    console.error("🙂 -> file: apis.js:34 -> getLocationId -> error:", error);
+    console.error('🙂 -> file: apis.js:34 -> getLocationId -> error:', error);
     return false;
   }
 }
 
-async function createLocation({
-  data,
-  orderId,
-  consolNo = 0,
-  country,
-  houseBill,
-}) {
-  if (country.toLowerCase() === "us" && _.get(data, "zip_code", 0).length > 5) {
+async function createLocation({ data, orderId, consolNo = 0, country, houseBill }) {
+  if (country.toLowerCase() === 'us' && _.get(data, 'zip_code', 0).length > 5) {
     data.zip_code = data.zip_code.slice(0, 5);
   }
   const apiUrl = CREATE_LOC_URL;
 
   const headers = {
-    Accept: "application/json",
+    Accept: 'application/json',
     Authorization: AUTH,
   };
 
@@ -86,16 +72,13 @@ async function createLocation({
     });
 
     // Handle the response using lodash or other methods as needed
-    const responseData = _.get(response, "data", {});
-    console.info(
-      "🙂 -> file: apis.js:54 -> createLocation -> responseData:",
-      responseData
-    );
+    const responseData = _.get(response, 'data', {});
+    console.info('🙂 -> file: apis.js:54 -> createLocation -> responseData:', responseData);
     // Return the created location data or perform additional processing as needed
-    return _.get(responseData, "id", false);
+    return _.get(responseData, 'id', false);
   } catch (error) {
-    const errorMessage = _.get(error, "response.data", error.message);
-    console.error("🙂 -> file: apis.js:58 -> createLocation -> error:", error);
+    const errorMessage = _.get(error, 'response.data', error.message);
+    console.error('🙂 -> file: apis.js:58 -> createLocation -> error:', error);
     throw new Error(`\nError in Create Location API.
     \n FK_OrderNo: ${orderId}
     \n ConsolNo: ${consolNo}
@@ -106,16 +89,11 @@ async function createLocation({
   }
 }
 
-async function sendPayload({
-  payload: data,
-  orderId,
-  consolNo = 0,
-  houseBillString,
-}) {
+async function sendPayload({ payload: data, orderId, consolNo = 0, houseBillString }) {
   const apiUrl = SEND_PAYLOAD_URL;
 
   const headers = {
-    Accept: "application/json",
+    Accept: 'application/json',
     Authorization: AUTH,
   };
 
@@ -125,13 +103,13 @@ async function sendPayload({
     });
 
     // Handle the response using lodash or other methods as needed
-    const responseData = _.get(response, "data", {});
-    console.info("🙂 -> file: apis.js:74 -> responseData:", responseData);
+    const responseData = _.get(response, 'data', {});
+    console.info('🙂 -> file: apis.js:74 -> responseData:', responseData);
     // Return the created location data or perform additional processing as needed
     return responseData;
   } catch (error) {
-    console.info("🙂 -> file: apis.js:78 -> error:", error);
-    const errorMessage = _.get(error, "response.data", error.message);
+    console.info('🙂 -> file: apis.js:78 -> error:', error);
+    const errorMessage = _.get(error, 'response.data', error.message);
     throw new Error(`\nError in Create Orders API.
     \n FK_OrderNo: ${orderId}
     \n ConsolNo: ${consolNo}
@@ -142,16 +120,11 @@ async function sendPayload({
   }
 }
 
-async function updateOrders({
-  payload: data,
-  orderId,
-  consolNo = 0,
-  houseBillString,
-}) {
+async function updateOrders({ payload: data, orderId, consolNo = 0, houseBillString }) {
   const apiUrl = UPDATE_PAYLOAD_URL;
 
   const headers = {
-    Accept: "application/json",
+    Accept: 'application/json',
     Authorization: AUTH,
   };
 
@@ -161,16 +134,13 @@ async function updateOrders({
     });
 
     // Handle the response using lodash or other methods as needed
-    const responseData = _.get(response, "data", {});
-    console.info(
-      "🙂 -> file: apis.js:54 -> updateOrders -> responseData:",
-      responseData
-    );
+    const responseData = _.get(response, 'data', {});
+    console.info('🙂 -> file: apis.js:54 -> updateOrders -> responseData:', responseData);
     // Return the created location data or perform additional processing as needed
     return responseData;
   } catch (error) {
-    console.info("🙂 -> file: apis.js:103 -> error:", error);
-    const errorMessage = _.get(error, "response.data", error.message);
+    console.info('🙂 -> file: apis.js:103 -> error:', error);
+    const errorMessage = _.get(error, 'response.data', error.message);
     throw new Error(`\nError in Update Orders API.
     \n FK_OrderNo: ${orderId}
     \n ConsolNo: ${consolNo}
@@ -213,8 +183,8 @@ async function liveSendUpdate(houseBill, shipmentId) {
   try {
     const response = await axios.post(TRACKING_NOTES_API_URL, requestBody, {
       headers: {
-        "Content-Type": "text/xml",
-        Accept: "text/xml",
+        'Content-Type': 'text/xml',
+        'Accept': 'text/xml',
       },
     });
 
@@ -222,22 +192,19 @@ async function liveSendUpdate(houseBill, shipmentId) {
     const parsedResponse = await xmlParser.parseStringPromise(response.data);
 
     const result =
-      parsedResponse["soap:Envelope"]["soap:Body"].WriteTrackingNoteResponse
+      parsedResponse['soap:Envelope']['soap:Body'].WriteTrackingNoteResponse
         .WriteTrackingNoteResult;
 
-    if (result === "Success") {
-      console.info(
-        `updated in tracking notes API with shipmentId: ${shipmentId}`
-      );
+    if (result === 'Success') {
+      console.info(`updated in tracking notes API with shipmentId: ${shipmentId}`);
       return parsedResponse;
     }
-    parsedResponse["soap:Envelope"][
-      "soap:Body"
-    ].WriteTrackingNoteResponse.WriteTrackingNoteResult = "Failed";
+    parsedResponse['soap:Envelope']['soap:Body'].WriteTrackingNoteResponse.WriteTrackingNoteResult =
+      'Failed';
     return parsedResponse;
   } catch (error) {
-    console.error("Error in liveSendUpdate:", error);
-    return error.response ? error.response.data : "liveSendUpdate error";
+    console.error('Error in liveSendUpdate:', error);
+    return error.response ? error.response.data : 'liveSendUpdate error';
   }
 }
 
@@ -247,15 +214,11 @@ async function checkAddressByGoogleApi(address) {
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
     );
 
-    if (geocodeResponse.data.status !== "OK") {
+    if (geocodeResponse.data.status !== 'OK') {
       throw new Error(`Unable to geocode ${address}`);
     }
 
-    const { lat, lng } = _.get(
-      geocodeResponse,
-      "data.results[0].geometry.location",
-      {}
-    );
+    const { lat, lng } = _.get(geocodeResponse, 'data.results[0].geometry.location', {});
     return { lat, lng };
   } catch (error) {
     console.error(`Error geocoding address "${address}":`, error.message);
@@ -270,19 +233,14 @@ async function getTimezoneByGoogleApi(lat, long) {
       `https://maps.googleapis.com/maps/api/timezone/json?location=${lat}%2C${long}&timestamp=${timestamp}&key=${apiKey}`
     );
 
-    if (timezoneResponse.data.status !== "OK") {
-      throw new Error(
-        `Unable to fetch timezone for coordinates (${lat}, ${long})`
-      );
+    if (timezoneResponse.data.status !== 'OK') {
+      throw new Error(`Unable to fetch timezone for coordinates (${lat}, ${long})`);
     }
 
-    const timeZoneId = _.get(timezoneResponse, "data.timeZoneId");
+    const timeZoneId = _.get(timezoneResponse, 'data.timeZoneId');
     return timeZoneId;
   } catch (error) {
-    console.error(
-      `Error fetching timezone for coordinates (${lat}, ${long}):`,
-      error.message
-    );
+    console.error(`Error fetching timezone for coordinates (${lat}, ${long}):`, error.message);
     throw error;
   }
 }
