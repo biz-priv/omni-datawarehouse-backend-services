@@ -29,7 +29,7 @@ module.exports.handler = async (event, context) => {
   let consolNo;
   let orderId;
   let houseBillString = '';
-  let stationCode;
+  let stationCode = 'SUPPORT';
 
   try {
     const promises = dynamoEventRecords.map(async (record) => {

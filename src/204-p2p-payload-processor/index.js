@@ -35,7 +35,7 @@ module.exports.handler = async (event, context) => {
   );
   functionName = _.get(context, 'functionName');
   const dynamoEventRecords = event.Records;
-  let stationCode;
+  let stationCode = 'SUPPORT';
 
   try {
     const promises = dynamoEventRecords.map(async (record) => {

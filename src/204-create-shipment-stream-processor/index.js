@@ -19,6 +19,7 @@ const {
   SHIPMENT_HEADER_TABLE,
   ACCEPTED_BILLNOS,
   LGB_ACCEPTED_BILLNOS,
+  COMCAST_BILLNOS,
 } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
@@ -106,7 +107,7 @@ module.exports.handler = async (event, context) => {
             // Check if createDateTime is before "2024-03-06 16:00:000"
             if (createDateTime < '2024-03-06 17:15:000') {
               console.info(
-                'Shipment is created before 2024-03-06 17:15:000. Skipping the process.'
+                'Shipment is created before 2024-03-06 17:15:000 for LGB_ACCEPTED_BILLNOS. Skipping the process.'
               );
               return true;
             }
@@ -114,9 +115,28 @@ module.exports.handler = async (event, context) => {
             // If there are no bill numbers satisfying the criteria, skip further processing
             if (commonLGBBillNos.length === 0) {
               console.info(
-                'Ignoring shipment, No bill numbers in LGB_ACCEPTED_BILLNOS satisfy the conditions. Skipping process.'
+                'Ignoring shipment, No bill numbers in LGB_ACCEPTED_BILLNOS satisfy the conditions. Checking COMCAST_BILLNOS.'
               );
-              return true;
+
+              // Check for accepted bill numbers in COMCAST_BILLNOS
+              const commonComcastBillNos = COMCAST_BILLNOS.split(',').filter((billNo) =>
+                billNumbers.includes(billNo)
+              );
+
+              // Check if createDateTime is before "2024-03-18 13:30:000" for COMCAST_BILLNOS
+              if (createDateTime < '2024-03-18 13:30:000') {
+                console.info(
+                  'Shipment is created before 2024-03-18 14:00:000 for COMCAST_BILLNOS. Skipping the process.'
+                );
+                return true;
+              }
+
+              if (commonComcastBillNos.length === 0) {
+                console.info(
+                  'Ignoring shipment, No bill numbers in COMCAST_BILLNOS satisfy the conditions. Skipping process.'
+                );
+                return true;
+              }
             }
           } else {
             console.info('Accepted bill numbers found. Skipping LGB_ACCEPTED_BILLNOS check.');
