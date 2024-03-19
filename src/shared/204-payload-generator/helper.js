@@ -1386,8 +1386,21 @@ async function populateSpecialInstructions(shipmentHeader) {
 }
 
 function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
+  
   return _.map(shipmentHeader, (header) => {
-    const matchingDesc = _.find(shipmentDesc, (desc) => desc.FK_OrderNo === header.PK_OrderNo);
+    // Initialize variables to store the sum of pieces and weights for each header
+    let totalPieces = 0;
+    let totalWeight = 0;
+    
+    const matchingDesc = _.filter(shipmentDesc, (desc) => desc.FK_OrderNo === header.PK_OrderNo);
+    console.info('🙂 -> matchingDesc:', matchingDesc);
+
+    // Iterate over matchingDesc objects to accumulate pieces and weights
+    _.forEach(matchingDesc, (desc) => {
+      totalPieces += parseInt(_.get(desc, 'Pieces', 0), 10);
+      totalWeight += parseFloat(_.get(desc, 'Weight', 0));
+    });
+
     return {
       __type: 'reference_number',
       __name: 'referenceNumbers',
@@ -1395,14 +1408,15 @@ function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
       version: '004010',
       company_id: 'TMS',
       element_id: '128',
-      pieces: _.get(matchingDesc, 'Pieces', 0),
-      weight: _.get(matchingDesc, 'Weight', 0),
+      pieces: totalPieces,
+      weight: totalWeight,
       reference_number: _.get(header, 'Housebill', 0),
       reference_qual: 'MB',
       send_to_driver: false,
     };
   });
 }
+
 
 function populateDims(shipmentHeader, shipmentDesc) {
   // Check if shipmentHeader is not an array, then wrap it into an array
