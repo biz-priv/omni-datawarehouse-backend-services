@@ -78,11 +78,29 @@ module.exports.handler = async (event, context) => {
             return true;
           }
 
-          const shipmentHeaderResult = await fetchBillNos({ orderNo: orderId });
+          let retryCount = 0;
+          const maxRetries = 3;
+          const retryInterval = 5000; // 5 seconds in milliseconds
+
+          let shipmentHeaderResult = [];
+          while (retryCount < maxRetries) {
+            shipmentHeaderResult = await fetchBillNos({ orderNo: orderId });
+            if (shipmentHeaderResult.length > 0) {
+              break; // Break the retry loop if data is found
+            } else {
+              console.info('No shipment header data found. Retrying...');
+              await new Promise((resolve) => setTimeout(resolve, retryInterval));
+              retryCount++;
+            }
+          }
+
           // Check if there are any items in the result
           if (shipmentHeaderResult.length === 0) {
-            console.info('No shipment header data found. Skipping process.');
-            return true; // Skip further processing
+            console.error('No shipment header data found. Skipping process.');
+            throw new Error(`No shipment header data was found, hence the process cannot proceed.
+            \n Please verify if there is any data available in the ${SHIPMENT_HEADER_TABLE} table associated with the PK_OrderNo: ${orderId} after 5 minutes.
+            \n If data exists, please consider retriggering the processing of this record by incrementing or decrementing the InsertedTimeStamp by 1 second for the FK_OrderNo: ${orderId} in the ${SHIPMENT_APAR_TABLE} table.
+            \n If data does not exists, please close the ticket after 5 minutes.`);
           }
 
           // Extract bill numbers from the result
