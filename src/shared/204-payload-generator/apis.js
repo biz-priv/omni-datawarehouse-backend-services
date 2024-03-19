@@ -18,18 +18,30 @@ const {
 const apiKey = ADDRESS_MAPPING_G_API_KEY;
 
 async function getLocationId(name, address1, address2, state) {
-  const address1Words = address1.split(' ');
+  const handleSpecialCharacters = (inputString) => {
+    if (/[^a-zA-Z0-9 ]/.test(inputString)) {
+      let outputString = inputString.replace(/[^a-zA-Z0-9 ]/g, '*');
+      let starPosition = outputString.indexOf('*');
+      if (starPosition === 0) {
+        outputString = outputString.substring(1);
+        starPosition = outputString.indexOf('*');
+      }
+      if (starPosition !== -1) {
+        outputString = outputString.substring(0, starPosition + 1);
+      }
+      outputString = outputString.replace(' *', '*');
+      return outputString;
+    }
+    return inputString;
+  };
+  // Apply special character handling to name, address1, and address2
+  name = handleSpecialCharacters(name);
+  console.info('🚀 ~ file: test.js:1182 ~ getLocationId ~ name:', name);
+  address1 = handleSpecialCharacters(address1);
+  console.info('🚀 ~ file: test.js:1184 ~ getLocationId ~ address1:', address1);
+  address2 = handleSpecialCharacters(address2);
+  console.info('🚀 ~ file: test.js:1186 ~ getLocationId ~ address2:', address2);
 
-  // Check if address1 has more than two words
-  if (address1Words.length > 2) {
-    // Append an asterisk to the end of the second word
-    address1Words[1] += '*';
-    // Remove the third word
-    address1Words.splice(2);
-  }
-
-  // Join the modified words back into address1
-  address1 = address1Words.join(' ');
   const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${address2 ?? ''}&state=${state}`;
 
   console.info('🚀 ~ file: apis.js:40 ~ apiUrl:', apiUrl);
@@ -39,16 +51,33 @@ async function getLocationId(name, address1, address2, state) {
   };
 
   try {
-    const response = await axios.get(apiUrl, {
-      // params: queryParams,
-      headers,
+    const response = await axios.get(apiUrl, { headers });
+    const responseData = _.get(response, 'data', {});
+    console.info('🙂 -> responseData:', responseData);
+
+    // Remove asterisks from name, address1, and address2
+    name = name.replace('*', '');
+    address1 = address1.replace('*', '');
+    address2 = address2 ? address2.replace('*', '') : address2;
+    // Filter response data to ensure all fields start with name, address1, address2, and equal to state
+    const filteredData = _.filter(responseData, (item) => {
+      return (
+        (name === item.name || _.startsWith(item.name, name)) &&
+        (address1 === item.address1 || _.startsWith(item.address1, address1)) &&
+        (_.isEmpty(address2) ||
+          address2 === item.address2 ||
+          _.startsWith(item.address2, address2)) &&
+        item.state === state
+      );
     });
 
-    // Handle the response using lodash or other methods as needed
-    const responseData = _.get(response, 'data', {});
-    console.info('🙂 -> file: apis.js:30 -> getLocationId -> responseData:', responseData);
-    // Return the location ID or perform additional processing as needed
-    return _.get(responseData, '[0].id', false);
+    if (!_.isEmpty(filteredData)) {
+      console.info('🙂 -> filteredData[0]:', filteredData[0]);
+      console.info('🙂 -> filteredData[0].id:', filteredData[0].id);
+      // Return the location ID or perform additional processing as needed
+      return _.get(filteredData, '[0].id', false);
+    }
+    return false;
   } catch (error) {
     console.error('🙂 -> file: apis.js:34 -> getLocationId -> error:', error);
     return false;
