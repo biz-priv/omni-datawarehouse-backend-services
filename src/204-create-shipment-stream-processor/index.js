@@ -28,6 +28,7 @@ let functionName;
 let orderId;
 module.exports.handler = async (event, context) => {
   let controlStation;
+  let stationCode;
   console.info('🚀 ~ file: index.js:26 ~ event:', JSON.stringify(event));
   try {
     functionName = get(context, 'functionName');
@@ -52,6 +53,7 @@ module.exports.handler = async (event, context) => {
         const consolidation = get(shipmentAparData, 'Consolidation');
 
         controlStation = get(shipmentAparData, 'FK_ConsolStationId');
+        console.info('🚀 ~ file: index.js:55 ~ get ~ controlStation:', controlStation);
 
         const createDateTime = get(shipmentAparData, 'CreateDateTime');
 
@@ -69,6 +71,8 @@ module.exports.handler = async (event, context) => {
         }
 
         if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
+          stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
+          console.info('🚀 ~ file: index.js:75 ~ get ~ stationCode:', stationCode);
           console.info('Non Console');
           type = TYPES.NON_CONSOLE;
 
@@ -78,11 +82,31 @@ module.exports.handler = async (event, context) => {
             return true;
           }
 
-          const shipmentHeaderResult = await fetchBillNos({ orderNo: orderId });
+          let retryCount = 0;
+          const maxRetries = 3;
+          const retryInterval = 5000; // 5 seconds in milliseconds
+
+          let shipmentHeaderResult = [];
+          while (retryCount < maxRetries) {
+            console.info('🚀 ~ file: index.js:87 ~ get ~ retryCount:', retryCount);
+            shipmentHeaderResult = await fetchBillNos({ orderNo: orderId });
+            if (shipmentHeaderResult.length > 0) {
+              break; // Break the retry loop if data is found
+            } else {
+              console.info('No shipment header data found. Retrying...');
+              await new Promise((resolve) => setTimeout(resolve, retryInterval));
+              retryCount++;
+            }
+          }
+
           // Check if there are any items in the result
           if (shipmentHeaderResult.length === 0) {
-            console.info('No shipment header data found. Skipping process.');
-            return true; // Skip further processing
+            console.error('No shipment header data found. Skipping process.');
+            throw new Error(`
+            \n No shipment header data was found, hence the process cannot proceed.
+            \n Please verify if there is any data available in the ${SHIPMENT_HEADER_TABLE} table associated with the PK_OrderNo: ${orderId} after 5 minutes.
+            \n If data exists, please consider retriggering the processing of this record by incrementing or decrementing the InsertedTimeStamp by 1 second for the FK_OrderNo: ${orderId} in the ${SHIPMENT_APAR_TABLE} table.
+            \n If data does not exists, please close the ticket after 5 minutes.`);
           }
 
           // Extract bill numbers from the result
@@ -150,6 +174,7 @@ module.exports.handler = async (event, context) => {
           vendorId === VENDOR &&
           controlStation === 'OTR'
         ) {
+          stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
           console.info('Console');
           type = TYPES.CONSOLE;
           const aparResult = await fetchPreviousOrderNos({ consolNo });
@@ -166,6 +191,7 @@ module.exports.handler = async (event, context) => {
           serviceLevelId === 'MT' &&
           controlStation === 'OTR'
         ) {
+          stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
           console.info('Multi Stop');
           type = TYPES.MULTI_STOP;
           const aparResult = await fetchPreviousOrderNos({ consolNo });
@@ -206,7 +232,7 @@ module.exports.handler = async (event, context) => {
     );
     return await publishSNSTopic({
       message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
-      stationCode: controlStation,
+      stationCode,
     });
   }
 };
