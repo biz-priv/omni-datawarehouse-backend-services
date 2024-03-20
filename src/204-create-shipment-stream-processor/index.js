@@ -98,7 +98,13 @@ module.exports.handler = async (event, context) => {
               retryCount++;
             }
           }
-
+          if (
+            shipmentHeaderResult.length > 0 &&
+            get(shipmentHeaderResult, '[0]ShipQuote') !== 'S'
+          ) {
+            console.error('Skipping the record as ShipQuote is not S.');
+            return true;
+          }
           // Check if there are any items in the result
           if (shipmentHeaderResult.length === 0) {
             console.error('No shipment header data found. Skipping process.');
@@ -422,10 +428,8 @@ async function fetchBillNos({ orderNo }) {
     const params = {
       TableName: SHIPMENT_HEADER_TABLE,
       KeyConditionExpression: 'PK_OrderNo = :orderNo',
-      FilterExpression: 'ShipQuote = :shipquote',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
-        ':shipquote': 'S',
       },
     };
     console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
