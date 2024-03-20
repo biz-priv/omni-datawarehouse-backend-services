@@ -132,7 +132,7 @@ module.exports.handler = async (event) => {
           orderNo,
           UpdateCount: get(logQueryResult, '[0].UpdateCount', 0),
           updatedResponse,
-          oldResponse: get(logQueryResult, '[0].UpdatePayload', {}),
+          oldResponse: get(logQueryResult, '[0].UpdatedResponse', {}),
         });
       } else {
         console.info('Update not found in log table.');
