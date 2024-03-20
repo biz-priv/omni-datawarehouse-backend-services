@@ -89,7 +89,13 @@ resources:
         ShipmentFileTableStreamDLQ: ${file(config/queues/shipment-file-table-stream.yml):ShipmentFileTableStreamDLQ}
         LtlRatingLogInsertionQueue: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionQueue}
         LtlRatingLogInsertionDLQ: ${file(config/queues/ltl-rating-log-insertion.yml):LtlRatingLogInsertionDLQ}
+        
+        204UpdateTableStreamQueue: ${file(config/queues/204-update-table-stream.yml):204UpdateTableStreamQueue}
+        204UpdateTableStreamDLQ: ${file(config/queues/204-update-table-stream.yml):204UpdateTableStreamDLQ}
+        204UpdateTableStreamQueuePolicy: ${file(config/queues/204-update-table-stream.yml):204UpdateTableStreamQueuePolicy}
 
+        ConfirmationCostSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ConfirmationCostSNSTopicSubscription}
+        ConsolStopHeaderSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ConsolStopHeaderSNSTopicSubscription}
 layers:
     DWBackend:
         path: lambdaLayer/lib
