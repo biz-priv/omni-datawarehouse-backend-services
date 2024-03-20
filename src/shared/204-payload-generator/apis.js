@@ -63,12 +63,14 @@ async function getLocationId(name, address1, address2, state) {
     // Filter response data to ensure all fields start with name, address1, address2, and equal to state
     const filteredData = _.filter(responseData, (item) => {
       return (
-        (name === item.name || _.startsWith(item.name, name)) &&
-        (address1 === item.address1 || _.startsWith(item.address1, address1)) &&
+        (_.toUpper(name) === _.toUpper(item.name) ||
+          _.startsWith(_.toUpper(item.name), _.toUpper(name))) &&
+        (_.toUpper(address1) === _.toUpper(item.address1) ||
+          _.startsWith(_.toUpper(item.address1), _.toUpper(address1))) &&
         (_.isEmpty(address2) ||
-          address2 === item.address2 ||
-          _.startsWith(item.address2, address2)) &&
-        item.state === state
+          _.toUpper(address2) === _.toUpper(item.address2) ||
+          _.startsWith(_.toUpper(item.address2), _.toUpper(address2))) &&
+        _.toUpper(item.state) === _.toUpper(state)
       );
     });
 
