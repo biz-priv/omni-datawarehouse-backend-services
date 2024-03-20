@@ -1386,12 +1386,11 @@ async function populateSpecialInstructions(shipmentHeader) {
 }
 
 function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
-  
   return _.map(shipmentHeader, (header) => {
     // Initialize variables to store the sum of pieces and weights for each header
     let totalPieces = 0;
     let totalWeight = 0;
-    
+
     const matchingDesc = _.filter(shipmentDesc, (desc) => desc.FK_OrderNo === header.PK_OrderNo);
     console.info('🙂 -> matchingDesc:', matchingDesc);
 
@@ -1416,7 +1415,6 @@ function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
     };
   });
 }
-
 
 function populateDims(shipmentHeader, shipmentDesc) {
   // Check if shipmentHeader is not an array, then wrap it into an array

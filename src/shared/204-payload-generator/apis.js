@@ -13,6 +13,7 @@ const {
   API_PASS,
   API_USER_ID,
   ADDRESS_MAPPING_G_API_KEY,
+  GET_ORDERS_API_ENDPOINT,
 } = process.env;
 
 const apiKey = ADDRESS_MAPPING_G_API_KEY;
@@ -80,6 +81,30 @@ async function getLocationId(name, address1, address2, state) {
     return false;
   } catch (error) {
     console.error('🙂 -> file: apis.js:34 -> getLocationId -> error:', error);
+    return false;
+  }
+}
+
+async function getOrders({ id }) {
+  const apiUrl = `${GET_ORDERS_API_ENDPOINT}/${id}`;
+
+  const headers = {
+    Accept: 'application/json',
+    Authorization: AUTH,
+  };
+
+  try {
+    const response = await axios.get(apiUrl, {
+      headers,
+    });
+
+    // Handle the response using lodash or other methods as needed
+    const responseData = _.get(response, 'data', {});
+    console.info('🙂 -> file: apis.js:30 -> getOrders -> responseData:', responseData);
+    // Return the location ID or perform additional processing as needed
+    return responseData;
+  } catch (error) {
+    console.error('🙂 -> file: apis.js:34 -> getOrders -> error:', error);
     return false;
   }
 }
@@ -282,4 +307,5 @@ module.exports = {
   liveSendUpdate,
   checkAddressByGoogleApi,
   getTimezoneByGoogleApi,
+  getOrders,
 };
