@@ -26,3 +26,5 @@ function:
     AUTH: ${ssm:/omni-204-create-shipment/${self:provider.stage}/apis.auth}
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
     GET_ORDERS_API_ENDPOINT: ${ssm:/omni-204-create-shipment/${self:provider.stage}/get-orders.url}
+    CONSOL_STOP_HEADERS: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-headers/ddb.tableName~true}
+    CONSOLE_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
