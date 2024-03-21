@@ -104,7 +104,12 @@ async function handleUpdatesForP2P(newImage, oldImage) {
       }
 
       await updateOrders({ payload: updatedResponse });
-      await updateRecord({ orderNo, logQueryResult, updatedResponse });
+      await updateRecord({
+        orderNo,
+        UpdateCount: _.get(logQueryResult, '[0].UpdateCount', 0),
+        updatedResponse,
+        oldResponse: _.get(logQueryResult, '[0].UpdatedResponse', {}),
+      });
     }
   } catch (error) {
     console.error('Error handling order updates:', error);
@@ -178,7 +183,12 @@ async function handleUpdatesforMt(newImage, oldImage) {
       }
 
       await updateOrders({ payload: updatedResponse });
-      await updateRecordForMt({ consolNo, logQueryResult, updatedResponse });
+      await updateRecordForMt({
+        consolNo,
+        UpdateCount: _.get(logQueryResult, '[0].UpdateCount', 0),
+        updatedResponse,
+        oldResponse: _.get(logQueryResult, '[0].UpdatedResponse', {}),
+      });
     }
     return true;
   } catch (error) {
