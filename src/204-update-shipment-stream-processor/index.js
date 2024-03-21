@@ -588,6 +588,7 @@ function updateONFields(stop, changedFields) {
 }
 
 async function updatetimeFields(changedFields, newImage) {
+  console.info('🚀 ~ file: index.js:591 ~ updatetimeFields ~ newImage:', newImage)
   if (
     _.get(changedFields, 'ConsolStopTimeBegin') ||
     _.get(changedFields, 'ConsolStopTimeEnd') ||
@@ -599,15 +600,12 @@ async function updatetimeFields(changedFields, newImage) {
       country: _.get(newImage, 'FK_ConsolStopCountry'),
       address1: _.get(newImage, 'ConsolStopAddress1'),
     });
-    if (changedFields.ConsolStopDate) {
-      changedFields.ConsolStopDate = await getCstTime({
-        datetime: _.get(changedFields, 'ConsolStopDate'),
-        timezone,
-      });
-    }
+    console.info('🚀 ~ file: index.js:605 ~ updatetimeFields ~ timezone:', timezone)
     if (changedFields.ConsolStopTimeBegin) {
       const consolStopDate = _.get(changedFields, 'ConsolStopDate');
+      console.info('🚀 ~ file: index.js:611 ~ updatetimeFields ~ consolStopDate:', consolStopDate)
       const consolStopTimeBegin = _.get(changedFields, 'ConsolStopTimeBegin');
+      console.info('🚀 ~ file: index.js:613 ~ updatetimeFields ~ consolStopTimeBegin:', consolStopTimeBegin)
 
       if (consolStopTimeBegin) {
         let datePart = '';
@@ -624,14 +622,18 @@ async function updatetimeFields(changedFields, newImage) {
 
         if (datePart && timePart) {
           const datetime = `${datePart} ${timePart}`;
+          console.info('🚀 ~ file: index.js:629 ~ updatetimeFields ~ datetime:', datetime)
           changedFields.ConsolStopTimeBegin = await getCstTime({ datetime, timezone });
+          console.info('🚀 ~ file: index.js:629 ~ updatetimeFields ~ changedFields.ConsolStopTimeBegin:', changedFields.ConsolStopTimeBegin)
         }
       }
     }
 
     if (changedFields.ConsolStopTimeEnd) {
       const consolStopDate = _.get(changedFields, 'ConsolStopDate');
+      console.info('🚀 ~ file: index.js:633 ~ updatetimeFields ~ consolStopDate:', consolStopDate)
       const consolStopTimeEnd = _.get(changedFields, 'ConsolStopTimeEnd');
+      console.info('🚀 ~ file: index.js:635 ~ updatetimeFields ~ consolStopTimeEnd:', consolStopTimeEnd)
 
       if (consolStopTimeEnd) {
         let datePart = '';
@@ -649,6 +651,7 @@ async function updatetimeFields(changedFields, newImage) {
         if (datePart && timePart) {
           const datetime = `${datePart} ${timePart}`;
           changedFields.ConsolStopTimeBegin = await getCstTime({ datetime, timezone });
+          console.info('🚀 ~ file: index.js:653 ~ updatetimeFields ~ datetime:', datetime)
         }
       }
     }
