@@ -28,4 +28,3 @@ function:
     GET_ORDERS_API_ENDPOINT: ${ssm:/omni-204-create-shipment/${self:provider.stage}/get-orders.url}
     CONSOL_STOP_HEADERS: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-headers/ddb.tableName~true}
     CONSOLE_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
-    ADDRESS_MAPPING_G_API_KEY: ${ssm:/omni-ivia/${self:provider.stage}/google/api.Key~true}

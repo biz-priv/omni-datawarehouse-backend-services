@@ -36,14 +36,14 @@ module.exports.handler = async (event, context) => {
   functionName = _.get(context, 'functionName');
   const dynamoEventRecords = event.Records;
   let stationCode = 'SUPPORT';
-
+  let houseBillString = '';
+  let orderId;
+  let houseBill;
+  let consolNo = 0;
   try {
     const promises = dynamoEventRecords.map(async (record) => {
       let payload = '';
-      let orderId;
-      let houseBill;
-      let consolNo = 0;
-      let houseBillString = '';
+
 
       try {
         const newImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
@@ -289,6 +289,9 @@ module.exports.handler = async (event, context) => {
       \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
       stationCode,
+      houseBillString,
+      orderId,
+      consolNo
     });
     return false;
   }
@@ -395,11 +398,11 @@ async function insertInOutputTable({ orderNo, status, response, payload, Housebi
   }
 }
 
-async function publishSNSTopic({ message, stationCode }) {
+async function publishSNSTopic({ message, stationCode, houseBillString, orderId, consolNo = 0 }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
+      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${orderId} / ConsolNo: ${consolNo}`,
       Message: `An error occurred in ${functionName}: ${message}`,
       MessageAttributes: {
         stationCode: {

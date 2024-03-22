@@ -85,6 +85,7 @@ async function handleUpdatesForP2P(newImage, oldImage) {
         console.info('Brokerage status is not OPEN, BOOKED, NEWOMNI, or COVERED.');
         return;
       }
+      console.info('Brokerage status is OPEN, BOOKED, NEWOMNI, or COVERED.');
 
       await updateTimeFieldforConsolAndNonConsole(changedFields, orderNo);
       const stopsFromResponse = _.cloneDeep(_.get(orderResponse, 'stops', []));
@@ -125,10 +126,10 @@ async function handleUpdatesforMt(newImage, oldImage) {
     console.info('🚀 ~ file: index.js:66 ~ event.Records.map ~ changedFields:', changedFields);
     // Query log table
     const logQueryResult = await queryConsolStatusTable(consolNo);
-    if (!_.isEmpty(logQueryResult) && _.get(logQueryResult[0], 'Status') === STATUSES.FAILED) {
+    if (!_.isEmpty(logQueryResult) && _.get(logQueryResult, '[0]Status') === STATUSES.FAILED) {
       // retrigger the process by updating the status to 'PENDING'
       return await updateConsolStatusTable({ consolNo });
-    } else if (!_.isEmpty(logQueryResult) && _.get(logQueryResult[0], 'Status') === STATUSES.SENT) {
+    } else if (!_.isEmpty(logQueryResult) && _.get(logQueryResult, '[0]Status') === STATUSES.SENT) {
       const response = _.get(logQueryResult, '[0]Response');
 
       const id = _.get(response, 'id', '');
@@ -588,77 +589,62 @@ function updateONFields(stop, changedFields) {
 }
 
 async function updatetimeFields(changedFields, newImage) {
-  console.info('🚀 ~ file: index.js:591 ~ updatetimeFields ~ newImage:', newImage)
+  console.info('🚀 ~ file: index.js:591 ~ updatetimeFields ~ newImage:', newImage);
+  const timezone = await getTimezone({
+    stopCity: _.get(newImage, 'ConsolStopCity'),
+    state: _.get(newImage, 'FK_ConsolStopState'),
+    country: _.get(newImage, 'FK_ConsolStopCountry'),
+    address1: _.get(newImage, 'ConsolStopAddress1'),
+  });
+  console.info('🚀 ~ file: index.js:605 ~ updatetimeFields ~ timezone:', timezone);
+
   if (
     _.get(changedFields, 'ConsolStopTimeBegin') ||
     _.get(changedFields, 'ConsolStopTimeEnd') ||
     _.get(changedFields, 'ConsolStopDate')
   ) {
-    const { timezone } = await getTimezone({
-      stopCity: _.get(newImage, 'ConsolStopCity'),
-      state: _.get(newImage, 'FK_ConsolStopState'),
-      country: _.get(newImage, 'FK_ConsolStopCountry'),
-      address1: _.get(newImage, 'ConsolStopAddress1'),
-    });
-    console.info('🚀 ~ file: index.js:605 ~ updatetimeFields ~ timezone:', timezone)
     if (changedFields.ConsolStopTimeBegin) {
-      const consolStopDate = _.get(changedFields, 'ConsolStopDate');
-      console.info('🚀 ~ file: index.js:611 ~ updatetimeFields ~ consolStopDate:', consolStopDate)
+      const consolStopDate = _.get(newImage, 'ConsolStopDate');
+      console.info('🚀 ~ file: index.js:611 ~ updatetimeFields ~ consolStopDate:', consolStopDate);
       const consolStopTimeBegin = _.get(changedFields, 'ConsolStopTimeBegin');
-      console.info('🚀 ~ file: index.js:613 ~ updatetimeFields ~ consolStopTimeBegin:', consolStopTimeBegin)
+      console.info(
+        '🚀 ~ file: index.js:613 ~ updatetimeFields ~ consolStopTimeBegin:',
+        consolStopTimeBegin
+      );
+      const datePart = consolStopDate.split(' ')[0];
+      const timePart = consolStopTimeBegin.split(' ')[1];
 
-      if (consolStopTimeBegin) {
-        let datePart = '';
-        if (consolStopDate) {
-          datePart = consolStopDate.split(' ')[0];
-        } else {
-          const newImageConsolStopDate = _.get(newImage, 'ConsolStopDate');
-          if (newImageConsolStopDate) {
-            datePart = newImageConsolStopDate.split(' ')[0];
-          }
-        }
-
-        const timePart = consolStopTimeBegin.split(' ')[1];
-
-        if (datePart && timePart) {
-          const datetime = `${datePart} ${timePart}`;
-          console.info('🚀 ~ file: index.js:629 ~ updatetimeFields ~ datetime:', datetime)
-          changedFields.ConsolStopTimeBegin = await getCstTime({ datetime, timezone });
-          console.info('🚀 ~ file: index.js:629 ~ updatetimeFields ~ changedFields.ConsolStopTimeBegin:', changedFields.ConsolStopTimeBegin)
-        }
+      if (datePart && timePart) {
+        const datetime = `${datePart} ${timePart}`;
+        console.info('🚀 ~ file: index.js:629 ~ updatetimeFields ~ datetime:', datetime);
+        changedFields.ConsolStopTimeBegin = await getCstTime({ datetime, timezone });
+        console.info(
+          '🚀 ~ file: index.js:629 ~ updatetimeFields ~ changedFields.ConsolStopTimeBegin:',
+          changedFields.ConsolStopTimeBegin
+        );
       }
     }
-
     if (changedFields.ConsolStopTimeEnd) {
-      const consolStopDate = _.get(changedFields, 'ConsolStopDate');
-      console.info('🚀 ~ file: index.js:633 ~ updatetimeFields ~ consolStopDate:', consolStopDate)
+      const consolStopDate = _.get(newImage, 'ConsolStopDate');
+      console.info('🚀 ~ file: index.js:633 ~ updatetimeFields ~ consolStopDate:', consolStopDate);
       const consolStopTimeEnd = _.get(changedFields, 'ConsolStopTimeEnd');
-      console.info('🚀 ~ file: index.js:635 ~ updatetimeFields ~ consolStopTimeEnd:', consolStopTimeEnd)
-
-      if (consolStopTimeEnd) {
-        let datePart = '';
-        if (consolStopDate) {
-          datePart = consolStopDate.split(' ')[0];
-        } else {
-          const newImageConsolStopDate = _.get(newImage, 'ConsolStopDate');
-          if (newImageConsolStopDate) {
-            datePart = newImageConsolStopDate.split(' ')[0];
-          }
-        }
-
-        const timePart = consolStopTimeEnd.split(' ')[1];
-
-        if (datePart && timePart) {
-          const datetime = `${datePart} ${timePart}`;
-          changedFields.ConsolStopTimeBegin = await getCstTime({ datetime, timezone });
-          console.info('🚀 ~ file: index.js:653 ~ updatetimeFields ~ datetime:', datetime)
-        }
+      console.info(
+        '🚀 ~ file: index.js:635 ~ updatetimeFields ~ consolStopTimeEnd:',
+        consolStopTimeEnd
+      );
+      const datePart = consolStopDate.split(' ')[0];
+      const timePart = consolStopTimeEnd.split(' ')[1];
+  
+      if (datePart && timePart) {
+        const datetime = `${datePart} ${timePart}`;
+        console.info('🚀 ~ file: index.js:653 ~ updatetimeFields ~ datetime:', datetime);
+        changedFields.ConsolStopTimeBegin = await getCstTime({ datetime, timezone });
       }
     }
-
     console.info('updated the time fields successfully');
   }
 }
+
 
 async function queryConsolStatusTable(consolNo) {
   try {

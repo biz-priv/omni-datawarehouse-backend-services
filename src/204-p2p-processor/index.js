@@ -35,11 +35,11 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function publishSNSTopic({ message, stationCode }) {
+async function publishSNSTopic({ message, stationCode, orderNo }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
+      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderNo}`,
       Message: `An error occurred in ${functionName}: ${message}`,
       MessageAttributes: {
         stationCode: {
@@ -162,6 +162,7 @@ async function checkTable(tableData) {
       \n Please check ${STATUS_TABLE} to see which table does not have data. 
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
         stationCode: handlingStation,
+        orderNo,
       });
       return false;
     }
@@ -189,6 +190,7 @@ async function checkTable(tableData) {
       \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
       stationCode: handlingStation,
+      orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
     });
     return false;
   }

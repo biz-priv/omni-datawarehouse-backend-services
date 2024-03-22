@@ -207,6 +207,8 @@ module.exports.handler = async (event, context) => {
       \n Please check details on ${CONSOL_STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
       stationCode,
+      houseBillString,
+      consolNo,
     });
     return false;
   }
@@ -289,11 +291,11 @@ async function insertInOutputTable({ ConsolNo, status, response, payload, Houseb
   }
 }
 
-async function publishSNSTopic({ message, stationCode }) {
+async function publishSNSTopic({ message, stationCode, houseBillString, consolNo }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
+      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE} - Housebill: ${houseBillString} / ConsolNo: ${consolNo}`,
       Message: `An error occurred in ${functionName}: ${message}`,
       MessageAttributes: {
         stationCode: {

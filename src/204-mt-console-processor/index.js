@@ -45,11 +45,11 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function publishSNSTopic({ message, stationCode }) {
+async function publishSNSTopic({ message, stationCode, consolNo }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
+      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE} - consol: ${consolNo}`,
       Message: `An error occurred in ${functionName}: ${message}`,
       MessageAttributes: {
         stationCode: {
@@ -166,6 +166,7 @@ async function checkMultiStop(tableData) {
               \n Please check ${CONSOLE_STATUS_TABLE} to see which table does not have data. 
               \n Retrigger the process by changing Status to ${STATUSES.PENDING} and resetting the RetryCount to 0.`,
             stationCode,
+            consolNo
           });
           return await updateConosleStatusTable({
             consolNo,
