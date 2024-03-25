@@ -19,8 +19,8 @@ function:
       - '!**/*'
       - 'src/204-create-shipment-stream-processor/**'
       - 'src/shared/constants/204_create_shipment.js'
-      - 'src/shared/204-payload-generator/helper.js'
-
+      - 'src/shared/204-payload-generator/**'
+      - 'src/shared/timezoneInfo/**'
   environment:
     STAGE: ${self:provider.stage}
     LIVE_SNS_TOPIC_ARN: ${ssm:/omni-power-broker/${self:provider.stage}/error-notification/sns/arn}

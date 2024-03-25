@@ -10,7 +10,8 @@ function:
     include:
       - 'src/204-mt-console-processor/index.js'
       - 'src/shared/constants/204_create_shipment.js'
-      - 'src/shared/204-payload-generator/helper.js'
+      - 'src/shared/204-payload-generator/**'
+      - 'src/shared/timezoneInfo/**'      
     exclude:
       - '**/*'
   environment:
