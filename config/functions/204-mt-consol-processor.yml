@@ -11,7 +11,7 @@ function:
       - 'src/204-mt-console-processor/index.js'
       - 'src/shared/constants/204_create_shipment.js'
       - 'src/shared/204-payload-generator/**'
-      - 'src/shared/timezoneInfo/**'      
+      - 'src/shared/timezoneInfo/**'
     exclude:
       - '**/*'
   environment:
@@ -40,6 +40,8 @@ function:
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
     CONSOLE_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
     CONSOL_STOP_HEADERS_CONSOL_INDEX: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-headers/ddb.ConsolNoIndex}
-
+    OMNI_DEV_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-dev/email}
+    OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}
+    
   events:
     - schedule: cron(*/1 * * * ? *) #cron for every 1 min

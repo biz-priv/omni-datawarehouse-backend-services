@@ -1,13 +1,15 @@
 'use strict';
 const AWS = require('aws-sdk');
-
-const ses = new AWS.SES();
 const _ = require('lodash');
 const moment = require('moment-timezone');
 const { v4: uuidv4 } = require('uuid');
 
 const { mtPayload } = require('../shared/204-payload-generator/payloads');
-const { fetchDataFromTablesList, getUserEmail } = require('../shared/204-payload-generator/helper');
+const {
+  fetchDataFromTablesList,
+  getUserEmail,
+  sendSESEmail,
+} = require('../shared/204-payload-generator/helper');
 const {
   sendPayload,
   updateOrders,
@@ -210,12 +212,15 @@ module.exports.handler = async (event, context) => {
   } catch (error) {
     console.error('Error', error);
     await sendSESEmail({
+      functionName,
       message: ` ${error.message}
       \n Please check details on ${CONSOL_STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
-      houseBillString,
-      consolNo,
       userEmail,
+      subject: {
+        Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / ConsolNo: ${consolNo}`,
+        Charset: 'UTF-8',
+      },
     });
     await publishSNSTopic({
       message: ` ${error.message}
@@ -333,35 +338,6 @@ async function publishSNSTopic({ message, stationCode, houseBillString, consolNo
     await sns.publish(params).promise();
   } catch (error) {
     console.error('Error publishing to SNS topic:', error);
-    throw error;
-  }
-}
-
-async function sendSESEmail({ message, houseBillString, consolNo, userEmail }) {
-  try {
-    const params = {
-      Destination: {
-        ToAddresses: [userEmail, 'omnidev@bizcloudexperts.com'],
-      },
-      Message: {
-        Body: {
-          Text: {
-            Data: `An error occurred in ${functionName}: ${message}`,
-            Charset: 'UTF-8',
-          },
-        },
-        Subject: {
-          Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / ConsolNo: ${consolNo}`,
-          Charset: 'UTF-8',
-        },
-      },
-      Source: 'no-reply@omnilogistics.com',
-      ReplyToAddresses: ['no-reply@omnilogistics.com'],
-    };
-
-    await ses.sendEmail(params).promise();
-  } catch (error) {
-    console.error('Error sending email with SES:', error);
     throw error;
   }
 }

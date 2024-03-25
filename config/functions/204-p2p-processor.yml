@@ -43,3 +43,5 @@ function:
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
     STATUS_TABLE_CONSOLE_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.ConsolNoIndex}
     STATUS_TABLE_STATUS_INDEX: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.StatusIndex}
+    OMNI_DEV_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-dev/email}
+    OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}

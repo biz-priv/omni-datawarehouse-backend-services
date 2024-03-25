@@ -2,7 +2,6 @@
 const { get, includes } = require('lodash');
 const AWS = require('aws-sdk');
 
-const ses = new AWS.SES();
 const {
   STATUSES,
   TYPES,
@@ -25,7 +24,7 @@ const {
 } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
-const { getUserEmail } = require('../shared/204-payload-generator/helper');
+const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
 
 let functionName;
 let orderId;
@@ -253,9 +252,12 @@ module.exports.handler = async (event, context) => {
       e
     );
     await sendSESEmail({
+      functionName,
       message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
-      orderNo: orderId,
-      consolNo,
+      subject: {
+        Data: `PB ERROR NOTIFICATION - ${STAGE} ~ FileNo: ${orderId} / Consol: ${consolNo}`,
+        Charset: 'UTF-8',
+      },
       userEmail,
     });
     return await publishSNSTopic({
@@ -598,35 +600,6 @@ async function checkAndSkipOrderTable({ orderNo }) {
     return existingOrder;
   } catch (error) {
     console.error('🚀 ~ file: index.js:144 ~ existingOrderParam:', error);
-    throw error;
-  }
-}
-
-async function sendSESEmail({ message, orderNo, consolNo, userEmail }) {
-  try {
-    const params = {
-      Destination: {
-        ToAddresses: [userEmail, 'omnidev@bizcloudexperts.com'],
-      },
-      Message: {
-        Body: {
-          Text: {
-            Data: `An error occurred in ${functionName}: ${message}`,
-            Charset: 'UTF-8',
-          },
-        },
-        Subject: {
-          Data: `PB ERROR NOTIFICATION - ${STAGE} ~ FileNo: ${orderNo} / Consol: ${consolNo}`,
-          Charset: 'UTF-8',
-        },
-      },
-      Source: 'no-reply@omnilogistics.com',
-      ReplyToAddresses: ['no-reply@omnilogistics.com'],
-    };
-
-    await ses.sendEmail(params).promise();
-  } catch (error) {
-    console.error('Error sending email with SES:', error);
     throw error;
   }
 }

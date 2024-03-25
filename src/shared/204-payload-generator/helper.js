@@ -10,6 +10,7 @@ const {
 } = require('./apis');
 const timezoneInfo = require('../timezoneInfo/canadaUSTimezoneGroupBy.json');
 
+const ses = new AWS.SES();
 const {
   SHIPMENT_APAR_TABLE,
   SHIPMENT_HEADER_TABLE,
@@ -30,6 +31,8 @@ const {
   REFERENCES_TABLE,
   REFERENCES_INDEX_KEY_NAME,
   TRACKING_NOTES_ORDERNO_INDEX,
+  OMNI_NO_REPLY_EMAIL,
+  OMNI_DEV_EMAIL,
 } = process.env;
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
@@ -1724,6 +1727,31 @@ async function fetchUserEmail({ userId }) {
   }
 }
 
+async function sendSESEmail({ message, userEmail, subject, functionName }) {
+  try {
+    const params = {
+      Destination: {
+        ToAddresses: [userEmail, OMNI_DEV_EMAIL],
+      },
+      Message: {
+        Body: {
+          Text: {
+            Data: `An error occurred in ${functionName}: ${message}`,
+            Charset: 'UTF-8',
+          },
+        },
+        Subject: subject,
+      },
+      Source: OMNI_NO_REPLY_EMAIL,
+    };
+
+    await ses.sendEmail(params).promise();
+  } catch (error) {
+    console.error('Error sending email with SES:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getPowerBrokerCode,
   getCstTime,
@@ -1754,4 +1782,5 @@ module.exports = {
   stationCodeInfo,
   getReferencesData,
   getUserEmail,
+  sendSESEmail,
 };

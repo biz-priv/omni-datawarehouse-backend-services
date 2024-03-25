@@ -3,7 +3,6 @@
 const { get, pickBy, includes } = require('lodash');
 const AWS = require('aws-sdk');
 
-const ses = new AWS.SES();
 const {
   STATUSES,
   TABLE_PARAMS,
@@ -24,7 +23,7 @@ const {
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
-const { getUserEmail } = require('../shared/204-payload-generator/helper');
+const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
 
 let functionName;
 
@@ -39,7 +38,6 @@ module.exports.handler = async (event, context) => {
     return 'success';
   } catch (e) {
     console.error('🚀 ~ file: 204 table status:32 = ~ e:', e);
-
     await publishSNSTopic({
       message: ` ${e.message}
       \n Please check details on ${CONSOLE_STATUS_TABLE}. Look for status FAILED.
@@ -66,35 +64,6 @@ async function publishSNSTopic({ message, stationCode, consolNo }) {
     await sns.publish(params).promise();
   } catch (error) {
     console.error('Error publishing to SNS topic:', error);
-    throw error;
-  }
-}
-
-async function sendSESEmail({ message, consolNo, userEmail }) {
-  try {
-    const params = {
-      Destination: {
-        ToAddresses: [userEmail, 'omnidev@bizcloudexperts.com'],
-      },
-      Message: {
-        Body: {
-          Text: {
-            Data: `An error occurred in ${functionName}: ${message}`,
-            Charset: 'UTF-8',
-          },
-        },
-        Subject: {
-          Data: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${consolNo}`,
-          Charset: 'UTF-8',
-        },
-      },
-      Source: 'no-reply@omnilogistics.com',
-      ReplyToAddresses: ['no-reply@omnilogistics.com'],
-    };
-
-    await ses.sendEmail(params).promise();
-  } catch (error) {
-    console.error('Error sending email with SES:', error);
     throw error;
   }
 }
@@ -203,13 +172,17 @@ async function checkMultiStop(tableData) {
             consolNo,
           });
           await sendSESEmail({
+            functionName,
             message: `All tables are not populated for consolNo: ${consolNo}.
               \n Please check if all the below feilds are populated: 
               \n ${missingFields} 
               \n Please check ${CONSOLE_STATUS_TABLE} to see which table does not have data. 
               \n Retrigger the process by changing Status to ${STATUSES.PENDING} and resetting the RetryCount to 0.`,
-            consolNo,
             userEmail,
+            subject: {
+              Data: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${consolNo}`,
+              Charset: 'UTF-8',
+            },
           });
           return await updateConosleStatusTable({
             consolNo,
@@ -230,13 +203,16 @@ async function checkMultiStop(tableData) {
   } catch (error) {
     console.error('🚀 ~ file: index.js:225 ~ error:', error);
     await sendSESEmail({
+      functionName,
       message: ` ${error.message}
       \n consolNo: ${consolNo}
       \n Please check details on ${CONSOLE_STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
-      stationCode,
-      consolNo,
       userEmail,
+      subject: {
+        Data: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${consolNo}`,
+        Charset: 'UTF-8',
+      },
     });
     await publishSNSTopic({
       message: ` ${error.message}

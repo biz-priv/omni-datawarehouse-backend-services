@@ -9,10 +9,9 @@ const {
   CONSOLE_WISE_REQUIRED_FIELDS,
 } = require('../shared/constants/204_create_shipment');
 
-const ses = new AWS.SES();
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
-const { getUserEmail } = require('../shared/204-payload-generator/helper');
+const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
 
 const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, STAGE, SHIPMENT_HEADER_TABLE } = process.env;
 
@@ -54,35 +53,6 @@ async function publishSNSTopic({ message, stationCode, orderNo, houseBillString 
     await sns.publish(params).promise();
   } catch (error) {
     console.error('Error publishing to SNS topic:', error);
-    throw error;
-  }
-}
-
-async function sendSESEmail({ message, houseBillString, orderNo, userEmail }) {
-  try {
-    const params = {
-      Destination: {
-        ToAddresses: [userEmail, 'omnidev@bizcloudexperts.com'],
-      },
-      Message: {
-        Body: {
-          Text: {
-            Data: `An error occurred in ${functionName}: ${message}`,
-            Charset: 'UTF-8',
-          },
-        },
-        Subject: {
-          Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${orderNo}`,
-          Charset: 'UTF-8',
-        },
-      },
-      Source: 'no-reply@omnilogistics.com',
-      ReplyToAddresses: ['no-reply@omnilogistics.com'],
-    };
-
-    await ses.sendEmail(params).promise();
-  } catch (error) {
-    console.error('Error sending email with SES:', error);
     throw error;
   }
 }
@@ -199,15 +169,17 @@ async function checkTable(tableData) {
         houseBillString,
       });
       await sendSESEmail({
+        functionName,
         message: `All tables are not populated for order id: ${orderNo}.
       \n Please check if all the below feilds are populated: 
       \n${missingFields}. 
       \n Please check ${STATUS_TABLE} to see which table does not have data. 
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
-        stationCode: handlingStation,
-        orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
-        houseBillString,
         userEmail,
+        subject: {
+          Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
+          Charset: 'UTF-8',
+        },
       });
       return false;
     }
@@ -239,14 +211,16 @@ async function checkTable(tableData) {
       houseBillString,
     });
     await sendSESEmail({
+      functionName,
       message: ` ${error.message}
       \n order id: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}
       \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
-      stationCode: handlingStation,
-      orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
-      houseBillString,
       userEmail,
+      subject: {
+        Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
+        Charset: 'UTF-8',
+      },
     });
     return false;
   }
