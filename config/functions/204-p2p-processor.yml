@@ -12,6 +12,7 @@ function:
       - '!**/*'
       - 'src/204-p2p-processor/index.js'
       - 'src/shared/constants/204_create_shipment.js'
+      - 'src/shared/204-payload-generator/helper.js'
 
   events:
     - schedule: cron(*/1 * * * ? *) #cron for every 1 min

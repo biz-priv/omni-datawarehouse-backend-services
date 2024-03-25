@@ -1,6 +1,8 @@
 'use strict';
 const { get, includes } = require('lodash');
 const AWS = require('aws-sdk');
+
+const ses = new AWS.SES();
 const {
   STATUSES,
   TYPES,
@@ -23,12 +25,16 @@ const {
 } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
+const { getUserEmail } = require('../shared/204-payload-generator/helper');
 
 let functionName;
 let orderId;
 module.exports.handler = async (event, context) => {
   let controlStation;
   let stationCode;
+  let consolNo;
+  let userEmail;
+  let userId;
   console.info('🚀 ~ file: index.js:26 ~ event:', JSON.stringify(event));
   try {
     functionName = get(context, 'functionName');
@@ -41,7 +47,7 @@ module.exports.handler = async (event, context) => {
         orderId = get(shipmentAparData, 'FK_OrderNo');
         console.info('🙂 -> file: index.js:23 -> orderId:', orderId);
 
-        const consolNo = parseInt(get(shipmentAparData, 'ConsolNo', null), 10);
+        consolNo = parseInt(get(shipmentAparData, 'ConsolNo', null), 10);
         console.info('🙂 -> file: index.js:23 -> consolNo:', consolNo);
 
         const serviceLevelId = get(shipmentAparData, 'FK_ServiceId');
@@ -56,6 +62,9 @@ module.exports.handler = async (event, context) => {
         console.info('🚀 ~ file: index.js:55 ~ get ~ controlStation:', controlStation);
 
         const createDateTime = get(shipmentAparData, 'CreateDateTime');
+        console.info('🚀 ~ file: index.js:64 ~ get ~ createDateTime:', createDateTime);
+        userId = get(shipmentAparData, 'UpdatedBy');
+        console.info('🚀 ~ file: index.js:66 ~ get ~ userId:', userId);
 
         if (createDateTime < '2024-02-27 16:15:000') {
           console.info('shipment is created before 2024-02-27. Skipping the process');
@@ -71,6 +80,8 @@ module.exports.handler = async (event, context) => {
         }
 
         if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
+          userEmail = await getUserEmail({ userId });
+          console.info('🚀 ~ file: index.js:83 ~ get ~ userEmail:', userEmail);
           stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
           console.info('🚀 ~ file: index.js:75 ~ get ~ stationCode:', stationCode);
           console.info('Non Console');
@@ -180,6 +191,8 @@ module.exports.handler = async (event, context) => {
           vendorId === VENDOR &&
           controlStation === 'OTR'
         ) {
+          userEmail = await getUserEmail({ userId });
+          console.info('🚀 ~ file: index.js:194 ~ get ~ userEmail:', userEmail);
           stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
           console.info('Console');
           type = TYPES.CONSOLE;
@@ -197,6 +210,8 @@ module.exports.handler = async (event, context) => {
           serviceLevelId === 'MT' &&
           controlStation === 'OTR'
         ) {
+          userEmail = await getUserEmail({ userId });
+          console.info('🚀 ~ file: index.js:213 ~ get ~ userEmail:', userEmail);
           stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
           console.info('Multi Stop');
           type = TYPES.MULTI_STOP;
@@ -215,6 +230,7 @@ module.exports.handler = async (event, context) => {
             await insertConsoleStatusTable({
               consolNo,
               status: STATUSES.PENDING,
+              userId,
             });
           }
         }
@@ -236,9 +252,17 @@ module.exports.handler = async (event, context) => {
       '🚀 ~ file: shipment_apar_table_stream_processor.js:117 ~ module.exports.handler= ~ e:',
       e
     );
+    await sendSESEmail({
+      message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
+      orderNo: orderId,
+      consolNo,
+      userEmail,
+    });
     return await publishSNSTopic({
       message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
       stationCode,
+      orderNo: orderId,
+      consolNo,
     });
   }
 };
@@ -256,6 +280,7 @@ async function insertShipmentStatus({ orderNo, status, type, tableStatuses, ship
         CreatedAt: moment.tz('America/Chicago').format(),
         LastUpdateBy: functionName,
         LastUpdatedAt: moment.tz('America/Chicago').format(),
+        UpdatedBy: shipmentAparData.UpdatedBy,
       },
     };
     console.info('🙂 -> file: index.js:106 -> params:', params);
@@ -267,11 +292,11 @@ async function insertShipmentStatus({ orderNo, status, type, tableStatuses, ship
   }
 }
 
-async function publishSNSTopic({ message, stationCode }) {
+async function publishSNSTopic({ message, stationCode, orderNo, consolNo }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
+      Subject: `PB ERROR NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderNo} / ConsolNo: ${consolNo}`,
       Message: `An error occurred in ${functionName}: ${message}`,
       MessageAttributes: {
         stationCode: {
@@ -328,7 +353,7 @@ async function checkAndUpdateOrderTable({ orderNo, type, shipmentAparData }) {
   return true;
 }
 
-async function insertConsoleStatusTable({ consolNo, status }) {
+async function insertConsoleStatusTable({ consolNo, status, userId }) {
   try {
     let orderData = await fetchOrderData({ consolNo });
     orderData = orderData.map((data) => get(data, 'FK_OrderNo'));
@@ -351,6 +376,7 @@ async function insertConsoleStatusTable({ consolNo, status }) {
         CreatedAt: moment.tz('America/Chicago').format(),
         LastUpdateBy: functionName,
         LastUpdatedAt: moment.tz('America/Chicago').format(),
+        UpdatedBy: userId,
       },
     };
     console.info('🙂 -> file: index.js:106 -> params:', params);
@@ -572,6 +598,35 @@ async function checkAndSkipOrderTable({ orderNo }) {
     return existingOrder;
   } catch (error) {
     console.error('🚀 ~ file: index.js:144 ~ existingOrderParam:', error);
+    throw error;
+  }
+}
+
+async function sendSESEmail({ message, orderNo, consolNo, userEmail }) {
+  try {
+    const params = {
+      Destination: {
+        ToAddresses: [userEmail, 'omnidev@bizcloudexperts.com'],
+      },
+      Message: {
+        Body: {
+          Text: {
+            Data: `An error occurred in ${functionName}: ${message}`,
+            Charset: 'UTF-8',
+          },
+        },
+        Subject: {
+          Data: `PB ERROR NOTIFICATION - ${STAGE} ~ FileNo: ${orderNo} / Consol: ${consolNo}`,
+          Charset: 'UTF-8',
+        },
+      },
+      Source: 'no-reply@omnilogistics.com',
+      ReplyToAddresses: ['no-reply@omnilogistics.com'],
+    };
+
+    await ses.sendEmail(params).promise();
+  } catch (error) {
+    console.error('Error sending email with SES:', error);
     throw error;
   }
 }

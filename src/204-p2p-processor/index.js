@@ -9,8 +9,10 @@ const {
   CONSOLE_WISE_REQUIRED_FIELDS,
 } = require('../shared/constants/204_create_shipment');
 
+const ses = new AWS.SES();
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
+const { getUserEmail } = require('../shared/204-payload-generator/helper');
 
 const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, STAGE, SHIPMENT_HEADER_TABLE } = process.env;
 
@@ -35,11 +37,11 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function publishSNSTopic({ message, stationCode }) {
+async function publishSNSTopic({ message, stationCode, orderNo, houseBillString }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
+      Subject: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} /FK_OrderNo: ${orderNo}`,
       Message: `An error occurred in ${functionName}: ${message}`,
       MessageAttributes: {
         stationCode: {
@@ -52,6 +54,35 @@ async function publishSNSTopic({ message, stationCode }) {
     await sns.publish(params).promise();
   } catch (error) {
     console.error('Error publishing to SNS topic:', error);
+    throw error;
+  }
+}
+
+async function sendSESEmail({ message, houseBillString, orderNo, userEmail }) {
+  try {
+    const params = {
+      Destination: {
+        ToAddresses: [userEmail, 'omnidev@bizcloudexperts.com'],
+      },
+      Message: {
+        Body: {
+          Text: {
+            Data: `An error occurred in ${functionName}: ${message}`,
+            Charset: 'UTF-8',
+          },
+        },
+        Subject: {
+          Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${orderNo}`,
+          Charset: 'UTF-8',
+        },
+      },
+      Source: 'no-reply@omnilogistics.com',
+      ReplyToAddresses: ['no-reply@omnilogistics.com'],
+    };
+
+    await ses.sendEmail(params).promise();
+  } catch (error) {
+    console.error('Error sending email with SES:', error);
     throw error;
   }
 }
@@ -81,6 +112,8 @@ async function checkTable(tableData) {
   const type = get(tableData, 'Type');
   const headerResult = await queryDynamoDB(get(tableData, 'FK_OrderNo'));
   console.info('🙂 -> file: index.js:66 -> headerResult:', headerResult);
+  const userEmail = await getUserEmail({ userId: get(tableData, 'ShipmentAparData.UpdatedBy') });
+  const houseBillString = get(headerResult, '[0]Housebill');
   let handlingStation;
   if (type === TYPES.NON_CONSOLE) {
     handlingStation =
@@ -162,6 +195,19 @@ async function checkTable(tableData) {
       \n Please check ${STATUS_TABLE} to see which table does not have data. 
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
         stationCode: handlingStation,
+        orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
+        houseBillString,
+      });
+      await sendSESEmail({
+        message: `All tables are not populated for order id: ${orderNo}.
+      \n Please check if all the below feilds are populated: 
+      \n${missingFields}. 
+      \n Please check ${STATUS_TABLE} to see which table does not have data. 
+      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+        stationCode: handlingStation,
+        orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
+        houseBillString,
+        userEmail,
       });
       return false;
     }
@@ -189,6 +235,18 @@ async function checkTable(tableData) {
       \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
       stationCode: handlingStation,
+      orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
+      houseBillString,
+    });
+    await sendSESEmail({
+      message: ` ${error.message}
+      \n order id: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}
+      \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
+      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+      stationCode: handlingStation,
+      orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
+      houseBillString,
+      userEmail,
     });
     return false;
   }

@@ -1386,12 +1386,11 @@ async function populateSpecialInstructions(shipmentHeader) {
 }
 
 function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
-  
   return _.map(shipmentHeader, (header) => {
     // Initialize variables to store the sum of pieces and weights for each header
     let totalPieces = 0;
     let totalWeight = 0;
-    
+
     const matchingDesc = _.filter(shipmentDesc, (desc) => desc.FK_OrderNo === header.PK_OrderNo);
     console.info('🙂 -> matchingDesc:', matchingDesc);
 
@@ -1416,7 +1415,6 @@ function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
     };
   });
 }
-
 
 function populateDims(shipmentHeader, shipmentDesc) {
   // Check if shipmentHeader is not an array, then wrap it into an array
@@ -1698,6 +1696,34 @@ function generateReferenceNumbers({ references }) {
   );
 }
 
+async function getUserEmail({ userId }) {
+  try {
+    const userEmail = await fetchUserEmail({ userId });
+    return userEmail;
+  } catch (error) {
+    console.error('🚀 ~ file: helper.js:770 ~ getUserData ~ error:', error);
+    throw error;
+  }
+}
+
+async function fetchUserEmail({ userId }) {
+  try {
+    const params = {
+      TableName: USERS_TABLE,
+      KeyConditionExpression: 'PK_UserId = :PK_UserId',
+      ExpressionAttributeValues: {
+        ':PK_UserId': userId,
+      },
+    };
+    console.info('🚀 ~ file: helper.js:759 ~ fetchUserEmail ~ param:', params);
+    const response = await dynamoDB.query(params).promise();
+    return _.get(response, 'Items[0].UserEmail', []);
+  } catch (error) {
+    console.error('🙂 -> file: helper.js:1722 -> error:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getPowerBrokerCode,
   getCstTime,
@@ -1727,4 +1753,5 @@ module.exports = {
   getTimezone,
   stationCodeInfo,
   getReferencesData,
+  getUserEmail,
 };
