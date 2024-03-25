@@ -341,7 +341,7 @@ async function sendSESEmail({ message, houseBillString, consolNo, userEmail }) {
   try {
     const params = {
       Destination: {
-        ToAddresses: [userEmail, 'mohammed.sazeed@bizcloudexperts.com'],
+        ToAddresses: [userEmail, 'omnidev@bizcloudexperts.com'],
       },
       Message: {
         Body: {
