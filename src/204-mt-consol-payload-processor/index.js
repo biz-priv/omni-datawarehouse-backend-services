@@ -269,7 +269,7 @@ async function updateOrderStatusTable({
       TableName: STATUS_TABLE,
       Key: { FK_OrderNo: orderNo },
       UpdateExpression:
-        'set #Status = :status, #Response = :response, Payload = :payload, Housebill = :housebill',
+        'set #Status = :status, #Response = :response, Payload = :payload, Housebill = :housebill, ShipmentId = :shipmentid',
       ExpressionAttributeNames: {
         '#Status': 'Status',
         '#Response': 'Response',
