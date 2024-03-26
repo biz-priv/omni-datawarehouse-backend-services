@@ -42,6 +42,6 @@ function:
     CONSOL_STOP_HEADERS_CONSOL_INDEX: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-headers/ddb.ConsolNoIndex}
     OMNI_DEV_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-dev/email}
     OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}
-    
+
   events:
     - schedule: cron(*/1 * * * ? *) #cron for every 1 min

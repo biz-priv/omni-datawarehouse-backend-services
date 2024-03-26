@@ -234,7 +234,14 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function updateStatusTable({ ConsolNo, status, response, payload, Housebill, ShipmentId }) {
+async function updateStatusTable({
+  ConsolNo,
+  status,
+  response,
+  payload,
+  Housebill,
+  ShipmentId = 0,
+}) {
   try {
     const updateParam = {
       TableName: CONSOL_STATUS_TABLE,
@@ -267,7 +274,7 @@ async function updateOrderStatusTable({
   response,
   payload,
   Housebill,
-  ShipmentId,
+  ShipmentId = 0,
 }) {
   try {
     const updateParam = {
@@ -295,7 +302,14 @@ async function updateOrderStatusTable({
   }
 }
 
-async function insertInOutputTable({ ConsolNo, status, response, payload, Housebill, ShipmentId }) {
+async function insertInOutputTable({
+  ConsolNo,
+  status,
+  response,
+  payload,
+  Housebill,
+  ShipmentId = 0,
+}) {
   try {
     const params = {
       TableName: OUTPUT_TABLE,

@@ -51,7 +51,7 @@ function:
     REFERENCES_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.orderNoIndex}
     OMNI_DEV_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-dev/email}
     OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}
-    
+
   events:
     - stream:
         arn: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.streamArn~true}

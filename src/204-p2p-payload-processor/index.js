@@ -361,7 +361,14 @@ async function consolNonConsolCommonData({ shipmentAparData, orderId, consolNo, 
   }
 }
 
-async function updateStatusTable({ orderNo, status, response, payload, Housebill, ShipmentId }) {
+async function updateStatusTable({
+  orderNo,
+  status,
+  response,
+  payload,
+  Housebill,
+  ShipmentId = 0,
+}) {
   try {
     const updateParam = {
       TableName: STATUS_TABLE,
@@ -388,7 +395,14 @@ async function updateStatusTable({ orderNo, status, response, payload, Housebill
   }
 }
 
-async function insertInOutputTable({ orderNo, status, response, payload, Housebill, ShipmentId }) {
+async function insertInOutputTable({
+  orderNo,
+  status,
+  response,
+  payload,
+  Housebill,
+  ShipmentId = 0,
+}) {
   try {
     const params = {
       TableName: OUTPUT_TABLE,

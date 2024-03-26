@@ -175,7 +175,24 @@ module.exports.handler = async (event, context) => {
                 console.info(
                   'Ignoring shipment, No bill numbers in COMCAST_BILLNOS satisfy the conditions. Skipping process.'
                 );
-                return true;
+
+                // Check for accepted bill numbers in freseniusBillNo, Hardcoding this as in from tomorrow we will be going live with all the bill-to's
+                const freseniusBillNo = '54144';
+
+                // Check if createDateTime is before "2024-03-26 12:00:000" for FreseniusBillNo
+                if (createDateTime < '2024-03-26 12:00:000') {
+                  console.info(
+                    'Shipment is created before 2024-03-26 12:00:000 for FreseniusBillNo. Skipping the process.'
+                  );
+                  return true;
+                }
+
+                if (!billNumbers.includes(freseniusBillNo)) {
+                  console.info(
+                    'Ignoring shipment, FreseniusBillNo not found in billNumbers. Skipping process.'
+                  );
+                  return true;
+                }
               }
             }
           } else {

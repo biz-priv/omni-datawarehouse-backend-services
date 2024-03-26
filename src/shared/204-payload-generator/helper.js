@@ -1744,6 +1744,7 @@ async function sendSESEmail({ message, userEmail, subject, functionName }) {
       },
       Source: OMNI_NO_REPLY_EMAIL,
     };
+    console.info('🚀 ~ file: helper.js:1747 ~ sendSESEmail ~ params:', params);
 
     await ses.sendEmail(params).promise();
   } catch (error) {
