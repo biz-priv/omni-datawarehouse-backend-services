@@ -18,9 +18,6 @@ const {
   SHIPMENT_APAR_INDEX_KEY_NAME,
   SHIPMENT_APAR_TABLE,
   SHIPMENT_HEADER_TABLE,
-  ACCEPTED_BILLNOS,
-  LGB_ACCEPTED_BILLNOS,
-  COMCAST_BILLNOS,
 } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
@@ -124,88 +121,13 @@ module.exports.handler = async (event, context) => {
             \n If data exists, please consider retriggering the processing of this record by incrementing or decrementing the InsertedTimeStamp by 1 second for the FK_OrderNo: ${orderId} in the ${SHIPMENT_APAR_TABLE} table.
             \n If data does not exists, please close the ticket after 5 minutes.`);
           }
-
-          // Extract bill numbers from the result
-          const billNumbers = shipmentHeaderResult.map((item) => item.BillNo);
-          console.info('🚀 ~ file: index.js:65 ~ get ~ billNumbers:', billNumbers);
-
-          // Check if any of the bill numbers are in the accepted list
-          const commonBillNos = ACCEPTED_BILLNOS.split(',').filter((billNo) =>
-            billNumbers.includes(billNo)
-          );
-
-          if (commonBillNos.length === 0) {
-            console.info(
-              'Ignoring shipment, BillNo does not include any of the accepted bill numbers. Checking LGB_ACCEPTED_BILLNOS.'
-            );
-
-            // Check for accepted bill numbers in LGB_ACCEPTED_BILLNOS
-            const commonLGBBillNos = LGB_ACCEPTED_BILLNOS.split(',').filter((billNo) =>
-              billNumbers.includes(billNo)
-            );
-
-            // Check if createDateTime is before "2024-03-06 16:00:000"
-            if (createDateTime < '2024-03-06 17:15:000') {
-              console.info(
-                'Shipment is created before 2024-03-06 17:15:000 for LGB_ACCEPTED_BILLNOS. Skipping the process.'
-              );
-              return true;
-            }
-
-            // If there are no bill numbers satisfying the criteria, skip further processing
-            if (commonLGBBillNos.length === 0) {
-              console.info(
-                'Ignoring shipment, No bill numbers in LGB_ACCEPTED_BILLNOS satisfy the conditions. Checking COMCAST_BILLNOS.'
-              );
-
-              // Check for accepted bill numbers in COMCAST_BILLNOS
-              const commonComcastBillNos = COMCAST_BILLNOS.split(',').filter((billNo) =>
-                billNumbers.includes(billNo)
-              );
-
-              // Check if createDateTime is before "2024-03-18 13:30:000" for COMCAST_BILLNOS
-              if (createDateTime < '2024-03-18 14:00:000') {
-                console.info(
-                  'Shipment is created before 2024-03-18 14:00:000 for COMCAST_BILLNOS. Skipping the process.'
-                );
-                return true;
-              }
-
-              if (commonComcastBillNos.length === 0) {
-                console.info(
-                  'Ignoring shipment, No bill numbers in COMCAST_BILLNOS satisfy the conditions. Skipping process.'
-                );
-
-                // Check for accepted bill numbers in freseniusBillNo, Hardcoding this as in from tomorrow we will be going live with all the bill-to's
-                const freseniusBillNo = '54144';
-
-                // Check if createDateTime is before "2024-03-26 12:00:000" for FreseniusBillNo
-                if (createDateTime < '2024-03-26 12:00:000') {
-                  console.info(
-                    'Shipment is created before 2024-03-26 12:00:000 for FreseniusBillNo. Skipping the process.'
-                  );
-                  return true;
-                }
-
-                if (!billNumbers.includes(freseniusBillNo)) {
-                  console.info(
-                    'Ignoring shipment, FreseniusBillNo not found in billNumbers. Skipping process.'
-                  );
-                  return true;
-                }
-              }
-            }
-          } else {
-            console.info('Accepted bill numbers found. Skipping LGB_ACCEPTED_BILLNOS check.');
-          }
         }
 
         if (
           consolNo > 0 &&
           consolidation === 'Y' &&
           includes(['HS', 'TL'], serviceLevelId) &&
-          vendorId === VENDOR &&
-          controlStation === 'OTR'
+          vendorId === VENDOR
         ) {
           userEmail = await getUserEmail({ userId });
           console.info('🚀 ~ file: index.js:194 ~ get ~ userEmail:', userEmail);
@@ -223,8 +145,7 @@ module.exports.handler = async (event, context) => {
           !isNaN(consolNo) &&
           consolNo !== null &&
           consolidation === 'N' &&
-          serviceLevelId === 'MT' &&
-          controlStation === 'OTR'
+          serviceLevelId === 'MT'
         ) {
           userEmail = await getUserEmail({ userId });
           console.info('🚀 ~ file: index.js:213 ~ get ~ userEmail:', userEmail);
