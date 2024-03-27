@@ -1,6 +1,7 @@
 'use strict';
 const { get, includes } = require('lodash');
 const AWS = require('aws-sdk');
+
 const {
   STATUSES,
   TYPES,
@@ -17,18 +18,19 @@ const {
   SHIPMENT_APAR_INDEX_KEY_NAME,
   SHIPMENT_APAR_TABLE,
   SHIPMENT_HEADER_TABLE,
-  ACCEPTED_BILLNOS,
-  LGB_ACCEPTED_BILLNOS,
-  COMCAST_BILLNOS,
 } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
+const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
 
 let functionName;
 let orderId;
 module.exports.handler = async (event, context) => {
   let controlStation;
   let stationCode;
+  let consolNo;
+  let userEmail;
+  let userId;
   console.info('🚀 ~ file: index.js:26 ~ event:', JSON.stringify(event));
   try {
     functionName = get(context, 'functionName');
@@ -41,7 +43,7 @@ module.exports.handler = async (event, context) => {
         orderId = get(shipmentAparData, 'FK_OrderNo');
         console.info('🙂 -> file: index.js:23 -> orderId:', orderId);
 
-        const consolNo = parseInt(get(shipmentAparData, 'ConsolNo', null), 10);
+        consolNo = parseInt(get(shipmentAparData, 'ConsolNo', null), 10);
         console.info('🙂 -> file: index.js:23 -> consolNo:', consolNo);
 
         const serviceLevelId = get(shipmentAparData, 'FK_ServiceId');
@@ -56,6 +58,9 @@ module.exports.handler = async (event, context) => {
         console.info('🚀 ~ file: index.js:55 ~ get ~ controlStation:', controlStation);
 
         const createDateTime = get(shipmentAparData, 'CreateDateTime');
+        console.info('🚀 ~ file: index.js:64 ~ get ~ createDateTime:', createDateTime);
+        userId = get(shipmentAparData, 'UpdatedBy');
+        console.info('🚀 ~ file: index.js:66 ~ get ~ userId:', userId);
 
         if (createDateTime < '2024-02-27 16:15:000') {
           console.info('shipment is created before 2024-02-27. Skipping the process');
@@ -71,6 +76,8 @@ module.exports.handler = async (event, context) => {
         }
 
         if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
+          userEmail = await getUserEmail({ userId });
+          console.info('🚀 ~ file: index.js:83 ~ get ~ userEmail:', userEmail);
           stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
           console.info('🚀 ~ file: index.js:75 ~ get ~ stationCode:', stationCode);
           console.info('Non Console');
@@ -114,91 +121,16 @@ module.exports.handler = async (event, context) => {
             \n If data exists, please consider retriggering the processing of this record by incrementing or decrementing the InsertedTimeStamp by 1 second for the FK_OrderNo: ${orderId} in the ${SHIPMENT_APAR_TABLE} table.
             \n If data does not exists, please close the ticket after 5 minutes.`);
           }
-
-          // Extract bill numbers from the result
-          const billNumbers = shipmentHeaderResult.map((item) => item.BillNo);
-          console.info('🚀 ~ file: index.js:65 ~ get ~ billNumbers:', billNumbers);
-
-          // Check if any of the bill numbers are in the accepted list
-          const commonBillNos = ACCEPTED_BILLNOS.split(',').filter((billNo) =>
-            billNumbers.includes(billNo)
-          );
-
-          if (commonBillNos.length === 0) {
-            console.info(
-              'Ignoring shipment, BillNo does not include any of the accepted bill numbers. Checking LGB_ACCEPTED_BILLNOS.'
-            );
-
-            // Check for accepted bill numbers in LGB_ACCEPTED_BILLNOS
-            const commonLGBBillNos = LGB_ACCEPTED_BILLNOS.split(',').filter((billNo) =>
-              billNumbers.includes(billNo)
-            );
-
-            // Check if createDateTime is before "2024-03-06 16:00:000"
-            if (createDateTime < '2024-03-06 17:15:000') {
-              console.info(
-                'Shipment is created before 2024-03-06 17:15:000 for LGB_ACCEPTED_BILLNOS. Skipping the process.'
-              );
-              return true;
-            }
-
-            // If there are no bill numbers satisfying the criteria, skip further processing
-            if (commonLGBBillNos.length === 0) {
-              console.info(
-                'Ignoring shipment, No bill numbers in LGB_ACCEPTED_BILLNOS satisfy the conditions. Checking COMCAST_BILLNOS.'
-              );
-
-              // Check for accepted bill numbers in COMCAST_BILLNOS
-              const commonComcastBillNos = COMCAST_BILLNOS.split(',').filter((billNo) =>
-                billNumbers.includes(billNo)
-              );
-
-              // Check if createDateTime is before "2024-03-18 13:30:000" for COMCAST_BILLNOS
-              if (createDateTime < '2024-03-18 14:00:000') {
-                console.info(
-                  'Shipment is created before 2024-03-18 14:00:000 for COMCAST_BILLNOS. Skipping the process.'
-                );
-                return true;
-              }
-
-              if (commonComcastBillNos.length === 0) {
-                console.info(
-                  'Ignoring shipment, No bill numbers in COMCAST_BILLNOS satisfy the conditions. Skipping process.'
-                );
-
-                // Check for accepted bill numbers in freseniusBillNo, Hardcoding this as in from tomorrow we will be going live with all the bill-to's
-                const freseniusBillNo = '54144';
-
-                // Check if createDateTime is before "2024-03-26 12:00:000" for FreseniusBillNo
-                if (createDateTime < '2024-03-26 13:00:000') {
-                  console.info(
-                    'Shipment is created before 2024-03-26 13:00:000 for FreseniusBillNo. Skipping the process.'
-                  );
-                  return true;
-                }
-
-                if (!billNumbers.includes(freseniusBillNo)) {
-                  console.info(
-                    'Ignoring shipment, FreseniusBillNo not found in billNumbers. Skipping process.'
-                  );
-                  return true;
-                }
-              }
-            }
-          } else {
-            console.info(
-              'Accepted bill numbers found. Skipping LGB_ACCEPTED_BILLNOS, COMCAST_BILLNOS and, FreseniusBillNo checks.'
-            );
-          }
         }
 
         if (
           consolNo > 0 &&
           consolidation === 'Y' &&
           includes(['HS', 'TL'], serviceLevelId) &&
-          vendorId === VENDOR &&
-          controlStation === 'OTR'
+          vendorId === VENDOR
         ) {
+          userEmail = await getUserEmail({ userId });
+          console.info('🚀 ~ file: index.js:194 ~ get ~ userEmail:', userEmail);
           stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
           console.info('Console');
           type = TYPES.CONSOLE;
@@ -213,9 +145,10 @@ module.exports.handler = async (event, context) => {
           !isNaN(consolNo) &&
           consolNo !== null &&
           consolidation === 'N' &&
-          serviceLevelId === 'MT' &&
-          controlStation === 'OTR'
+          serviceLevelId === 'MT'
         ) {
+          userEmail = await getUserEmail({ userId });
+          console.info('🚀 ~ file: index.js:213 ~ get ~ userEmail:', userEmail);
           stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
           console.info('Multi Stop');
           type = TYPES.MULTI_STOP;
@@ -234,6 +167,7 @@ module.exports.handler = async (event, context) => {
             await insertConsoleStatusTable({
               consolNo,
               status: STATUSES.PENDING,
+              userId,
             });
           }
         }
@@ -255,9 +189,20 @@ module.exports.handler = async (event, context) => {
       '🚀 ~ file: shipment_apar_table_stream_processor.js:117 ~ module.exports.handler= ~ e:',
       e
     );
+    await sendSESEmail({
+      functionName,
+      message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
+      subject: {
+        Data: `PB ERROR NOTIFICATION - ${STAGE} ~ FileNo: ${orderId} / Consol: ${consolNo}`,
+        Charset: 'UTF-8',
+      },
+      userEmail,
+    });
     return await publishSNSTopic({
       message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
       stationCode,
+      orderNo: orderId,
+      consolNo,
     });
   }
 };
@@ -275,6 +220,7 @@ async function insertShipmentStatus({ orderNo, status, type, tableStatuses, ship
         CreatedAt: moment.tz('America/Chicago').format(),
         LastUpdateBy: functionName,
         LastUpdatedAt: moment.tz('America/Chicago').format(),
+        UpdatedBy: shipmentAparData.UpdatedBy,
       },
     };
     console.info('🙂 -> file: index.js:106 -> params:', params);
@@ -286,11 +232,11 @@ async function insertShipmentStatus({ orderNo, status, type, tableStatuses, ship
   }
 }
 
-async function publishSNSTopic({ message, stationCode }) {
+async function publishSNSTopic({ message, stationCode, orderNo, consolNo }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
+      Subject: `PB ERROR NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderNo} / ConsolNo: ${consolNo}`,
       Message: `An error occurred in ${functionName}: ${message}`,
       MessageAttributes: {
         stationCode: {
@@ -347,7 +293,7 @@ async function checkAndUpdateOrderTable({ orderNo, type, shipmentAparData }) {
   return true;
 }
 
-async function insertConsoleStatusTable({ consolNo, status }) {
+async function insertConsoleStatusTable({ consolNo, status, userId }) {
   try {
     let orderData = await fetchOrderData({ consolNo });
     orderData = orderData.map((data) => get(data, 'FK_OrderNo'));
@@ -370,6 +316,7 @@ async function insertConsoleStatusTable({ consolNo, status }) {
         CreatedAt: moment.tz('America/Chicago').format(),
         LastUpdateBy: functionName,
         LastUpdatedAt: moment.tz('America/Chicago').format(),
+        UpdatedBy: userId,
       },
     };
     console.info('🙂 -> file: index.js:106 -> params:', params);
