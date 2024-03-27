@@ -62,8 +62,8 @@ module.exports.handler = async (event, context) => {
         userId = get(shipmentAparData, 'UpdatedBy');
         console.info('🚀 ~ file: index.js:66 ~ get ~ userId:', userId);
 
-        if (createDateTime < '2024-02-27 16:15:000') {
-          console.info('shipment is created before 2024-02-27. Skipping the process');
+        if (createDateTime < '2024-03-27 16:15:000') {
+          console.info('shipment is created before 2024-03-27. Skipping the process');
           return true;
         }
         const processedRecords = await checkAndSkipOrderTable({
