@@ -1,22 +1,83 @@
 {
-    "name": "omni-dw-backend-services",
-    "version": "1.0.0",
-    "description": "",
-    "main": "index.js",
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-        "aws-sdk": "^2.1163.0",
-        "lodash": "^4.17.21",
-        "moment-timezone": "^0.5.39",
-        "uuid": "^9.0.1"
-    },
-    "devDependencies": {
-        "serverless": "2.72.3",
-        "serverless-layers": "^2.7.0",
-        "serverless-offline": "^8.8.0"
+  "name": "omni-dw-backend-services",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint  --ignore-path .gitignore .",
+    "lint:updated": "pipe-git-updated --ext=js -- eslint --ignore-path .gitignore",
+    "prettier-check": "prettier -c \"**/*.{css,html,js,json,md,yaml,yml}\"",
+    "prettier-check:updated": "pipe-git-updated --ext=css --ext=html --ext=js --ext=json --ext=md --ext=yaml --ext=yml -- prettier -c",
+    "prettify": "prettier --write \"**/*.{css,html,js,json,md,yaml,yml}\"",
+    "prettify:updated": "pipe-git-updated --ext=css --ext=html --ext=js --ext=json --ext=md --ext=yaml --ext=yml -- prettier --write",
+    "prepare": "husky install"
+  },
+  "author": "",
+  "license": "ISC",
+  "eslintConfig": {
+    "extends": "@serverless/eslint-config/node",
+    "root": true,
+    "ignorePatterns": [
+      "src/pod_doc_upload/*",
+      "src/shipment_header_table_stream_processor/index.js",
+      "src/shipment_detail_collector/*",
+      "src/shared/amazonPODHelperFiles/*",
+      "src/shared/dynamo.js",
+      "src/shared/sns.js",
+      "src/shared/s3.js",
+      "src/shipment_detail_collector.index.js",
+      "src/shared/constants.js",
+      "src/shared/constants/shipment_details.js",
+      "src/shared/common_functions/shipment_details.js",
+      "config/functions/pod-doc-upload.yml",
+      "config/functions/references-stream-to-dynamoDB.yml",
+      "config/functions/shipment-desc-stream-to-dynamoDB.yml",
+      "config/functions/shipment-header-stream-to-dynamoDB.yml",
+      "config/functions/shipment-header-table-stream-processor.yml",
+      "config/functions/shipment-milestone-details-stream-to-dynamoDB.yml",
+      "config/functions/shipment-milestone-stream-to-dynamoDB.yml",
+      "config/functions/shipper-stream-to-dynamoDB.yml",
+      "config/functions/tracking-notes-stream-to-dynamoDB.yml",
+      "src/shipment_detail_collector/index.js",
+      "config/functions/consignee-stream-to-dynamoDB.yml",
+      "src/ltl_rating_log_insertion/index.js",
+      "config/functions/ltl-rating-log-insertion.yml",
+      "lambdaLayer/lib/nodejs/package.json",
+      "package.json",
+      "serverless.yml",
+      "src/ltl_rating_log_insertion/index.js"
+    ],
+    "rules": {
+      "no-console": "off",
+      "no-restricted-syntax": [
+        "error",
+        {
+          "selector": "CallExpression[callee.object.name='console'][callee.property.name!=/^(error|info)$/]",
+          "message": "Unexpected property on console object was called"
+        }
+      ]
     }
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1163.0",
+    "axios": "^1.6.7",
+    "lodash": "^4.17.21",
+    "moment-timezone": "^0.5.39",
+    "serverless-plugin-existing-s3": "^2.4.0",
+    "uuid": "^9.0.1",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^18.4.4",
+    "@commitlint/config-conventional": "^18.4.4",
+    "@serverless/eslint-config": "^5.1.0",
+    "eslint": "^8.56.0",
+    "eslint-plugin-import": "^2.29.1",
+    "git-list-updated": "^1.2.1",
+    "husky": "^8.0.0",
+    "prettier": "^3.1.1",
+    "serverless": "2.72.3",
+    "serverless-layers": "^2.7.0",
+    "serverless-offline": "^8.8.0"
+  }
 }
