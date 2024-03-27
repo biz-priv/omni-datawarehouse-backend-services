@@ -19,6 +19,8 @@ function:
       - '!**/*'
       - 'src/204-create-shipment-stream-processor/**'
       - 'src/shared/constants/204_create_shipment.js'
+      - 'src/shared/204-payload-generator/**'
+      - 'src/shared/timezoneInfo/**'
   environment:
     STAGE: ${self:provider.stage}
     LIVE_SNS_TOPIC_ARN: ${ssm:/omni-power-broker/${self:provider.stage}/error-notification/sns/arn}
@@ -39,3 +41,6 @@ function:
     ACCEPTED_BILLNOS: ${ssm:/omni-204-create-shipment/${self:provider.stage}/accepted/filterBillNo}
     LGB_ACCEPTED_BILLNOS: ${ssm:/omni-204-create-shipment/${self:provider.stage}/lgb-accepted/filterBillNo}
     COMCAST_BILLNOS: ${ssm:/omni-204-create-shipment/${self:provider.stage}/comcast/filterBillNo}
+    USERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/users/ddb.tableName~true}
+    OMNI_DEV_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-dev/email}
+    OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}

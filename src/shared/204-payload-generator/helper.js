@@ -10,6 +10,7 @@ const {
 } = require('./apis');
 const timezoneInfo = require('../timezoneInfo/canadaUSTimezoneGroupBy.json');
 
+const ses = new AWS.SES();
 const {
   SHIPMENT_APAR_TABLE,
   SHIPMENT_HEADER_TABLE,
@@ -30,6 +31,8 @@ const {
   REFERENCES_TABLE,
   REFERENCES_INDEX_KEY_NAME,
   TRACKING_NOTES_ORDERNO_INDEX,
+  OMNI_NO_REPLY_EMAIL,
+  OMNI_DEV_EMAIL,
 } = process.env;
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
@@ -1386,12 +1389,11 @@ async function populateSpecialInstructions(shipmentHeader) {
 }
 
 function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
-  
   return _.map(shipmentHeader, (header) => {
     // Initialize variables to store the sum of pieces and weights for each header
     let totalPieces = 0;
     let totalWeight = 0;
-    
+
     const matchingDesc = _.filter(shipmentDesc, (desc) => desc.FK_OrderNo === header.PK_OrderNo);
     console.info('🙂 -> matchingDesc:', matchingDesc);
 
@@ -1416,7 +1418,6 @@ function populateHousebillNumbers(shipmentHeader, shipmentDesc) {
     };
   });
 }
-
 
 function populateDims(shipmentHeader, shipmentDesc) {
   // Check if shipmentHeader is not an array, then wrap it into an array
@@ -1698,6 +1699,60 @@ function generateReferenceNumbers({ references }) {
   );
 }
 
+async function getUserEmail({ userId }) {
+  try {
+    const userEmail = await fetchUserEmail({ userId });
+    return userEmail;
+  } catch (error) {
+    console.error('🚀 ~ file: helper.js:770 ~ getUserData ~ error:', error);
+    throw error;
+  }
+}
+
+async function fetchUserEmail({ userId }) {
+  try {
+    const params = {
+      TableName: USERS_TABLE,
+      KeyConditionExpression: 'PK_UserId = :PK_UserId',
+      ExpressionAttributeValues: {
+        ':PK_UserId': userId,
+      },
+    };
+    console.info('🚀 ~ file: helper.js:759 ~ fetchUserEmail ~ param:', params);
+    const response = await dynamoDB.query(params).promise();
+    return _.get(response, 'Items[0].UserEmail', []);
+  } catch (error) {
+    console.error('🙂 -> file: helper.js:1722 -> error:', error);
+    throw error;
+  }
+}
+
+async function sendSESEmail({ message, userEmail, subject, functionName }) {
+  try {
+    const params = {
+      Destination: {
+        ToAddresses: [userEmail, OMNI_DEV_EMAIL],
+      },
+      Message: {
+        Body: {
+          Text: {
+            Data: `An error occurred in ${functionName}: ${message}`,
+            Charset: 'UTF-8',
+          },
+        },
+        Subject: subject,
+      },
+      Source: OMNI_NO_REPLY_EMAIL,
+    };
+    console.info('🚀 ~ file: helper.js:1747 ~ sendSESEmail ~ params:', params);
+
+    await ses.sendEmail(params).promise();
+  } catch (error) {
+    console.error('Error sending email with SES:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getPowerBrokerCode,
   getCstTime,
@@ -1727,4 +1782,6 @@ module.exports = {
   getTimezone,
   stationCodeInfo,
   getReferencesData,
+  getUserEmail,
+  sendSESEmail,
 };

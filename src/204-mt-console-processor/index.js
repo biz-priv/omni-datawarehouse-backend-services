@@ -2,6 +2,7 @@
 
 const { get, pickBy, includes } = require('lodash');
 const AWS = require('aws-sdk');
+
 const {
   STATUSES,
   TABLE_PARAMS,
@@ -22,6 +23,7 @@ const {
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
+const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
 
 let functionName;
 
@@ -45,11 +47,11 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function publishSNSTopic({ message, stationCode }) {
+async function publishSNSTopic({ message, stationCode, consolNo }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
+      Subject: `PB ERROR NOTIFICATION - ${STAGE} ~ Consol: ${consolNo}`,
       Message: `An error occurred in ${functionName}: ${message}`,
       MessageAttributes: {
         stationCode: {
@@ -90,6 +92,7 @@ async function queryTableStatusPending() {
 async function checkMultiStop(tableData) {
   const consolNo = get(tableData, 'ConsolNo');
   const aparResult = await queryDynamoDB(consolNo);
+  const userEmail = await getUserEmail({ userId: get(tableData, 'UpdatedBy') });
   const stationCode = get(aparResult, '[0].FK_ConsolStationId');
   console.info('🚀 ~ file: index.js:93 ~ checkMultiStop ~ stationCode:', stationCode);
   if (stationCode === '') {
@@ -166,6 +169,20 @@ async function checkMultiStop(tableData) {
               \n Please check ${CONSOLE_STATUS_TABLE} to see which table does not have data. 
               \n Retrigger the process by changing Status to ${STATUSES.PENDING} and resetting the RetryCount to 0.`,
             stationCode,
+            consolNo,
+          });
+          await sendSESEmail({
+            functionName,
+            message: `All tables are not populated for consolNo: ${consolNo}.
+              \n Please check if all the below feilds are populated: 
+              \n ${missingFields} 
+              \n Please check ${CONSOLE_STATUS_TABLE} to see which table does not have data. 
+              \n Retrigger the process by changing Status to ${STATUSES.PENDING} and resetting the RetryCount to 0.`,
+            userEmail,
+            subject: {
+              Data: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${consolNo}`,
+              Charset: 'UTF-8',
+            },
           });
           return await updateConosleStatusTable({
             consolNo,
@@ -185,12 +202,25 @@ async function checkMultiStop(tableData) {
     });
   } catch (error) {
     console.error('🚀 ~ file: index.js:225 ~ error:', error);
+    await sendSESEmail({
+      functionName,
+      message: ` ${error.message}
+      \n consolNo: ${consolNo}
+      \n Please check details on ${CONSOLE_STATUS_TABLE}. Look for status FAILED.
+      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+      userEmail,
+      subject: {
+        Data: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${consolNo}`,
+        Charset: 'UTF-8',
+      },
+    });
     await publishSNSTopic({
       message: ` ${error.message}
       \n consolNo: ${consolNo}
       \n Please check details on ${CONSOLE_STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
       stationCode,
+      consolNo,
     });
     return false;
   }

@@ -13,6 +13,8 @@ const {
   fetchConsoleTableData,
   getShipmentHeaderData,
   getAparDataByConsole,
+  getUserEmail,
+  sendSESEmail,
 } = require('../shared/204-payload-generator/helper');
 const {
   sendPayload,
@@ -36,14 +38,14 @@ module.exports.handler = async (event, context) => {
   functionName = _.get(context, 'functionName');
   const dynamoEventRecords = event.Records;
   let stationCode = 'SUPPORT';
-
+  let houseBillString = '';
+  let orderId;
+  let houseBill;
+  let consolNo = 0;
+  let userEmail;
   try {
     const promises = dynamoEventRecords.map(async (record) => {
       let payload = '';
-      let orderId;
-      let houseBill;
-      let consolNo = 0;
-      let houseBillString = '';
 
       try {
         const newImage = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
@@ -58,6 +60,8 @@ module.exports.handler = async (event, context) => {
           parseInt(_.get(shipmentAparData, 'ConsolNo', 0), 10) === 0 &&
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
+          userEmail = await getUserEmail({ userId: _.get(shipmentAparData, 'UpdatedBy') });
+          console.info('🚀 ~ file: index.js:65 ~ promises ~ userEmail:', userEmail);
           const {
             shipmentHeaderData: [shipmentHeaderData],
             referencesData,
@@ -70,6 +74,7 @@ module.exports.handler = async (event, context) => {
           }
           houseBill = _.get(shipmentHeaderData, 'Housebill', 0);
           console.info('🚀 ~ file: index.js:71 ~ promises ~ houseBill:', houseBill);
+          houseBillString = houseBill.toString();
           stationCode =
             _.get(shipmentHeaderData, 'ControllingStation', '') ||
             _.get(shipmentAparData, 'FK_HandlingStation', '');
@@ -110,7 +115,8 @@ module.exports.handler = async (event, context) => {
           _.includes(['HS', 'TL'], _.get(shipmentAparData, 'FK_ServiceId'))
         ) {
           consolNo = _.get(shipmentAparData, 'ConsolNo', 0);
-
+          userEmail = await getUserEmail({ userId: _.get(shipmentAparData, 'UpdatedBy') });
+          console.info('🚀 ~ file: index.js:120 ~ promises ~ userEmail:', userEmail);
           const shipmentAparDataForConsole = await fetchAparTableForConsole({
             orderNo: _.get(shipmentAparData, 'FK_OrderNo'),
           });
@@ -145,6 +151,7 @@ module.exports.handler = async (event, context) => {
           }
           houseBill = shipmentHeader.flatMap((headerData) => headerData.housebills);
           console.info('🚀 ~ file: index.js:123 ~ promises ~ houseBill:', houseBill);
+          houseBillString = houseBill.join(',').toString();
           const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
             await consolNonConsolCommonData({
               shipmentAparData,
@@ -188,11 +195,6 @@ module.exports.handler = async (event, context) => {
               `);
             }
           }
-        }
-        if (Array.isArray(houseBill)) {
-          houseBillString = houseBill.join(',');
-        } else {
-          houseBillString = houseBill;
         }
         const createPayloadResponse = await sendPayload({
           payload,
@@ -252,6 +254,7 @@ module.exports.handler = async (event, context) => {
           orderNo: orderId,
           status: STATUSES.SENT,
           Housebill: String(houseBillString),
+          ShipmentId: String(shipmentId),
         });
         await insertInOutputTable({
           response: updatedOrderResponse,
@@ -259,6 +262,7 @@ module.exports.handler = async (event, context) => {
           orderNo: orderId,
           status: STATUSES.SENT,
           Housebill: String(houseBillString),
+          ShipmentId: String(shipmentId),
         });
       } catch (error) {
         console.info('Error', error);
@@ -284,11 +288,24 @@ module.exports.handler = async (event, context) => {
     return true;
   } catch (error) {
     console.error('Error', error);
+    await sendSESEmail({
+      functionName,
+      message: ` ${error.message}
+      \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
+      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
+      userEmail,
+      subject: {
+        Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / ConsolNo: ${consolNo}`,
+        Charset: 'UTF-8',
+      },
+    });
     await publishSNSTopic({
       message: ` ${error.message}
       \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
       stationCode,
+      houseBillString,
+      consolNo,
     });
     return false;
   }
@@ -344,13 +361,20 @@ async function consolNonConsolCommonData({ shipmentAparData, orderId, consolNo, 
   }
 }
 
-async function updateStatusTable({ orderNo, status, response, payload, Housebill }) {
+async function updateStatusTable({
+  orderNo,
+  status,
+  response,
+  payload,
+  Housebill,
+  ShipmentId = 0,
+}) {
   try {
     const updateParam = {
       TableName: STATUS_TABLE,
       Key: { FK_OrderNo: orderNo },
       UpdateExpression:
-        'set #Status = :status, #Response = :response, Payload = :payload, Housebill = :housebill',
+        'set #Status = :status, #Response = :response, Payload = :payload, Housebill = :housebill, ShipmentId = :shipmentid',
       ExpressionAttributeNames: {
         '#Status': 'Status',
         '#Response': 'Response',
@@ -360,6 +384,7 @@ async function updateStatusTable({ orderNo, status, response, payload, Housebill
         ':response': response,
         ':payload': payload,
         ':housebill': Housebill,
+        ':shipmentid': ShipmentId,
       },
     };
     console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
@@ -370,7 +395,14 @@ async function updateStatusTable({ orderNo, status, response, payload, Housebill
   }
 }
 
-async function insertInOutputTable({ orderNo, status, response, payload, Housebill }) {
+async function insertInOutputTable({
+  orderNo,
+  status,
+  response,
+  payload,
+  Housebill,
+  ShipmentId = 0,
+}) {
   try {
     const params = {
       TableName: OUTPUT_TABLE,
@@ -384,6 +416,7 @@ async function insertInOutputTable({ orderNo, status, response, payload, Housebi
         Payload: payload,
         Housebill,
         LastUpdateBy: functionName,
+        ShipmentId,
       },
     };
     console.info('🙂 -> file: index.js:106 -> params:', params);
@@ -395,11 +428,11 @@ async function insertInOutputTable({ orderNo, status, response, payload, Housebi
   }
 }
 
-async function publishSNSTopic({ message, stationCode }) {
+async function publishSNSTopic({ message, stationCode, houseBillString, consolNo = 0 }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `POWERBROKER ERROR NOTIFICATION - ${STAGE}`,
+      Subject: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / ConsolNo: ${consolNo}`,
       Message: `An error occurred in ${functionName}: ${message}`,
       MessageAttributes: {
         stationCode: {
