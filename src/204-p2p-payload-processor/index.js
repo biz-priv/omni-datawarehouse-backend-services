@@ -68,6 +68,7 @@ module.exports.handler = async (event, context) => {
             shipmentDescData,
             customersData: [customersData],
             userData: [userData],
+            confirmationCostData,
           } = await fetchNonConsoleTableData({ shipmentAparData });
           if (!shipmentHeaderData) {
             return 'Shipment header data is missing.';
@@ -100,6 +101,7 @@ module.exports.handler = async (event, context) => {
             shipperLocationId,
             userData,
             shipmentAparData,
+            confirmationCostData,
           });
           console.info(
             '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
@@ -152,13 +154,18 @@ module.exports.handler = async (event, context) => {
           houseBill = shipmentHeader.flatMap((headerData) => headerData.housebills);
           console.info('🚀 ~ file: index.js:123 ~ promises ~ houseBill:', houseBill);
           houseBillString = houseBill.join(',').toString();
-          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
-            await consolNonConsolCommonData({
-              shipmentAparData,
-              consolNo,
-              orderId,
-              houseBill: houseBill.join(','),
-            });
+          const {
+            shipperLocationId,
+            consigneeLocationId,
+            finalConsigneeData,
+            finalShipperData,
+            confirmationCostData,
+          } = await consolNonConsolCommonData({
+            shipmentAparData,
+            consolNo,
+            orderId,
+            houseBill: houseBill.join(','),
+          });
           const ConsolPayloadData = await consolPayload({
             customersData,
             consigneeLocationId,
@@ -170,6 +177,7 @@ module.exports.handler = async (event, context) => {
             shipmentAparData,
             trackingNotesData,
             userData,
+            confirmationCostData,
           });
           console.info(
             '🙂 -> file: index.js:114 -> ConsolPayloadData:',
@@ -361,6 +369,7 @@ async function consolNonConsolCommonData({ shipmentAparData, orderId, consolNo, 
       consigneeLocationId,
       finalConsigneeData,
       finalShipperData,
+      confirmationCostData,
     };
   } catch (error) {
     console.error('Error', error);

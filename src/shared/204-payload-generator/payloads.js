@@ -30,6 +30,7 @@ async function nonConsolPayload({
   customersData,
   userData,
   shipmentAparData,
+  confirmationCostData
 }) {
   let hazmat = _.get(shipmentDesc, '[0]Hazmat', false);
   // Check if Hazmat is equal to 'Y'
@@ -56,7 +57,7 @@ async function nonConsolPayload({
   const equipmentCode =
     _.get(shipmentHeader, 'FK_EquipmentCode', '') ||
     _.get(shipmentAparData, 'FK_EquipmentCode', '') ||
-    _.get(finalShipperData, 'FK_EquipmentCode', '') ||
+    _.get(confirmationCostData, 'FK_EquipmentCode', '') ||
     'NA';
 
   const deliveryStop = await generateStop(
@@ -161,6 +162,7 @@ async function consolPayload({
   finalConsigneeData,
   shipmentAparData,
   userData,
+  confirmationCostData
 }) {
   const shipmentAparConsoleData = await getAparDataByConsole({
     shipmentAparData,
@@ -334,7 +336,7 @@ async function mtPayload(
   const equipmentCode =
     _.get(shipmentHeader, '[0]FK_EquipmentCode', '') ||
     _.get(shipmentApar, '[0]FK_EquipmentCode', '')
-    
+
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
