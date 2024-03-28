@@ -68,7 +68,6 @@ module.exports.handler = async (event, context) => {
             shipmentDescData,
             customersData: [customersData],
             userData: [userData],
-            confirmationCostData,
           } = await fetchNonConsoleTableData({ shipmentAparData });
           if (!shipmentHeaderData) {
             return 'Shipment header data is missing.';
@@ -83,13 +82,18 @@ module.exports.handler = async (event, context) => {
           if (!stationCode) {
             throw new Error('Please populate the Controlling Station');
           }
-          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
-            await consolNonConsolCommonData({
-              shipmentAparData,
-              orderId,
-              consolNo,
-              houseBill,
-            });
+          const {
+            shipperLocationId,
+            consigneeLocationId,
+            finalConsigneeData,
+            finalShipperData,
+            confirmationCostData,
+          } = await consolNonConsolCommonData({
+            shipmentAparData,
+            orderId,
+            consolNo,
+            houseBill,
+          });
           const nonConsolPayloadData = await nonConsolPayload({
             referencesData,
             customersData,
