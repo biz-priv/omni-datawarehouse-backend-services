@@ -55,7 +55,9 @@ async function nonConsolPayload({
 
   const equipmentCode =
     _.get(shipmentHeader, 'FK_EquipmentCode', '') ||
-    _.get(shipmentAparData, 'FK_EquipmentCode', 'NA');
+    _.get(shipmentAparData, 'FK_EquipmentCode', '') ||
+    _.get(finalShipperData, 'FK_EquipmentCode', '') ||
+    'NA';
 
   const deliveryStop = await generateStop(
     shipmentHeader,
@@ -177,8 +179,9 @@ async function consolPayload({
 
   const equipmentCode =
     _.get(shipmentHeaderData, '[0].equipmentCode', '') ||
-    _.get(shipmentAparData, 'FK_EquipmentCode', 'NA');
-
+    _.get(shipmentAparData, 'FK_EquipmentCode', '') ||
+    _.get(finalShipperData, 'FK_EquipmentCode', '') ||
+    'NA';
   const stationCode = _.get(shipmentAparData, 'FK_ConsolStationId', '');
   console.info('🚀 ~ file: payloads.js:44 ~ stationCode:', stationCode);
 
@@ -328,7 +331,10 @@ async function mtPayload(
   // Call the function to get customer ID based on the station code
   const customerId = stationCodeInfo(stationCode);
   console.info('🚀 ~ file: payloads.js:53 ~ customerId:', customerId);
-
+  const equipmentCode =
+    _.get(shipmentHeader, '[0]FK_EquipmentCode', '') ||
+    _.get(shipmentApar, '[0]FK_EquipmentCode', '')
+    
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
@@ -341,10 +347,7 @@ async function mtPayload(
     customer_id: customerId,
     blnum: _.get(consolStopHeaders, '[0]FK_ConsolNo', ''),
     entered_user_id: 'apiuser',
-    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
-      _.get(shipmentHeader, '[0]FK_EquipmentCode', '') ||
-        _.get(shipmentApar, '[0]FK_EquipmentCode', '')
-    ),
+    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(equipmentCode),
     order_mode: 'T',
     order_type_id: 'NA',
     excise_disable_update: false,
