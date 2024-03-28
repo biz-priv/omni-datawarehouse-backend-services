@@ -82,13 +82,18 @@ module.exports.handler = async (event, context) => {
           if (!stationCode) {
             throw new Error('Please populate the Controlling Station');
           }
-          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
-            await consolNonConsolCommonData({
-              shipmentAparData,
-              orderId,
-              consolNo,
-              houseBill,
-            });
+          const {
+            shipperLocationId,
+            consigneeLocationId,
+            finalConsigneeData,
+            finalShipperData,
+            confirmationCostData,
+          } = await consolNonConsolCommonData({
+            shipmentAparData,
+            orderId,
+            consolNo,
+            houseBill,
+          });
           const nonConsolPayloadData = await nonConsolPayload({
             referencesData,
             customersData,
@@ -100,6 +105,7 @@ module.exports.handler = async (event, context) => {
             shipperLocationId,
             userData,
             shipmentAparData,
+            confirmationCostData,
           });
           console.info(
             '🙂 -> file: index.js:114 -> nonConsolPayloadData:',
@@ -152,13 +158,18 @@ module.exports.handler = async (event, context) => {
           houseBill = shipmentHeader.flatMap((headerData) => headerData.housebills);
           console.info('🚀 ~ file: index.js:123 ~ promises ~ houseBill:', houseBill);
           houseBillString = houseBill.join(',').toString();
-          const { shipperLocationId, consigneeLocationId, finalConsigneeData, finalShipperData } =
-            await consolNonConsolCommonData({
-              shipmentAparData,
-              consolNo,
-              orderId,
-              houseBill: houseBill.join(','),
-            });
+          const {
+            shipperLocationId,
+            consigneeLocationId,
+            finalConsigneeData,
+            finalShipperData,
+            confirmationCostData,
+          } = await consolNonConsolCommonData({
+            shipmentAparData,
+            consolNo,
+            orderId,
+            houseBill: houseBill.join(','),
+          });
           const ConsolPayloadData = await consolPayload({
             customersData,
             consigneeLocationId,
@@ -170,6 +181,7 @@ module.exports.handler = async (event, context) => {
             shipmentAparData,
             trackingNotesData,
             userData,
+            confirmationCostData,
           });
           console.info(
             '🙂 -> file: index.js:114 -> ConsolPayloadData:',
@@ -178,6 +190,13 @@ module.exports.handler = async (event, context) => {
           payload = ConsolPayloadData;
         }
         if (payload) {
+          const equipmentType = _.get(payload, 'equipment_type_id', 'NA');
+          console.info('🚀 ~ file: index.js:182 ~ promises ~ equipmentType:', equipmentType);
+          if (equipmentType === 'NA') {
+            throw new Error(
+              `\nPlease populate the equipment type to tender this load.\nPayload: ${JSON.stringify(payload)}`
+            );
+          }
           const result = await fetch204TableDataForConsole({
             orderNo: orderId,
           });
@@ -354,6 +373,7 @@ async function consolNonConsolCommonData({ shipmentAparData, orderId, consolNo, 
       consigneeLocationId,
       finalConsigneeData,
       finalShipperData,
+      confirmationCostData,
     };
   } catch (error) {
     console.error('Error', error);
