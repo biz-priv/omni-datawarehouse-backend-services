@@ -55,11 +55,18 @@ async function nonConsolPayload({
   const customerId = stationCodeInfo(stationCode);
   console.info('🚀 ~ file: payloads.js:53 ~ customerId:', customerId);
 
-  const equipmentCode =
-    _.get(shipmentHeader, 'FK_EquipmentCode', '') ||
-    _.get(shipmentAparData, 'FK_EquipmentCode', '') ||
-    _.get(confirmationCostData, 'FK_EquipmentCode', '') ||
-    'NA';
+  let equipmentCode = 'NA';
+  
+  if (_.get(shipmentHeader, 'FK_EquipmentCode', '') !== '' &&
+      _.get(shipmentHeader, 'FK_EquipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(shipmentHeader, 'FK_EquipmentCode', '');
+  } else if (_.get(shipmentAparData, 'FK_EquipmentCode', '') !== '' &&
+             _.get(shipmentAparData, 'FK_EquipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(shipmentAparData, 'FK_EquipmentCode', '');
+  } else if (_.get(confirmationCostData, 'FK_EquipmentCode', '') !== '' &&
+             _.get(confirmationCostData, 'FK_EquipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(confirmationCostData, 'FK_EquipmentCode', '');
+  }
   console.info('🚀 ~ file: payloads.js:183 ~ equipmentCode:', equipmentCode)
   const deliveryStop = await generateStop(
     shipmentHeader,
@@ -180,12 +187,19 @@ async function consolPayload({
 
   const referencesData = await getReferencesData({ shipmentAparConsoleData });
   console.info('🙂 -> file: payloads.js:180 -> referencesData:', referencesData);
+  let equipmentCode = 'NA';
+  
+  if (_.get(shipmentHeaderData, '[0]equipmentCode', '') !== '' &&
+      _.get(shipmentHeaderData, '[0]equipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(shipmentHeaderData, '[0]equipmentCode', '');
+  } else if (_.get(shipmentAparData, 'FK_EquipmentCode', '') !== '' &&
+             _.get(shipmentAparData, 'FK_EquipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(shipmentAparData, 'FK_EquipmentCode', '');
+  } else if (_.get(confirmationCostData, 'FK_EquipmentCode', '') !== '' &&
+             _.get(confirmationCostData, 'FK_EquipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(confirmationCostData, 'FK_EquipmentCode', '');
+  }
 
-  const equipmentCode =
-    _.get(shipmentHeaderData, '[0].equipmentCode', '') ||
-    _.get(shipmentAparData, 'FK_EquipmentCode', '') ||
-    _.get(confirmationCostData, 'FK_EquipmentCode', '') ||
-    'NA';
   console.info('🚀 ~ file: payloads.js:183 ~ equipmentCode:', equipmentCode)  
   const stationCode = _.get(shipmentAparData, 'FK_ConsolStationId', '');
   console.info('🚀 ~ file: payloads.js:44 ~ stationCode:', stationCode);
