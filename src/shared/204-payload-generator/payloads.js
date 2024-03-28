@@ -32,6 +32,7 @@ async function nonConsolPayload({
   shipmentAparData,
   confirmationCostData
 }) {
+  console.info('🚀 ~ file: payloads.js:167 ~ confirmationCostData:', confirmationCostData)
   let hazmat = _.get(shipmentDesc, '[0]Hazmat', false);
   // Check if Hazmat is equal to 'Y'
   if (hazmat === 'Y') {
@@ -164,6 +165,7 @@ async function consolPayload({
   userData,
   confirmationCostData
 }) {
+  console.info('🚀 ~ file: payloads.js:167 ~ confirmationCostData:', confirmationCostData)
   const shipmentAparConsoleData = await getAparDataByConsole({
     shipmentAparData,
   });
