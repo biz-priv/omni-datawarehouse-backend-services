@@ -82,6 +82,11 @@ module.exports.handler = async (event, context) => {
         payload = mtPayloadData;
         // Check if payload is not null
         if (payload) {
+          const equipmentType = _.get(payload, 'equipment_type_id', 'NA');
+          console.info('🚀 ~ file: index.js:182 ~ promises ~ equipmentType:', equipmentType);
+          if (equipmentType === 'NA') {
+            throw new Error('Please populate the equipment type to tender this load.');
+          }
           const result = await fetch204TableDataForConsole({
             consolNo,
           });
