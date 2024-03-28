@@ -30,7 +30,9 @@ async function nonConsolPayload({
   customersData,
   userData,
   shipmentAparData,
+  confirmationCostData
 }) {
+  console.info('🚀 ~ file: payloads.js:167 ~ confirmationCostData:', confirmationCostData)
   let hazmat = _.get(shipmentDesc, '[0]Hazmat', false);
   // Check if Hazmat is equal to 'Y'
   if (hazmat === 'Y') {
@@ -53,10 +55,19 @@ async function nonConsolPayload({
   const customerId = stationCodeInfo(stationCode);
   console.info('🚀 ~ file: payloads.js:53 ~ customerId:', customerId);
 
-  const equipmentCode =
-    _.get(shipmentHeader, 'FK_EquipmentCode', '') ||
-    _.get(shipmentAparData, 'FK_EquipmentCode', 'NA');
-
+  let equipmentCode = 'NA';
+  
+  if (_.get(shipmentHeader, 'FK_EquipmentCode', '') !== '' &&
+      _.get(shipmentHeader, 'FK_EquipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(shipmentHeader, 'FK_EquipmentCode', '');
+  } else if (_.get(shipmentAparData, 'FK_EquipmentCode', '') !== '' &&
+             _.get(shipmentAparData, 'FK_EquipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(shipmentAparData, 'FK_EquipmentCode', '');
+  } else if (_.get(confirmationCostData, 'FK_EquipmentCode', '') !== '' &&
+             _.get(confirmationCostData, 'FK_EquipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(confirmationCostData, 'FK_EquipmentCode', '');
+  }
+  console.info('🚀 ~ file: payloads.js:183 ~ equipmentCode:', equipmentCode)
   const deliveryStop = await generateStop(
     shipmentHeader,
     referencesData,
@@ -159,7 +170,9 @@ async function consolPayload({
   finalConsigneeData,
   shipmentAparData,
   userData,
+  confirmationCostData
 }) {
+  console.info('🚀 ~ file: payloads.js:167 ~ confirmationCostData:', confirmationCostData)
   const shipmentAparConsoleData = await getAparDataByConsole({
     shipmentAparData,
   });
@@ -174,11 +187,20 @@ async function consolPayload({
 
   const referencesData = await getReferencesData({ shipmentAparConsoleData });
   console.info('🙂 -> file: payloads.js:180 -> referencesData:', referencesData);
+  let equipmentCode = 'NA';
+  
+  if (_.get(shipmentHeaderData, '[0]equipmentCode', '') !== '' &&
+      _.get(shipmentHeaderData, '[0]equipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(shipmentHeaderData, '[0]equipmentCode', '');
+  } else if (_.get(shipmentAparData, 'FK_EquipmentCode', '') !== '' &&
+             _.get(shipmentAparData, 'FK_EquipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(shipmentAparData, 'FK_EquipmentCode', '');
+  } else if (_.get(confirmationCostData, 'FK_EquipmentCode', '') !== '' &&
+             _.get(confirmationCostData, 'FK_EquipmentCode', '') !== 'NULL') {
+    equipmentCode = _.get(confirmationCostData, 'FK_EquipmentCode', '');
+  }
 
-  const equipmentCode =
-    _.get(shipmentHeaderData, '[0].equipmentCode', '') ||
-    _.get(shipmentAparData, 'FK_EquipmentCode', 'NA');
-
+  console.info('🚀 ~ file: payloads.js:183 ~ equipmentCode:', equipmentCode)  
   const stationCode = _.get(shipmentAparData, 'FK_ConsolStationId', '');
   console.info('🚀 ~ file: payloads.js:44 ~ stationCode:', stationCode);
 
@@ -328,6 +350,9 @@ async function mtPayload(
   // Call the function to get customer ID based on the station code
   const customerId = stationCodeInfo(stationCode);
   console.info('🚀 ~ file: payloads.js:53 ~ customerId:', customerId);
+  const equipmentCode =
+    _.get(shipmentHeader, '[0]FK_EquipmentCode', '') ||
+    _.get(shipmentApar, '[0]FK_EquipmentCode', '')
 
   const payload = {
     __type: 'orders',
@@ -341,10 +366,7 @@ async function mtPayload(
     customer_id: customerId,
     blnum: _.get(consolStopHeaders, '[0]FK_ConsolNo', ''),
     entered_user_id: 'apiuser',
-    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(
-      _.get(shipmentHeader, '[0]FK_EquipmentCode', '') ||
-        _.get(shipmentApar, '[0]FK_EquipmentCode', '')
-    ),
+    equipment_type_id: mapEquipmentCodeToFkPowerbrokerCode(equipmentCode),
     order_mode: 'T',
     order_type_id: 'NA',
     excise_disable_update: false,
