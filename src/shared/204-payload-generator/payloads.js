@@ -59,7 +59,7 @@ async function nonConsolPayload({
     _.get(shipmentAparData, 'FK_EquipmentCode', '') ||
     _.get(confirmationCostData, 'FK_EquipmentCode', '') ||
     'NA';
-
+  console.info('🚀 ~ file: payloads.js:183 ~ equipmentCode:', equipmentCode)
   const deliveryStop = await generateStop(
     shipmentHeader,
     referencesData,
@@ -182,8 +182,9 @@ async function consolPayload({
   const equipmentCode =
     _.get(shipmentHeaderData, '[0].equipmentCode', '') ||
     _.get(shipmentAparData, 'FK_EquipmentCode', '') ||
-    _.get(finalShipperData, 'FK_EquipmentCode', '') ||
+    _.get(confirmationCostData, 'FK_EquipmentCode', '') ||
     'NA';
+  console.info('🚀 ~ file: payloads.js:183 ~ equipmentCode:', equipmentCode)  
   const stationCode = _.get(shipmentAparData, 'FK_ConsolStationId', '');
   console.info('🚀 ~ file: payloads.js:44 ~ stationCode:', stationCode);
 
