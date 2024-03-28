@@ -55,7 +55,7 @@ function:
   events:
     - stream:
         arn: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.streamArn~true}
-        batchSize: 5
+        batchSize: 1
         maximumRetryAttempts: 3
         bisectBatchOnFunctionError: true
         filterPatterns:
