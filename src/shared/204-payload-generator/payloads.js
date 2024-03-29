@@ -17,6 +17,7 @@ const {
   getTimezone,
   stationCodeInfo,
   getReferencesData,
+  getEquipmentCodeForMT,
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -30,9 +31,8 @@ async function nonConsolPayload({
   customersData,
   userData,
   shipmentAparData,
-  confirmationCostData
+  confirmationCostData,
 }) {
-  console.info('🚀 ~ file: payloads.js:167 ~ confirmationCostData:', confirmationCostData)
   let hazmat = _.get(shipmentDesc, '[0]Hazmat', false);
   // Check if Hazmat is equal to 'Y'
   if (hazmat === 'Y') {
@@ -56,18 +56,24 @@ async function nonConsolPayload({
   console.info('🚀 ~ file: payloads.js:53 ~ customerId:', customerId);
 
   let equipmentCode = 'NA';
-  
-  if (_.get(shipmentHeader, 'FK_EquipmentCode', '') !== '' &&
-      _.get(shipmentHeader, 'FK_EquipmentCode', '') !== 'NULL') {
+
+  if (
+    _.get(shipmentHeader, 'FK_EquipmentCode', '') !== '' &&
+    _.get(shipmentHeader, 'FK_EquipmentCode', '') !== 'NULL'
+  ) {
     equipmentCode = _.get(shipmentHeader, 'FK_EquipmentCode', '');
-  } else if (_.get(shipmentAparData, 'FK_EquipmentCode', '') !== '' &&
-             _.get(shipmentAparData, 'FK_EquipmentCode', '') !== 'NULL') {
+  } else if (
+    _.get(shipmentAparData, 'FK_EquipmentCode', '') !== '' &&
+    _.get(shipmentAparData, 'FK_EquipmentCode', '') !== 'NULL'
+  ) {
     equipmentCode = _.get(shipmentAparData, 'FK_EquipmentCode', '');
-  } else if (_.get(confirmationCostData, 'FK_EquipmentCode', '') !== '' &&
-             _.get(confirmationCostData, 'FK_EquipmentCode', '') !== 'NULL') {
+  } else if (
+    _.get(confirmationCostData, 'FK_EquipmentCode', '') !== '' &&
+    _.get(confirmationCostData, 'FK_EquipmentCode', '') !== 'NULL'
+  ) {
     equipmentCode = _.get(confirmationCostData, 'FK_EquipmentCode', '');
   }
-  console.info('🚀 ~ file: payloads.js:183 ~ equipmentCode:', equipmentCode)
+  console.info('🚀 ~ file: payloads.js:183 ~ equipmentCode:', equipmentCode);
   const deliveryStop = await generateStop(
     shipmentHeader,
     referencesData,
@@ -170,9 +176,8 @@ async function consolPayload({
   finalConsigneeData,
   shipmentAparData,
   userData,
-  confirmationCostData
+  confirmationCostData,
 }) {
-  console.info('🚀 ~ file: payloads.js:167 ~ confirmationCostData:', confirmationCostData)
   const shipmentAparConsoleData = await getAparDataByConsole({
     shipmentAparData,
   });
@@ -188,19 +193,25 @@ async function consolPayload({
   const referencesData = await getReferencesData({ shipmentAparConsoleData });
   console.info('🙂 -> file: payloads.js:180 -> referencesData:', referencesData);
   let equipmentCode = 'NA';
-  
-  if (_.get(shipmentHeaderData, '[0]equipmentCode', '') !== '' &&
-      _.get(shipmentHeaderData, '[0]equipmentCode', '') !== 'NULL') {
+
+  if (
+    _.get(shipmentHeaderData, '[0]equipmentCode', '') !== '' &&
+    _.get(shipmentHeaderData, '[0]equipmentCode', '') !== 'NULL'
+  ) {
     equipmentCode = _.get(shipmentHeaderData, '[0]equipmentCode', '');
-  } else if (_.get(shipmentAparData, 'FK_EquipmentCode', '') !== '' &&
-             _.get(shipmentAparData, 'FK_EquipmentCode', '') !== 'NULL') {
+  } else if (
+    _.get(shipmentAparData, 'FK_EquipmentCode', '') !== '' &&
+    _.get(shipmentAparData, 'FK_EquipmentCode', '') !== 'NULL'
+  ) {
     equipmentCode = _.get(shipmentAparData, 'FK_EquipmentCode', '');
-  } else if (_.get(confirmationCostData, 'FK_EquipmentCode', '') !== '' &&
-             _.get(confirmationCostData, 'FK_EquipmentCode', '') !== 'NULL') {
+  } else if (
+    _.get(confirmationCostData, 'FK_EquipmentCode', '') !== '' &&
+    _.get(confirmationCostData, 'FK_EquipmentCode', '') !== 'NULL'
+  ) {
     equipmentCode = _.get(confirmationCostData, 'FK_EquipmentCode', '');
   }
 
-  console.info('🚀 ~ file: payloads.js:183 ~ equipmentCode:', equipmentCode)  
+  console.info('🚀 ~ file: payloads.js:183 ~ equipmentCode:', equipmentCode);
   const stationCode = _.get(shipmentAparData, 'FK_ConsolStationId', '');
   console.info('🚀 ~ file: payloads.js:44 ~ stationCode:', stationCode);
 
@@ -352,7 +363,8 @@ async function mtPayload(
   console.info('🚀 ~ file: payloads.js:53 ~ customerId:', customerId);
   const equipmentCode =
     _.get(shipmentHeader, '[0]FK_EquipmentCode', '') ||
-    _.get(shipmentApar, '[0]FK_EquipmentCode', '')
+    (await getEquipmentCodeForMT(_.get(shipmentApar, '[0]ConsolNo'))) ||
+    'NA';
 
   const payload = {
     __type: 'orders',

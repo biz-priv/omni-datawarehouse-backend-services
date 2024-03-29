@@ -72,10 +72,10 @@ module.exports.handler = async (event, context) => {
 
         if (Object.keys(processedRecords).length > 0) {
           console.info('Records found in the order table with the same orderNo.');
-        
+
           // Check if the order exists in processedRecords and its status is "FAILED" or "PENDING"
           if (get(processedRecords, 'Status') !== STATUSES.SENT) {
-            console.info('Processing record...', );
+            console.info('Processing record...');
           } else {
             console.info('Skipping process.');
             return true;
