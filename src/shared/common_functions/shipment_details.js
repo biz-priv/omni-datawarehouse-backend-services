@@ -71,9 +71,9 @@ async function weightUOM(weightDimension) {
 async function getPickupTime(dateTime, dateTimeZone, timeZoneTable) {
   try {
     const result = await getTime(dateTime, dateTimeZone, timeZoneTable)
-    if (result == 0 || result == null || result == "" || result.substring(0, 4) == "1900") {
-      return ""
-    }
+    // if (result == 0 || result == null || result == "" || result.substring(0, 4) == "1900") {
+    //   return ""
+    // }
     return result
   } catch (error) {
     throw error
@@ -95,6 +95,9 @@ async function getTime(dateTime, dateTimeZone, timeZoneTable) {
       convertedDate = convertedDate + "-05:00";
     } else {
       convertedDate = convertedDate + "-06:00";
+    }
+    if (convertedDate == 0 || convertedDate == null || convertedDate == "" || convertedDate.substring(0, 4) == "1900") {
+      return ""
     }
     return convertedDate;
   } catch (error) {
