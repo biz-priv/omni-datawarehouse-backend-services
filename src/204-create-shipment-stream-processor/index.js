@@ -62,8 +62,8 @@ module.exports.handler = async (event, context) => {
         userId = get(shipmentAparData, 'UpdatedBy');
         console.info('🚀 ~ file: index.js:66 ~ get ~ userId:', userId);
 
-        if (createDateTime < '2024-02-27 16:15:000') {
-          console.info('shipment is created before 2024-02-27. Skipping the process');
+        if (createDateTime < '2024-03-27 13:00:000') {
+          console.info('shipment is created before 2024-03-27. Skipping the process');
           return true;
         }
         const processedRecords = await checkAndSkipOrderTable({
@@ -71,8 +71,15 @@ module.exports.handler = async (event, context) => {
         });
 
         if (Object.keys(processedRecords).length > 0) {
-          console.info('Records found in the order table with the same orderNo. Skipping process.');
-          return true;
+          console.info('Records found in the order table with the same orderNo.');
+        
+          // Check if the order exists in processedRecords and its status is "FAILED" or "PENDING"
+          if (get(processedRecords, 'Status') !== STATUSES.SENT) {
+            console.info('Processing record...', );
+          } else {
+            console.info('Skipping process.');
+            return true;
+          }
         }
 
         if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
