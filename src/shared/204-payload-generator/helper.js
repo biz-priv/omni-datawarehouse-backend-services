@@ -1601,8 +1601,8 @@ function mapEquipmentCodeToFkPowerbrokerCode(fkEquipmentCode) {
 function stationCodeInfo(stationCode) {
   const billingInfo = {
     ACN: { PbBillTo: 'ACUNACMX' },
-    LAX: { PbBillTo: 'EPICCOTX' },
-    LGB: { PbBillTo: 'EPICCOTX' },
+    LAX: { PbBillTo: 'OMNICOT3' },
+    LGB: { PbBillTo: 'OMNICO28' },
     IAH: { PbBillTo: 'HOUSHOTX' },
     BNA: { PbBillTo: 'NASHNATN' },
     AUS: { PbBillTo: 'OMNIAUTX' },
@@ -1612,20 +1612,20 @@ function stationCodeInfo(stationCode) {
     SAT: { PbBillTo: 'OMNICOT2' },
     BOS: { PbBillTo: 'OMNICOT4' },
     SLC: { PbBillTo: 'OMNICOT8' },
-    ATL: { PbBillTo: 'OMNICOT9' },
+    ATL: { PbBillTo: 'ATLACOTX' },
     BRO: { PbBillTo: 'OMNICOT9' },
-    CMH: { PbBillTo: 'OMNICOT9' },
-    CVG: { PbBillTo: 'OMNICOT9' },
+    CMH: { PbBillTo: 'COLUCOTX' },
+    CVG: { PbBillTo: 'CINCCOTX' },
     DAL: { PbBillTo: 'OMNICOT9' },
-    DTW: { PbBillTo: 'OMNICOT9' },
+    DTW: { PbBillTo: 'DETRCOTX' },
     EXP: { PbBillTo: 'OMNICOT9' },
-    GSP: { PbBillTo: 'OMNICOT9' },
-    LRD: { PbBillTo: 'OMNICOT9' },
-    MKE: { PbBillTo: 'OMNICOT9' },
-    MSP: { PbBillTo: 'OMNICOT9' },
-    PHX: { PbBillTo: 'OMNICOT9' },
+    GSP: { PbBillTo: 'TIGECONC' },
+    LRD: { PbBillTo: 'OMNILATX' },
+    MKE: { PbBillTo: 'MILWCOTX' },
+    MSP: { PbBillTo: 'STPACOTX' },
+    PHX: { PbBillTo: 'PHEOCOTX' },
     TAN: { PbBillTo: 'OMNICOT9' },
-    YYZ: { PbBillTo: 'OMNICOT9' },
+    YYZ: { PbBillTo: 'ONTACOTX' }, 
     DFW: { PbBillTo: 'OMNICOTX' },
     IND: { PbBillTo: 'OMNIDATX' },
     ELP: { PbBillTo: 'OMNIELTX' },
@@ -1753,6 +1753,35 @@ async function sendSESEmail({ message, userEmail, subject, functionName }) {
   }
 }
 
+async function getEquipmentCodeForMT(consolNo) {
+  try {
+    const params = {
+      TableName: SHIPMENT_APAR_TABLE,
+      IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
+      KeyConditionExpression: 'ConsolNo = :ConsolNo',
+      FilterExpression: 'Consolidation = :consolidation',
+      ExpressionAttributeValues: {
+        ':ConsolNo': consolNo,
+        ':consolidation': 'Y',
+      },
+    };
+
+    const data = await dynamoDB.query(params).promise();
+
+    // Use lodash chain to process the result set
+    const equipmentCode = _.chain(data.Items)
+      .map('FK_EquipmentCode') // Extract FK_EquipmentCode from items
+      .compact() // Remove any falsy values
+      .sample() // Select a random value if there are multiple
+      .value(); // Retrieve the final value
+
+    return equipmentCode || 'NA';
+  } catch (error) {
+    console.error('Error querying shipment apar table:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getPowerBrokerCode,
   getCstTime,
@@ -1784,4 +1813,5 @@ module.exports = {
   getReferencesData,
   getUserEmail,
   sendSESEmail,
+  getEquipmentCodeForMT
 };

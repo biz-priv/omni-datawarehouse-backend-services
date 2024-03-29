@@ -1,6 +1,6 @@
 'use strict';
 
-const { get, pickBy, includes } = require('lodash');
+const { get, pickBy, includes, every, isEmpty } = require('lodash');
 const AWS = require('aws-sdk');
 
 const {
@@ -234,16 +234,34 @@ async function fetchItemFromTable({ params }) {
       console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
       const stopHeaders = get(data, 'Items', []);
       if (
-        stopHeaders.every(
-          (item) =>
-            item.FK_ConsolStopState &&
-            item.ConsolStopTimeEnd &&
-            item.ConsolStopTimeBegin &&
-            item.ConsolStopName &&
-            item.ConsolStopDate &&
-            item.ConsolStopCity &&
-            item.ConsolStopAddress1
-        )
+        stopHeaders.every((item) => {
+          const {
+            // eslint-disable-next-line camelcase
+            FK_ConsolStopState,
+            ConsolStopTimeEnd,
+            ConsolStopTimeBegin,
+            ConsolStopName,
+            ConsolStopDate,
+            ConsolStopCity,
+            ConsolStopAddress1,
+            ConsolStopZip
+          } = item;
+
+          return every(
+            [
+              // eslint-disable-next-line camelcase
+              FK_ConsolStopState,
+              ConsolStopTimeEnd,
+              ConsolStopTimeBegin,
+              ConsolStopName,
+              ConsolStopDate,
+              ConsolStopCity,
+              ConsolStopAddress1,
+              ConsolStopZip
+            ],
+            (value) => !isEmpty(value) && value !== 'NULL'
+          );
+        })
       ) {
         return STATUSES.READY;
       }
