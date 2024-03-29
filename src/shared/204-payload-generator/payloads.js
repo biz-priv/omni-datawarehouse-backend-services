@@ -92,6 +92,7 @@ async function nonConsolPayload({
     state: _.get(finalShipperData, 'FK_ShipState', ''),
     country: _.get(finalShipperData, 'FK_ShipCountry', ''),
     address1: _.get(finalShipperData, 'ShipAddress1', ''),
+    zipcode: _.get(finalShipperData, 'ShipZip', ''),
   });
   const payload = {
     __type: 'orders',
@@ -239,6 +240,7 @@ async function consolPayload({
     state: _.get(finalShipperData, 'FK_ShipState', ''),
     country: _.get(finalShipperData, 'FK_ShipCountry', ''),
     address1: _.get(finalShipperData, 'ShipAddress1', ''),
+    zipcode: _.get(finalShipperData, 'ShipZip', ''),
   });
   const hazmat = await getHazmat({ shipmentAparConsoleData }); // Obtain hazmat information
 
@@ -349,6 +351,7 @@ async function mtPayload(
     state: _.get(consolStopHeaders, '[0].FK_ConsolStopState', ''),
     country: _.get(consolStopHeaders, '[0].FK_ConsolStopCountry', ''),
     address1: _.get(consolStopHeaders, '[0].ConsolStopAddress1', ''),
+    zipcode: _.get(consolStopHeaders, '[0].ConsolStopZip', ''),
   });
   const hazmat = await getHazmat({ shipmentAparConsoleData: shipmentApar }); // Obtain hazmat information
 

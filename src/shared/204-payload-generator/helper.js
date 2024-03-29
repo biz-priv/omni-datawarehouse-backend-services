@@ -33,6 +33,7 @@ const {
   TRACKING_NOTES_ORDERNO_INDEX,
   OMNI_NO_REPLY_EMAIL,
   OMNI_DEV_EMAIL,
+  TIMEZONE_ZIP_CR
 } = process.env;
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
@@ -218,6 +219,7 @@ async function processStopDataNonConsol(stopType, shipmentHeader, stateData) {
       state: _.get(stateData, 'FK_ShipState', ''),
       country: _.get(stateData, 'FK_ShipCountry', ''),
       address1: _.get(stateData, 'ShipAddress1', ''),
+      zipcode: _.get(stateData, 'ShipZip', ''),
     });
   } else if (stopType === 'SO') {
     schedArriveEarly = _.get(shipmentHeader, 'ScheduledDateTime', '');
@@ -227,6 +229,7 @@ async function processStopDataNonConsol(stopType, shipmentHeader, stateData) {
       state: _.get(stateData, 'FK_ConState', ''),
       country: _.get(stateData, 'FK_ConCountry', ''),
       address1: _.get(stateData, 'ConAddress1', ''),
+      zipcode: _.get(stateData, 'ConZip', ''),
     });
   }
 
@@ -365,6 +368,7 @@ async function processStopData(stopType, confirmationCostData) {
       state: _.get(confirmationCostData, 'FK_ShipState', ''),
       country: _.get(confirmationCostData, 'FK_ShipCountry', ''),
       address1: _.get(confirmationCostData, 'ShipAddress1', ''),
+      zipcode: _.get(confirmationCostData, 'ShipZip', ''),
     });
   } else if (stopType === 'SO') {
     schedArriveEarly = _.get(confirmationCostData, 'DeliveryDateTime', '');
@@ -374,6 +378,7 @@ async function processStopData(stopType, confirmationCostData) {
       state: _.get(confirmationCostData, 'FK_ConState', ''),
       country: _.get(confirmationCostData, 'FK_ConCountry', ''),
       address1: _.get(confirmationCostData, 'ConAddress1', ''),
+      zipcode: _.get(confirmationCostData, 'ConZip', ''),
     });
   }
 
@@ -1200,27 +1205,12 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     const refResult = await dynamoDB.query(refparams).promise();
     references.push(...refResult.Items);
 
-    const tnparams = {
-      TableName: TRACKING_NOTES_TABLE,
-      IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
-      KeyConditionExpression: 'ConsolNo = :ConsolNo',
-      ExpressionAttributeValues: {
-        ':ConsolNo': CONSOL_NO.toString(),
-      },
-    };
-
-    const trackingNotesResult = await dynamoDB.query(tnparams).promise();
-    console.info('🚀 ~ file: helper.js:777 ~ trackingNotesResult:', trackingNotesResult);
-
-    if (trackingNotesResult.Items.length === 0) {
-      throw new Error(`No data found in tracking notes table for ConsolNo:${CONSOL_NO}`);
-    }
     let users = [];
     const userparams = {
       TableName: USERS_TABLE,
       KeyConditionExpression: 'PK_UserId = :PK_UserId',
       ExpressionAttributeValues: {
-        ':PK_UserId': _.get(trackingNotesResult, 'Items[0].FK_UserId', ''),
+        ':PK_UserId': _.get(uniqueShipmentApar, '[0]UpdatedBy'),
       },
     };
     console.info('🚀 ~ file: helper.js:787 ~ userparams:', userparams);
@@ -1228,7 +1218,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     users = usersResult.Items;
     if (users.length === 0) {
       throw new Error(
-        `No users data found for PK_UserId: ${_.get(trackingNotesResult, 'Items[0].FK_UserId', '')}`
+        `No users data found for PK_UserId: ${_.get(uniqueShipmentApar, '[0]UpdatedBy')}`
       );
     }
 
@@ -1270,6 +1260,7 @@ async function populateStops(
       state: _.get(stopHeader, 'FK_ConsolStopState', ''),
       country: _.get(stopHeader, 'FK_ConsolStopCountry', ''),
       address1: _.get(stopHeader, 'ConsolStopAddress1', ''),
+      zipcode: _.get(stopHeader, 'ConsolStopZip', ''),
     });
 
     const referenceNumbersArray = [
@@ -1625,7 +1616,7 @@ function stationCodeInfo(stationCode) {
     MSP: { PbBillTo: 'STPACOTX' },
     PHX: { PbBillTo: 'PHEOCOTX' },
     TAN: { PbBillTo: 'OMNICOT9' },
-    YYZ: { PbBillTo: 'ONTACOTX' }, 
+    YYZ: { PbBillTo: 'ONTACOTX' },
     DFW: { PbBillTo: 'OMNICOTX' },
     IND: { PbBillTo: 'OMNIDATX' },
     ELP: { PbBillTo: 'OMNIELTX' },
@@ -1652,12 +1643,19 @@ async function getTimezoneFormGoogleApi({ address }) {
   return googleRes;
 }
 
-async function getTimezone({ stopCity, state, country, address1 }) {
+async function getTimezone({ stopCity, state, country, address1, zipcode }) {
   const address = `${address1}, ${stopCity}, ${state}, ${country}`;
-
-  const cityListForState = timezoneInfo[state];
   let timezone = null;
 
+  // Attempt to get timezone from zipcode
+  timezone = await getTimeZoneFromZipCode(zipcode);
+  if (timezone) {
+    console.info('Timezone retrieved from zipcode:', timezone);
+    return timezone;
+  }
+
+  // Try to find timezone from timezoneInfo
+  const cityListForState = timezoneInfo[state];
   if (cityListForState && cityListForState.length > 1) {
     timezone = _.find(cityListForState, (timezone1) => {
       return _.isEqual(
@@ -1669,15 +1667,19 @@ async function getTimezone({ stopCity, state, country, address1 }) {
     timezone = _.get(cityListForState, '[0].timezone', null);
   }
 
-  if (!timezone) {
-    try {
-      // Call Google API to fetch timezone based on address
-      const googleRes = await getTimezoneFormGoogleApi({ address });
-      timezone = googleRes;
-    } catch (error) {
-      console.error('Error fetching timezone from Google API:', error);
-      throw error;
-    }
+  if (timezone) {
+    console.info('Timezone retrieved from timezoneInfo:', timezone);
+    return timezone;
+  }
+
+  // If timezone is still not found, call Google API
+  try {
+    const googleRes = await getTimezoneFormGoogleApi({ address });
+    timezone = googleRes;
+    console.info('Timezone retrieved from Google API:', timezone);
+  } catch (error) {
+    console.error('Error fetching timezone from Google API:', error);
+    throw error;
   }
 
   return timezone;
@@ -1782,6 +1784,48 @@ async function getEquipmentCodeForMT(consolNo) {
   }
 }
 
+async function getTimeZoneFromZipCode(zipcode) {
+  const params = {
+    TableName: TIMEZONE_ZIP_CR,
+    KeyConditionExpression: 'ZipCode = :zip',
+    ExpressionAttributeValues: {
+      ':zip': zipcode,
+    },
+  };
+
+  try {
+    const data = await dynamoDB.query(params).promise();
+
+    if (_.get(data, 'Items[0].FK_TimeZoneCode')) {
+      const timezoneCode = _.get(data, 'Items[0].FK_TimeZoneCode');
+      return getLongFormTimeZone(timezoneCode);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error querying DynamoDB:', error);
+    throw error;
+  }
+}
+
+function getLongFormTimeZone(abbreviation) {
+  const timeZoneMappings = {
+    ADT: 'America/Halifax',
+    AST: 'America/Halifax',
+    CDT: 'America/Chicago',
+    CST: 'America/Chicago',
+    EDT: 'America/New_York',
+    EST: 'America/New_York',
+    HDT: 'Pacific/Honolulu',
+    HST: 'Pacific/Honolulu',
+    MDT: 'America/Denver',
+    MST: 'America/Denver',
+    PDT: 'America/Los_Angeles',
+    PST: 'America/Los_Angeles',
+  };
+
+  return timeZoneMappings[abbreviation] || null;
+}
+
 module.exports = {
   getPowerBrokerCode,
   getCstTime,
@@ -1813,5 +1857,6 @@ module.exports = {
   getReferencesData,
   getUserEmail,
   sendSESEmail,
-  getEquipmentCodeForMT
+  getEquipmentCodeForMT,
+  getTimeZoneFromZipCode,
 };
