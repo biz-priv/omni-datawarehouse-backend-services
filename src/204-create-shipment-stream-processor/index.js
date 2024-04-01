@@ -179,7 +179,7 @@ module.exports.handler = async (event, context) => {
           }
         }
 
-        if (type !== TYPES.MULTI_STOP) {
+        if (type && type !== TYPES.MULTI_STOP) {
           return await checkAndUpdateOrderTable({
             orderNo: orderId,
             type,
