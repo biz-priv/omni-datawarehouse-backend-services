@@ -208,6 +208,7 @@ const CONSOLE_WISE_REQUIRED_FIELDS = {
       'ConsolStop TimeEnd',
       'ConsolStop Date',
     ],
+    tbl_ConsolStopItems: ['File Number'],
   },
 };
 
