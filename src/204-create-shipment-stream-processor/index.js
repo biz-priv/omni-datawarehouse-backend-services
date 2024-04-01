@@ -98,7 +98,7 @@ module.exports.handler = async (event, context) => {
 
           let retryCount = 0;
           const maxRetries = 3;
-          const retryInterval = 5000; // 5 seconds in milliseconds
+          const retryInterval = 10000; // 10 seconds in milliseconds
 
           let shipmentHeaderResult = [];
           while (retryCount < maxRetries) {

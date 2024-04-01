@@ -7,7 +7,6 @@ const { nonConsolPayload, consolPayload } = require('../shared/204-payload-gener
 const {
   fetchLocationId,
   getFinalShipperAndConsigneeData,
-  fetchAparTableForConsole,
   fetchCommonTableData,
   fetchNonConsoleTableData,
   fetchConsoleTableData,
@@ -123,24 +122,13 @@ module.exports.handler = async (event, context) => {
           consolNo = _.get(shipmentAparData, 'ConsolNo', 0);
           userEmail = await getUserEmail({ userId: _.get(shipmentAparData, 'UpdatedBy') });
           console.info('🚀 ~ file: index.js:120 ~ promises ~ userEmail:', userEmail);
-          const shipmentAparDataForConsole = await fetchAparTableForConsole({
-            orderNo: _.get(shipmentAparData, 'FK_OrderNo'),
-          });
-          console.info(
-            '🙂 -> file: index.js:121 -> shipmentAparDataForConsole:',
-            shipmentAparDataForConsole
-          );
           const {
             shipmentHeaderData: [shipmentHeaderData],
-            shipmentDescData,
-            trackingNotesData: [trackingNotesData],
             customersData: [customersData],
             userData: [userData],
           } = await fetchConsoleTableData({ shipmentAparData });
           console.info('🙂 -> file: index.js:118 -> userData:', userData);
           console.info('🙂 -> file: index.js:119 -> customersData:', customersData);
-          console.info('🙂 -> file: index.js:120 -> trackingNotesData:', trackingNotesData);
-          console.info('🙂 -> file: index.js:121 -> shipmentDescData:', shipmentDescData);
           console.info('🙂 -> file: index.js:123 -> shipmentHeaderData:', shipmentHeaderData);
           const shipmentAparConsoleData = await getAparDataByConsole({
             shipmentAparData,
@@ -175,11 +163,9 @@ module.exports.handler = async (event, context) => {
             consigneeLocationId,
             finalConsigneeData,
             finalShipperData,
-            shipmentDesc: shipmentDescData,
             shipmentHeader: shipmentHeaderData,
             shipperLocationId,
             shipmentAparData,
-            trackingNotesData,
             userData,
             confirmationCostData,
           });

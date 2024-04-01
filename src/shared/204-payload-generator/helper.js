@@ -466,10 +466,11 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
     case 'omni-wt-rt-shipment-apar-console':
       return {
         TableName: SHIPMENT_APAR_TABLE,
-        KeyConditionExpression: 'FK_OrderNo = :orderNo',
+        IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
+        KeyConditionExpression: 'ConsolNo = :ConsolNo',
         FilterExpression: 'Consolidation = :consolidation',
         ExpressionAttributeValues: {
-          ':orderNo': orderNo,
+          ':ConsolNo': String(consoleNo),
           ':consolidation': 'N',
         },
       };
@@ -610,15 +611,15 @@ function getFinalShipperAndConsigneeData({ confirmationCostData, shipperData, co
   return { finalShipperData, finalConsigneeData };
 }
 
-async function fetchAparTableForConsole({ orderNo }) {
-  try {
-    const aparParamsForConsole = getParamsByTableName(orderNo, 'omni-wt-rt-shipment-apar-console');
-    return _.get(await queryDynamoDB(aparParamsForConsole), 'Items', false);
-  } catch (e) {
-    console.error('🙂 -> file: helper.js:415 -> e:', e);
-    return [];
-  }
-}
+// async function fetchAparTableForConsole({ orderNo }) {
+//   try {
+//     const aparParamsForConsole = getParamsByTableName(orderNo, 'omni-wt-rt-shipment-apar-console');
+//     return _.get(await queryDynamoDB(aparParamsForConsole), 'Items', false);
+//   } catch (e) {
+//     console.error('🙂 -> file: helper.js:415 -> e:', e);
+//     return [];
+//   }
+// }
 
 async function fetchCommonTableData({ shipmentAparData }) {
   const tables = ['omni-wt-rt-confirmation-cost', 'omni-wt-rt-shipper', 'omni-wt-rt-consignee'];
@@ -769,25 +770,29 @@ async function queryUserTable({ userId }) {
 
 async function fetchConsoleTableData({ shipmentAparData }) {
   try {
-    const tables = [
-      'omni-wt-rt-shipment-header-console',
-      'omni-wt-rt-shipment-desc',
-    ];
-
-    const [shipmentHeaderData, shipmentDescData] = await Promise.all(
+    const tables = [ 'omni-wt-rt-shipment-apar-console']
+    const [shipmentAparConsolData] = await Promise.all(
       tables.map(async (table) => {
-        const param = getParamsByTableName(
-          _.get(shipmentAparData, 'FK_OrderNo'),
-          table,
-        );
+        const param = getParamsByTableName('','','','','',_.get(shipmentAparData, 'ConsolNo'), table);
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
-        console.info('🚀 ~ file: helper.js:510 ~ response:', response);
+        return _.get(response, '[0]Items', {});
+      }))
+
+    const tables1 = [
+      'omni-wt-rt-shipment-header-console',
+    ];
+
+    const [shipmentHeaderData] = await Promise.all(
+      tables1.map(async (table) => {
+        const param = getParamsByTableName(_.get(shipmentAparConsolData, 'FK_OrderNo'), table);
+        console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
+        const response = await queryDynamoDB(param);
         return _.get(response, 'Items', []);
       })
     );
-    if (shipmentHeaderData === 0) {
-      throw new Error('Missing data in customers or users');
+    if (shipmentHeaderData.length === 0) {
+      throw new Error('Missing data in shipment header');
     }
     const tables2 = ['omni-wt-rt-customers'];
     const [customersData] = await Promise.all(
@@ -804,33 +809,25 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         return _.get(response, 'Items', []);
       })
     );
-    // await Promise.all(
-    // trackingNotesData.map(async (trackingNote) => {
     const param = getParamsByTableName(
       '',
       'omni-wt-rt-users',
       '',
       '',
-      _.get(shipmentAparData, '[0]UpdatedBy')
+      _.get(shipmentAparData, 'UpdatedBy')
     );
     console.info('🚀 ~ file: helper.js:824 User Params:', param)
     let userData = await queryDynamoDB(param);
     console.info('🚀 ~ file: helper.js:822 ~ userData:', userData);
-    // return _.get(response, 'Items[0]', false);
-    // })
-    // );
     userData = userData.Items;
     return {
       shipmentHeaderData,
-      shipmentDescData,
       customersData,
       userData,
     };
   } catch (err) {
     console.info('🙂 -> file: helper.js:526 -> err:', err);
     return {
-      shipmentHeaderData: [],
-      shipmentDescData: [],
       customersData: [],
       userData: [],
     };
@@ -1822,7 +1819,7 @@ module.exports = {
   queryDynamoDB,
   fetchLocationId,
   getFinalShipperAndConsigneeData,
-  fetchAparTableForConsole,
+  // fetchAparTableForConsole,
   fetchCommonTableData,
   fetchNonConsoleTableData,
   fetchConsoleTableData,
