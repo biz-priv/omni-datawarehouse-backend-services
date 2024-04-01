@@ -30,7 +30,7 @@ const {
   INSTRUCTIONS_TABLE,
   REFERENCES_TABLE,
   REFERENCES_INDEX_KEY_NAME,
-  TRACKING_NOTES_ORDERNO_INDEX,
+  // TRACKING_NOTES_ORDERNO_INDEX,
   OMNI_NO_REPLY_EMAIL,
   OMNI_DEV_EMAIL,
   // TIMEZONE_ZIP_CR
@@ -680,7 +680,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
         return _.get(response, 'Items', []);
       })
     );
-    const userData = await getUserData({ shipmentHeaderData });
+    const userData = await queryUserTable({ userId: _.get(shipmentAparData, 'UpdatedBy') });
     console.info('🚀 ~ file: helper.js:491 ~ userData:', userData);
     return {
       shipmentHeaderData,
@@ -701,53 +701,53 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
   }
 }
 
-async function getUserData({ shipmentHeaderData }) {
-  try {
-    console.info('🚀 ~ file: test.js:720 ~ getUserId ~ shipmentHeaderData:', shipmentHeaderData);
+// async function getUserData({ shipmentHeaderData }) {
+//   try {
+//     console.info('🚀 ~ file: test.js:720 ~ getUserId ~ shipmentHeaderData:', shipmentHeaderData);
 
-    let userId = _.get(shipmentHeaderData, '[0].AcctManager', '');
-    console.info('🚀 ~ file: test.js:723 ~ getUserId ~ userId:', userId);
-    if (userId === '') {
-      userId = _.get(shipmentHeaderData, '[0].UserId', '');
-      console.info('🚀 ~ file: test.js:727 ~ getUserId ~ userId:', userId);
-      if (userId) {
-        const result1 = await queryUserTable({ userId });
-        if (result1.length === 0) {
-          userId = await queryTrackingNotes({
-            orderNo: _.get(shipmentHeaderData, '[0].PK_OrderNo'),
-          });
-        } else {
-          return result1;
-        }
-      }
-    }
-    return await queryUserTable({ userId });
-  } catch (error) {
-    console.error('🚀 ~ file: helper.js:770 ~ getUserData ~ error:', error);
-    throw error;
-  }
-}
+//     let userId = _.get(shipmentHeaderData, '[0].AcctManager', '');
+//     console.info('🚀 ~ file: test.js:723 ~ getUserId ~ userId:', userId);
+//     if (userId === '') {
+//       userId = _.get(shipmentHeaderData, '[0].UserId', '');
+//       console.info('🚀 ~ file: test.js:727 ~ getUserId ~ userId:', userId);
+//       if (userId) {
+//         const result1 = await queryUserTable({ userId });
+//         if (result1.length === 0) {
+//           userId = await queryTrackingNotes({
+//             orderNo: _.get(shipmentHeaderData, '[0].PK_OrderNo'),
+//           });
+//         } else {
+//           return result1;
+//         }
+//       }
+//     }
+//     return await queryUserTable({ userId });
+//   } catch (error) {
+//     console.error('🚀 ~ file: helper.js:770 ~ getUserData ~ error:', error);
+//     throw error;
+//   }
+// }
 
-async function queryTrackingNotes({ orderNo }) {
-  try {
-    const params = {
-      TableName: TRACKING_NOTES_TABLE,
-      IndexName: TRACKING_NOTES_ORDERNO_INDEX,
-      KeyConditionExpression: 'FK_OrderNo = :orderno',
-      ExpressionAttributeValues: {
-        ':orderno': String(orderNo),
-      },
-      Limit: 1,
-    };
-    console.info('🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:', params);
-    const response = await dynamoDB.query(params).promise();
-    console.info('🚀 ~ file: test.js:757 ~ queryTrackingNotes ~ response:', response);
-    return _.get(response, 'Items[0].FK_UserId', []);
-  } catch (error) {
-    console.error('🚀 ~ file: helper.js:792 ~ queryTrackingNotes ~ error:', error);
-    throw error;
-  }
-}
+// async function queryTrackingNotes({ orderNo }) {
+//   try {
+//     const params = {
+//       TableName: TRACKING_NOTES_TABLE,
+//       IndexName: TRACKING_NOTES_ORDERNO_INDEX,
+//       KeyConditionExpression: 'FK_OrderNo = :orderno',
+//       ExpressionAttributeValues: {
+//         ':orderno': String(orderNo),
+//       },
+//       Limit: 1,
+//     };
+//     console.info('🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:', params);
+//     const response = await dynamoDB.query(params).promise();
+//     console.info('🚀 ~ file: test.js:757 ~ queryTrackingNotes ~ response:', response);
+//     return _.get(response, 'Items[0].FK_UserId', []);
+//   } catch (error) {
+//     console.error('🚀 ~ file: helper.js:792 ~ queryTrackingNotes ~ error:', error);
+//     throw error;
+//   }
+// }
 
 async function queryUserTable({ userId }) {
   try {
@@ -772,18 +772,13 @@ async function fetchConsoleTableData({ shipmentAparData }) {
     const tables = [
       'omni-wt-rt-shipment-header-console',
       'omni-wt-rt-shipment-desc',
-      'omni-wt-rt-tracking-notes',
     ];
 
-    const [shipmentHeaderData, shipmentDescData, trackingNotesData] = await Promise.all(
+    const [shipmentHeaderData, shipmentDescData] = await Promise.all(
       tables.map(async (table) => {
         const param = getParamsByTableName(
           _.get(shipmentAparData, 'FK_OrderNo'),
           table,
-          '',
-          '',
-          '',
-          _.get(shipmentAparData, 'ConsolNo')
         );
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
@@ -791,7 +786,7 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         return _.get(response, 'Items', []);
       })
     );
-    if (shipmentHeaderData === 0 || trackingNotesData === 0) {
+    if (shipmentHeaderData === 0) {
       throw new Error('Missing data in customers or users');
     }
     const tables2 = ['omni-wt-rt-customers'];
@@ -809,31 +804,25 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         return _.get(response, 'Items', []);
       })
     );
-    let userData = await Promise.all(
-      trackingNotesData.map(async (trackingNote) => {
-        const param = getParamsByTableName(
-          '',
-          'omni-wt-rt-users',
-          '',
-          '',
-          _.get(trackingNote, 'FK_UserId')
-        );
-        console.info(
-          '🙂 -> file: index.js:35 -> tables.map -> param:',
-          trackingNote,
-          'omni-wt-rt-users',
-          param
-        );
-        const response = await queryDynamoDB(param);
-        console.info('🚀 ~ file: helper.js:529 ~ response:', response);
-        return _.get(response, 'Items[0]', false);
-      })
+    // await Promise.all(
+    // trackingNotesData.map(async (trackingNote) => {
+    const param = getParamsByTableName(
+      '',
+      'omni-wt-rt-users',
+      '',
+      '',
+      _.get(shipmentAparData, '[0]UpdatedBy')
     );
-    userData = [userData.filter((item) => item && _.has(item, 'UserEmail'))[0]];
+    console.info('🚀 ~ file: helper.js:824 User Params:', param)
+    let userData = await queryDynamoDB(param);
+    console.info('🚀 ~ file: helper.js:822 ~ userData:', userData);
+    // return _.get(response, 'Items[0]', false);
+    // })
+    // );
+    userData = userData.Items;
     return {
       shipmentHeaderData,
       shipmentDescData,
-      trackingNotesData,
       customersData,
       userData,
     };
@@ -842,7 +831,6 @@ async function fetchConsoleTableData({ shipmentAparData }) {
     return {
       shipmentHeaderData: [],
       shipmentDescData: [],
-      trackingNotesData: [],
       customersData: [],
       userData: [],
     };
