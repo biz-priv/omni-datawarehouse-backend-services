@@ -1220,11 +1220,9 @@ async function populateStops(
       phone: _.get(stopHeader, 'ConsolStopPhone', 0),
       sched_arrive_early: await getCstTime({
         datetime: earlyDatetime,
-        // timezone: timeZoneCode,
       }),
       sched_arrive_late: await getCstTime({
         datetime: lateDatetime,
-        // timezone: timeZoneCode,
       }),
       status: 'A',
       order_sequence: parseInt(stopHeader.ConsolStopNumber ?? 0, 10) + 1,
