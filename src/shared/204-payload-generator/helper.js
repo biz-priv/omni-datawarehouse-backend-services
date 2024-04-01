@@ -5,10 +5,10 @@ const moment = require('moment-timezone');
 const {
   getLocationId,
   createLocation,
-  checkAddressByGoogleApi,
-  getTimezoneByGoogleApi,
+  // checkAddressByGoogleApi,
+  // getTimezoneByGoogleApi,
 } = require('./apis');
-const timezoneInfo = require('../timezoneInfo/canadaUSTimezoneGroupBy.json');
+// const timezoneInfo = require('../timezoneInfo/canadaUSTimezoneGroupBy.json');
 
 const ses = new AWS.SES();
 const {
@@ -33,7 +33,7 @@ const {
   TRACKING_NOTES_ORDERNO_INDEX,
   OMNI_NO_REPLY_EMAIL,
   OMNI_DEV_EMAIL,
-  TIMEZONE_ZIP_CR
+  // TIMEZONE_ZIP_CR
 } = process.env;
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
@@ -108,7 +108,7 @@ async function generateStop(
   shipmentAparData,
   shipmentDesc
 ) {
-  const { schedArriveEarly, schedArriveLate, timeZone } = await processStopDataNonConsol(
+  const { schedArriveEarly, schedArriveLate } = await processStopDataNonConsol(
     stopType,
     shipmentHeader,
     stateData
@@ -138,11 +138,11 @@ async function generateStop(
       type === 'shipper' ? _.get(stateData, 'ShipPhone', 'NA') : _.get(stateData, 'ConPhone', 'NA'),
     sched_arrive_early: await getCstTime({
       datetime: schedArriveEarly,
-      timezone: timeZone,
+      // timezone: timeZone,
     }),
     sched_arrive_late: await getCstTime({
       datetime: schedArriveLate,
-      timezone: timeZone,
+      // timezone: timeZone,
     }),
     late_eta_colorcode: false,
     status: 'A',
@@ -206,34 +206,34 @@ async function generateStop(
   return stopData;
 }
 
-async function processStopDataNonConsol(stopType, shipmentHeader, stateData) {
+async function processStopDataNonConsol(stopType, shipmentHeader) {
   let schedArriveEarly = '';
   let schedArriveLate = '';
-  let timeZone = '';
+  // let timeZone = '';
 
   if (stopType === 'PU') {
     schedArriveEarly = _.get(shipmentHeader, 'ReadyDateTime', '');
     schedArriveLate = _.get(shipmentHeader, 'ReadyDateTimeRange', '');
-    timeZone = await getTimezone({
-      stopCity: _.get(stateData, 'ShipCity', ''),
-      state: _.get(stateData, 'FK_ShipState', ''),
-      country: _.get(stateData, 'FK_ShipCountry', ''),
-      address1: _.get(stateData, 'ShipAddress1', ''),
-      zipcode: _.get(stateData, 'ShipZip', ''),
-    });
+    // timeZone = await getTimezone({
+    //   stopCity: _.get(stateData, 'ShipCity', ''),
+    //   state: _.get(stateData, 'FK_ShipState', ''),
+    //   country: _.get(stateData, 'FK_ShipCountry', ''),
+    //   address1: _.get(stateData, 'ShipAddress1', ''),
+    //   zipcode: _.get(stateData, 'ShipZip', ''),
+    // });
   } else if (stopType === 'SO') {
     schedArriveEarly = _.get(shipmentHeader, 'ScheduledDateTime', '');
     schedArriveLate = _.get(shipmentHeader, 'ScheduledDateTimeRange', '');
-    timeZone = await getTimezone({
-      stopCity: _.get(stateData, 'ConCity', ''),
-      state: _.get(stateData, 'FK_ConState', ''),
-      country: _.get(stateData, 'FK_ConCountry', ''),
-      address1: _.get(stateData, 'ConAddress1', ''),
-      zipcode: _.get(stateData, 'ConZip', ''),
-    });
+    // timeZone = await getTimezone({
+    //   stopCity: _.get(stateData, 'ConCity', ''),
+    //   state: _.get(stateData, 'FK_ConState', ''),
+    //   country: _.get(stateData, 'FK_ConCountry', ''),
+    //   address1: _.get(stateData, 'ConAddress1', ''),
+    //   zipcode: _.get(stateData, 'ConZip', ''),
+    // });
   }
 
-  return { schedArriveEarly, schedArriveLate, timeZone };
+  return { schedArriveEarly, schedArriveLate };
 }
 
 async function generateStopforConsole(
@@ -284,11 +284,11 @@ async function generateStopforConsole(
         : _.get(confirmationCostData, 'ConPhone', 'NA'),
     sched_arrive_early: await getCstTime({
       datetime: schedArriveEarly,
-      timezone: timeZone,
+      // timezone: timeZone,
     }),
     sched_arrive_late: await getCstTime({
       datetime: schedArriveLate,
-      timezone: timeZone,
+      // timezone: timeZone,
     }),
     late_eta_colorcode: false,
     status: 'A',
@@ -358,31 +358,31 @@ async function generateStopforConsole(
 async function processStopData(stopType, confirmationCostData) {
   let schedArriveEarly = '';
   let schedArriveLate = '';
-  let timeZone = '';
+  // let timeZone = '';
 
   if (stopType === 'PU') {
     schedArriveEarly = _.get(confirmationCostData, 'PickupDateTime', '');
     schedArriveLate = _.get(confirmationCostData, 'PickupTimeRange', '');
-    timeZone = await getTimezone({
-      stopCity: _.get(confirmationCostData, 'ShipCity', ''),
-      state: _.get(confirmationCostData, 'FK_ShipState', ''),
-      country: _.get(confirmationCostData, 'FK_ShipCountry', ''),
-      address1: _.get(confirmationCostData, 'ShipAddress1', ''),
-      zipcode: _.get(confirmationCostData, 'ShipZip', ''),
-    });
+    // timeZone = await getTimezone({
+    //   stopCity: _.get(confirmationCostData, 'ShipCity', ''),
+    //   state: _.get(confirmationCostData, 'FK_ShipState', ''),
+    //   country: _.get(confirmationCostData, 'FK_ShipCountry', ''),
+    //   address1: _.get(confirmationCostData, 'ShipAddress1', ''),
+    //   zipcode: _.get(confirmationCostData, 'ShipZip', ''),
+    // });
   } else if (stopType === 'SO') {
     schedArriveEarly = _.get(confirmationCostData, 'DeliveryDateTime', '');
     schedArriveLate = _.get(confirmationCostData, 'DeliveryTimeRange', '');
-    timeZone = await getTimezone({
-      stopCity: _.get(confirmationCostData, 'ConCity', ''),
-      state: _.get(confirmationCostData, 'FK_ConState', ''),
-      country: _.get(confirmationCostData, 'FK_ConCountry', ''),
-      address1: _.get(confirmationCostData, 'ConAddress1', ''),
-      zipcode: _.get(confirmationCostData, 'ConZip', ''),
-    });
+    // timeZone = await getTimezone({
+    //   stopCity: _.get(confirmationCostData, 'ConCity', ''),
+    //   state: _.get(confirmationCostData, 'FK_ConState', ''),
+    //   country: _.get(confirmationCostData, 'FK_ConCountry', ''),
+    //   address1: _.get(confirmationCostData, 'ConAddress1', ''),
+    //   zipcode: _.get(confirmationCostData, 'ConZip', ''),
+    // });
   }
 
-  return { schedArriveEarly, schedArriveLate, timeZone };
+  return { schedArriveEarly, schedArriveLate };
 }
 
 function getNote(confirmationCostData, type) {
@@ -1255,13 +1255,13 @@ async function populateStops(
     const locationId = locationIds[index];
     const isPickup = stopHeader.ConsolStopPickupOrDelivery === 'false';
     const stoptype = isPickup ? 'PU' : 'SO';
-    const timeZoneCode = await getTimezone({
-      stopCity: _.get(stopHeader, 'ConsolStopCity', ''),
-      state: _.get(stopHeader, 'FK_ConsolStopState', ''),
-      country: _.get(stopHeader, 'FK_ConsolStopCountry', ''),
-      address1: _.get(stopHeader, 'ConsolStopAddress1', ''),
-      zipcode: _.get(stopHeader, 'ConsolStopZip', ''),
-    });
+    // const timeZoneCode = await getTimezone({
+    //   stopCity: _.get(stopHeader, 'ConsolStopCity', ''),
+    //   state: _.get(stopHeader, 'FK_ConsolStopState', ''),
+    //   country: _.get(stopHeader, 'FK_ConsolStopCountry', ''),
+    //   address1: _.get(stopHeader, 'ConsolStopAddress1', ''),
+    //   zipcode: _.get(stopHeader, 'ConsolStopZip', ''),
+    // });
 
     const referenceNumbersArray = [
       generateReferenceNumbers({ references }),
@@ -1331,11 +1331,11 @@ async function populateStops(
       phone: _.get(stopHeader, 'ConsolStopPhone', 0),
       sched_arrive_early: await getCstTime({
         datetime: earlyDatetime,
-        timezone: timeZoneCode,
+        // timezone: timeZoneCode,
       }),
       sched_arrive_late: await getCstTime({
         datetime: lateDatetime,
-        timezone: timeZoneCode,
+        // timezone: timeZoneCode,
       }),
       status: 'A',
       order_sequence: parseInt(stopHeader.ConsolStopNumber ?? 0, 10) + 1,
@@ -1494,22 +1494,22 @@ function getUniqueObjects(array) {
   return Array.from(uniqueSet, JSON.parse);
 }
 
-async function getCstTime({ datetime, timezone }) {
+async function getCstTime({ datetime }) {
   try {
     // Calculate UTC offset (including DST) for the timezone
-    const utcOffset = getNormalizedUtcOffset(datetime, timezone);
+    const utcOffset = getNormalizedUtcOffset(datetime, 'America/Chicago');
     console.info('🚀 ~ updated offset:', utcOffset);
 
     // Combine date and time
     let formattedDateTime = datetime + utcOffset;
     console.info('🚀 ~ file: helper.js:1315 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
     formattedDateTime = moment(formattedDateTime, 'YYYY-MM-DD HH:mm:ss.SSSZZ')
-      .tz(timezone)
-      .format('YYYYMMDDHHmmss');
-    const cstOffset = getNormalizedUtcOffset(new Date(datetime), 'America/Chicago');
-    console.info('🚀 ~ file: helper.js:1374 ~ getCstTime ~ cstOffset:', cstOffset);
-    console.info('🚀 ~ file: test.js:25 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
-    formattedDateTime += cstOffset;
+      .tz('America/Chicago')
+      .format('YYYYMMDDHHmmssZZ');
+    // const cstOffset = getNormalizedUtcOffset(new Date(datetime), 'America/Chicago');
+    // console.info('🚀 ~ file: helper.js:1374 ~ getCstTime ~ cstOffset:', cstOffset);
+    // console.info('🚀 ~ file: test.js:25 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
+    // formattedDateTime += cstOffset;
     return formattedDateTime;
   } catch (error) {
     console.error(error);
@@ -1637,53 +1637,53 @@ function stationCodeInfo(stationCode) {
   return 'NA';
 }
 
-async function getTimezoneFormGoogleApi({ address }) {
-  const { lat, lng } = await checkAddressByGoogleApi(address);
-  const googleRes = await getTimezoneByGoogleApi(lat, lng);
-  return googleRes;
-}
+// async function getTimezoneFormGoogleApi({ address }) {
+//   const { lat, lng } = await checkAddressByGoogleApi(address);
+//   const googleRes = await getTimezoneByGoogleApi(lat, lng);
+//   return googleRes;
+// }
 
-async function getTimezone({ stopCity, state, country, address1, zipcode }) {
-  const address = `${address1}, ${stopCity}, ${state}, ${country}`;
-  let timezone = null;
+// async function getTimezone({ stopCity, state, country, address1}) {
+//   const address = `${address1}, ${stopCity}, ${state}, ${country}`;
+//   let timezone = null;
 
-  // Attempt to get timezone from zipcode
-  timezone = await getTimeZoneFromZipCode(zipcode);
-  if (timezone) {
-    console.info('Timezone retrieved from zipcode:', timezone);
-    return timezone;
-  }
+//   // // Attempt to get timezone from zipcode
+//   // timezone = await getTimeZoneFromZipCode(zipcode);
+//   // if (timezone) {
+//   //   console.info('Timezone retrieved from zipcode:', timezone);
+//   //   return timezone;
+//   // }
 
-  // Try to find timezone from timezoneInfo
-  const cityListForState = timezoneInfo[state];
-  if (cityListForState && cityListForState.length > 1) {
-    timezone = _.find(cityListForState, (timezone1) => {
-      return _.isEqual(
-        _.toUpper(_.replace(timezone1.city, /[^a-zA-Z]/g, '')),
-        _.toUpper(_.replace(stopCity, /[^a-zA-Z]/g, ''))
-      );
-    })?.timezone;
-  } else {
-    timezone = _.get(cityListForState, '[0].timezone', null);
-  }
+//   // Try to find timezone from timezoneInfo
+//   const cityListForState = timezoneInfo[state];
+//   if (cityListForState && cityListForState.length > 1) {
+//     timezone = _.find(cityListForState, (timezone1) => {
+//       return _.isEqual(
+//         _.toUpper(_.replace(timezone1.city, /[^a-zA-Z]/g, '')),
+//         _.toUpper(_.replace(stopCity, /[^a-zA-Z]/g, ''))
+//       );
+//     })?.timezone;
+//   } else {
+//     timezone = _.get(cityListForState, '[0].timezone', null);
+//   }
 
-  if (timezone) {
-    console.info('Timezone retrieved from timezoneInfo:', timezone);
-    return timezone;
-  }
+//   if (timezone) {
+//     console.info('Timezone retrieved from timezoneInfo:', timezone);
+//     return timezone;
+//   }
 
-  // If timezone is still not found, call Google API
-  try {
-    const googleRes = await getTimezoneFormGoogleApi({ address });
-    timezone = googleRes;
-    console.info('Timezone retrieved from Google API:', timezone);
-  } catch (error) {
-    console.error('Error fetching timezone from Google API:', error);
-    throw error;
-  }
+//   // If timezone is still not found, call Google API
+//   try {
+//     const googleRes = await getTimezoneFormGoogleApi({ address });
+//     timezone = googleRes;
+//     console.info('Timezone retrieved from Google API:', timezone);
+//   } catch (error) {
+//     console.error('Error fetching timezone from Google API:', error);
+//     throw error;
+//   }
 
-  return timezone;
-}
+//   return timezone;
+// }
 
 function generateReferenceNumbers({ references }) {
   return getUniqueObjects(
@@ -1784,47 +1784,47 @@ async function getEquipmentCodeForMT(consolNo) {
   }
 }
 
-async function getTimeZoneFromZipCode(zipcode) {
-  const params = {
-    TableName: TIMEZONE_ZIP_CR,
-    KeyConditionExpression: 'ZipCode = :zip',
-    ExpressionAttributeValues: {
-      ':zip': zipcode,
-    },
-  };
+// async function getTimeZoneFromZipCode(zipcode) {
+//   const params = {
+//     TableName: TIMEZONE_ZIP_CR,
+//     KeyConditionExpression: 'ZipCode = :zip',
+//     ExpressionAttributeValues: {
+//       ':zip': zipcode,
+//     },
+//   };
 
-  try {
-    const data = await dynamoDB.query(params).promise();
+//   try {
+//     const data = await dynamoDB.query(params).promise();
 
-    if (_.get(data, 'Items[0].FK_TimeZoneCode')) {
-      const timezoneCode = _.get(data, 'Items[0].FK_TimeZoneCode');
-      return getLongFormTimeZone(timezoneCode);
-    }
-    return null;
-  } catch (error) {
-    console.error('Error querying DynamoDB:', error);
-    throw error;
-  }
-}
+//     if (_.get(data, 'Items[0].FK_TimeZoneCode')) {
+//       const timezoneCode = _.get(data, 'Items[0].FK_TimeZoneCode');
+//       return getLongFormTimeZone(timezoneCode);
+//     }
+//     return null;
+//   } catch (error) {
+//     console.error('Error querying DynamoDB:', error);
+//     throw error;
+//   }
+// }
 
-function getLongFormTimeZone(abbreviation) {
-  const timeZoneMappings = {
-    ADT: 'America/Halifax',
-    AST: 'America/Halifax',
-    CDT: 'America/Chicago',
-    CST: 'America/Chicago',
-    EDT: 'America/New_York',
-    EST: 'America/New_York',
-    HDT: 'Pacific/Honolulu',
-    HST: 'Pacific/Honolulu',
-    MDT: 'America/Denver',
-    MST: 'America/Denver',
-    PDT: 'America/Los_Angeles',
-    PST: 'America/Los_Angeles',
-  };
+// function getLongFormTimeZone(abbreviation) {
+//   const timeZoneMappings = {
+//     ADT: 'America/Halifax',
+//     AST: 'America/Halifax',
+//     CDT: 'America/Chicago',
+//     CST: 'America/Chicago',
+//     EDT: 'America/New_York',
+//     EST: 'America/New_York',
+//     HDT: 'Pacific/Honolulu',
+//     HST: 'Pacific/Honolulu',
+//     MDT: 'America/Denver',
+//     MST: 'America/Denver',
+//     PDT: 'America/Los_Angeles',
+//     PST: 'America/Los_Angeles',
+//   };
 
-  return timeZoneMappings[abbreviation] || null;
-}
+//   return timeZoneMappings[abbreviation] || null;
+// }
 
 module.exports = {
   getPowerBrokerCode,
@@ -1852,11 +1852,11 @@ module.exports = {
   generateStopforConsole,
   getHousebillData,
   descDataForConsole,
-  getTimezone,
+  // getTimezone,
   stationCodeInfo,
   getReferencesData,
   getUserEmail,
   sendSESEmail,
   getEquipmentCodeForMT,
-  getTimeZoneFromZipCode,
+  // getTimeZoneFromZipCode,
 };

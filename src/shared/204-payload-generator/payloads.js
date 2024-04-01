@@ -14,7 +14,7 @@ const {
   getHousebillData,
   descDataForConsole,
   getCstTime,
-  getTimezone,
+  // getTimezone,
   stationCodeInfo,
   getReferencesData,
   getEquipmentCodeForMT,
@@ -87,13 +87,13 @@ async function nonConsolPayload({
     shipmentDesc
   );
 
-  const timezone = await getTimezone({
-    stopCity: _.get(finalShipperData, 'ShipCity', ''),
-    state: _.get(finalShipperData, 'FK_ShipState', ''),
-    country: _.get(finalShipperData, 'FK_ShipCountry', ''),
-    address1: _.get(finalShipperData, 'ShipAddress1', ''),
-    zipcode: _.get(finalShipperData, 'ShipZip', ''),
-  });
+  // const timezone = await getTimezone({
+  //   stopCity: _.get(finalShipperData, 'ShipCity', ''),
+  //   state: _.get(finalShipperData, 'FK_ShipState', ''),
+  //   country: _.get(finalShipperData, 'FK_ShipCountry', ''),
+  //   address1: _.get(finalShipperData, 'ShipAddress1', ''),
+  //   zipcode: _.get(finalShipperData, 'ShipZip', ''),
+  // });
   const payload = {
     __type: 'orders',
     company_id: 'TMS',
@@ -123,7 +123,6 @@ async function nonConsolPayload({
     on_hold: true,
     ordered_date: await getCstTime({
       datetime: _.get(shipmentHeader, 'OrderDate', ''),
-      timezone,
     }),
     rad_date: deliveryStop.sched_arrive_late,
     ordered_method: 'M',
@@ -235,13 +234,13 @@ async function consolPayload({
     shipmentAparConsoleData,
     descData
   );
-  const timezone = await getTimezone({
-    stopCity: _.get(finalShipperData, 'ShipCity', ''),
-    state: _.get(finalShipperData, 'FK_ShipState', ''),
-    country: _.get(finalShipperData, 'FK_ShipCountry', ''),
-    address1: _.get(finalShipperData, 'ShipAddress1', ''),
-    zipcode: _.get(finalShipperData, 'ShipZip', ''),
-  });
+  // const timezone = await getTimezone({
+  //   stopCity: _.get(finalShipperData, 'ShipCity', ''),
+  //   state: _.get(finalShipperData, 'FK_ShipState', ''),
+  //   country: _.get(finalShipperData, 'FK_ShipCountry', ''),
+  //   address1: _.get(finalShipperData, 'ShipAddress1', ''),
+  //   zipcode: _.get(finalShipperData, 'ShipZip', ''),
+  // });
   const hazmat = await getHazmat({ shipmentAparConsoleData }); // Obtain hazmat information
 
   const payload = {
@@ -273,7 +272,6 @@ async function consolPayload({
     on_hold: true,
     ordered_date: await getCstTime({
       datetime: _.get(shipmentAparData, 'CreateDateTime', ''),
-      timezone,
     }),
     rad_date: deliveryStop.sched_arrive_late, // Set rad_date to scheduled arrival late of SO stop
     ordered_method: 'M',
@@ -346,13 +344,13 @@ async function mtPayload(
   );
   // Get the last stop
   const lastStop = stops[stops.length - 1];
-  const timezone = await getTimezone({
-    stopCity: _.get(consolStopHeaders, '[0].ConsolStopCity', ''),
-    state: _.get(consolStopHeaders, '[0].FK_ConsolStopState', ''),
-    country: _.get(consolStopHeaders, '[0].FK_ConsolStopCountry', ''),
-    address1: _.get(consolStopHeaders, '[0].ConsolStopAddress1', ''),
-    zipcode: _.get(consolStopHeaders, '[0].ConsolStopZip', ''),
-  });
+  // const timezone = await getTimezone({
+  //   stopCity: _.get(consolStopHeaders, '[0].ConsolStopCity', ''),
+  //   state: _.get(consolStopHeaders, '[0].FK_ConsolStopState', ''),
+  //   country: _.get(consolStopHeaders, '[0].FK_ConsolStopCountry', ''),
+  //   address1: _.get(consolStopHeaders, '[0].ConsolStopAddress1', ''),
+  //   zipcode: _.get(consolStopHeaders, '[0].ConsolStopZip', ''),
+  // });
   const hazmat = await getHazmat({ shipmentAparConsoleData: shipmentApar }); // Obtain hazmat information
 
   const stationCode = _.get(shipmentApar, '[0].FK_ConsolStationId', '');
@@ -398,7 +396,6 @@ async function mtPayload(
     on_hold: true,
     ordered_date: await getCstTime({
       datetime: _.get(shipmentApar, '[0]CreateDateTime', ''),
-      timezone,
     }),
     rad_date: lastStop.sched_arrive_late,
     ordered_method: 'M',
