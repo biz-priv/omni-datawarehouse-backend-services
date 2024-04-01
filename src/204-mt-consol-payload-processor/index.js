@@ -17,7 +17,7 @@ const {
 } = require('../shared/204-payload-generator/apis');
 const { STATUSES, TYPES } = require('../shared/constants/204_create_shipment');
 
-const { LIVE_SNS_TOPIC_ARN, CONSOL_STATUS_TABLE, OUTPUT_TABLE, STAGE, STATUS_TABLE } = process.env;
+const { LIVE_SNS_TOPIC_ARN, CONSOL_STATUS_TABLE, OUTPUT_TABLE, STAGE } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 
@@ -171,18 +171,6 @@ module.exports.handler = async (event, context) => {
           Housebill: String(houseBillString),
           ShipmentId: String(shipmentId),
         });
-        await Promise.all(
-          orderId.map(async (orderNo) => {
-            await updateOrderStatusTable({
-              orderNo,
-              response: updatedOrderResponse,
-              payload,
-              status: STATUSES.SENT,
-              Housebill: String(houseBillString),
-              ShipmentId: String(shipmentId),
-            });
-          })
-        );
       } catch (error) {
         console.info('Error', error);
         await insertInOutputTable({
@@ -199,17 +187,6 @@ module.exports.handler = async (event, context) => {
           status: STATUSES.FAILED,
           Housebill: String(houseBillString),
         });
-        await Promise.all(
-          orderId.map(async (orderNo) => {
-            await updateOrderStatusTable({
-              orderNo,
-              response: error.message,
-              payload,
-              status: STATUSES.FAILED,
-              Housebill: String(houseBillString),
-            });
-          })
-        );
         throw error;
       }
       return false;
@@ -253,40 +230,6 @@ async function updateStatusTable({
     const updateParam = {
       TableName: CONSOL_STATUS_TABLE,
       Key: { ConsolNo },
-      UpdateExpression:
-        'set #Status = :status, #Response = :response, Payload = :payload, Housebill = :housebill, ShipmentId = :shipmentid',
-      ExpressionAttributeNames: {
-        '#Status': 'Status',
-        '#Response': 'Response',
-      },
-      ExpressionAttributeValues: {
-        ':status': status,
-        ':response': response,
-        ':payload': payload,
-        ':housebill': Housebill,
-        ':shipmentid': ShipmentId,
-      },
-    };
-    console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
-    return await dynamoDb.update(updateParam).promise();
-  } catch (err) {
-    console.info('🙂 -> file: index.js:224 -> err:', err);
-    throw err;
-  }
-}
-
-async function updateOrderStatusTable({
-  orderNo,
-  status,
-  response,
-  payload,
-  Housebill,
-  ShipmentId = 0,
-}) {
-  try {
-    const updateParam = {
-      TableName: STATUS_TABLE,
-      Key: { FK_OrderNo: orderNo },
       UpdateExpression:
         'set #Status = :status, #Response = :response, Payload = :payload, Housebill = :housebill, ShipmentId = :shipmentid',
       ExpressionAttributeNames: {
