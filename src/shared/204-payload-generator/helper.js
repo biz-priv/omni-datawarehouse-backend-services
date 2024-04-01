@@ -773,11 +773,13 @@ async function fetchConsoleTableData({ shipmentAparData }) {
     const tables = [ 'omni-wt-rt-shipment-apar-console']
     const [shipmentAparConsolData] = await Promise.all(
       tables.map(async (table) => {
-        const param = getParamsByTableName('','','','','',_.get(shipmentAparData, 'ConsolNo'), table);
+        const param = getParamsByTableName('',table,'','','',_.get(shipmentAparData, 'ConsolNo'));
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
-        return _.get(response, '[0]Items', {});
+        console.info('🚀 ~ file: helper.js:779 ~ tables.map ~ response:', response)
+        return _.get(response, 'Items[0]', {});
       }))
+    console.info('🚀 ~ file: helper.js:782 ~ fetchConsoleTableData ~ shipmentAparConsolData:', shipmentAparConsolData)
 
     const tables1 = [
       'omni-wt-rt-shipment-header-console',
