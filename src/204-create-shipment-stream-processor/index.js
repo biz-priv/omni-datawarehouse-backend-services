@@ -98,7 +98,7 @@ module.exports.handler = async (event, context) => {
 
           let retryCount = 0;
           const maxRetries = 3;
-          const retryInterval = 5000; // 5 seconds in milliseconds
+          const retryInterval = 10000; // 10 seconds in milliseconds
 
           let shipmentHeaderResult = [];
           while (retryCount < maxRetries) {
@@ -179,7 +179,7 @@ module.exports.handler = async (event, context) => {
           }
         }
 
-        if (type) {
+        if (type && type !== TYPES.MULTI_STOP) {
           return await checkAndUpdateOrderTable({
             orderNo: orderId,
             type,
@@ -196,15 +196,18 @@ module.exports.handler = async (event, context) => {
       '🚀 ~ file: shipment_apar_table_stream_processor.js:117 ~ module.exports.handler= ~ e:',
       e
     );
-    await sendSESEmail({
-      functionName,
-      message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
-      subject: {
-        Data: `PB ERROR NOTIFICATION - ${STAGE} ~ FileNo: ${orderId} / Consol: ${consolNo}`,
-        Charset: 'UTF-8',
-      },
-      userEmail,
-    });
+    if (!e.message.includes('No shipment header data was found')) {
+      await sendSESEmail({
+        functionName,
+        message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
+        subject: {
+          Data: `PB ERROR NOTIFICATION - ${STAGE} ~ FileNo: ${orderId} / Consol: ${consolNo}`,
+          Charset: 'UTF-8',
+        },
+        userEmail,
+      });
+    }
+
     return await publishSNSTopic({
       message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
       stationCode,

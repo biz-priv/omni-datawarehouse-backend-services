@@ -244,7 +244,7 @@ async function fetchItemFromTable({ params }) {
             ConsolStopDate,
             ConsolStopCity,
             ConsolStopAddress1,
-            ConsolStopZip
+            ConsolStopZip,
           } = item;
 
           return every(
@@ -257,7 +257,7 @@ async function fetchItemFromTable({ params }) {
               ConsolStopDate,
               ConsolStopCity,
               ConsolStopAddress1,
-              ConsolStopZip
+              ConsolStopZip,
             ],
             (value) => !isEmpty(value) && value !== 'NULL'
           );
