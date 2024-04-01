@@ -51,7 +51,6 @@ function:
     REFERENCES_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.orderNoIndex}
     OMNI_DEV_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-dev/email}
     OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}
-    TIMEZONE_ZIP_CR: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/timezone-zip-cr/ddb.tableName~true}
     
   events:
     - stream:
