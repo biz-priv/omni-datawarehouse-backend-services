@@ -2,13 +2,7 @@
 const _ = require('lodash');
 const AWS = require('aws-sdk');
 const moment = require('moment-timezone');
-const {
-  getLocationId,
-  createLocation,
-  checkAddressByGoogleApi,
-  getTimezoneByGoogleApi,
-} = require('./apis');
-const timezoneInfo = require('../timezoneInfo/canadaUSTimezoneGroupBy.json');
+const { getLocationId, createLocation } = require('./apis');
 
 const ses = new AWS.SES();
 const {
@@ -30,7 +24,6 @@ const {
   INSTRUCTIONS_TABLE,
   REFERENCES_TABLE,
   REFERENCES_INDEX_KEY_NAME,
-  TRACKING_NOTES_ORDERNO_INDEX,
   OMNI_NO_REPLY_EMAIL,
   OMNI_DEV_EMAIL,
 } = process.env;
@@ -107,7 +100,7 @@ async function generateStop(
   shipmentAparData,
   shipmentDesc
 ) {
-  const { schedArriveEarly, schedArriveLate, timeZone } = await processStopDataNonConsol(
+  const { schedArriveEarly, schedArriveLate } = await processStopDataNonConsol(
     stopType,
     shipmentHeader,
     stateData
@@ -137,11 +130,9 @@ async function generateStop(
       type === 'shipper' ? _.get(stateData, 'ShipPhone', 'NA') : _.get(stateData, 'ConPhone', 'NA'),
     sched_arrive_early: await getCstTime({
       datetime: schedArriveEarly,
-      timezone: timeZone,
     }),
     sched_arrive_late: await getCstTime({
       datetime: schedArriveLate,
-      timezone: timeZone,
     }),
     late_eta_colorcode: false,
     status: 'A',
@@ -205,32 +196,19 @@ async function generateStop(
   return stopData;
 }
 
-async function processStopDataNonConsol(stopType, shipmentHeader, stateData) {
+async function processStopDataNonConsol(stopType, shipmentHeader) {
   let schedArriveEarly = '';
   let schedArriveLate = '';
-  let timeZone = '';
 
   if (stopType === 'PU') {
     schedArriveEarly = _.get(shipmentHeader, 'ReadyDateTime', '');
     schedArriveLate = _.get(shipmentHeader, 'ReadyDateTimeRange', '');
-    timeZone = await getTimezone({
-      stopCity: _.get(stateData, 'ShipCity', ''),
-      state: _.get(stateData, 'FK_ShipState', ''),
-      country: _.get(stateData, 'FK_ShipCountry', ''),
-      address1: _.get(stateData, 'ShipAddress1', ''),
-    });
   } else if (stopType === 'SO') {
     schedArriveEarly = _.get(shipmentHeader, 'ScheduledDateTime', '');
     schedArriveLate = _.get(shipmentHeader, 'ScheduledDateTimeRange', '');
-    timeZone = await getTimezone({
-      stopCity: _.get(stateData, 'ConCity', ''),
-      state: _.get(stateData, 'FK_ConState', ''),
-      country: _.get(stateData, 'FK_ConCountry', ''),
-      address1: _.get(stateData, 'ConAddress1', ''),
-    });
   }
 
-  return { schedArriveEarly, schedArriveLate, timeZone };
+  return { schedArriveEarly, schedArriveLate };
 }
 
 async function generateStopforConsole(
@@ -281,11 +259,9 @@ async function generateStopforConsole(
         : _.get(confirmationCostData, 'ConPhone', 'NA'),
     sched_arrive_early: await getCstTime({
       datetime: schedArriveEarly,
-      timezone: timeZone,
     }),
     sched_arrive_late: await getCstTime({
       datetime: schedArriveLate,
-      timezone: timeZone,
     }),
     late_eta_colorcode: false,
     status: 'A',
@@ -355,29 +331,16 @@ async function generateStopforConsole(
 async function processStopData(stopType, confirmationCostData) {
   let schedArriveEarly = '';
   let schedArriveLate = '';
-  let timeZone = '';
 
   if (stopType === 'PU') {
     schedArriveEarly = _.get(confirmationCostData, 'PickupDateTime', '');
     schedArriveLate = _.get(confirmationCostData, 'PickupTimeRange', '');
-    timeZone = await getTimezone({
-      stopCity: _.get(confirmationCostData, 'ShipCity', ''),
-      state: _.get(confirmationCostData, 'FK_ShipState', ''),
-      country: _.get(confirmationCostData, 'FK_ShipCountry', ''),
-      address1: _.get(confirmationCostData, 'ShipAddress1', ''),
-    });
   } else if (stopType === 'SO') {
     schedArriveEarly = _.get(confirmationCostData, 'DeliveryDateTime', '');
     schedArriveLate = _.get(confirmationCostData, 'DeliveryTimeRange', '');
-    timeZone = await getTimezone({
-      stopCity: _.get(confirmationCostData, 'ConCity', ''),
-      state: _.get(confirmationCostData, 'FK_ConState', ''),
-      country: _.get(confirmationCostData, 'FK_ConCountry', ''),
-      address1: _.get(confirmationCostData, 'ConAddress1', ''),
-    });
   }
 
-  return { schedArriveEarly, schedArriveLate, timeZone };
+  return { schedArriveEarly, schedArriveLate };
 }
 
 function getNote(confirmationCostData, type) {
@@ -461,10 +424,11 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
     case 'omni-wt-rt-shipment-apar-console':
       return {
         TableName: SHIPMENT_APAR_TABLE,
-        KeyConditionExpression: 'FK_OrderNo = :orderNo',
+        IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
+        KeyConditionExpression: 'ConsolNo = :ConsolNo',
         FilterExpression: 'Consolidation = :consolidation',
         ExpressionAttributeValues: {
-          ':orderNo': orderNo,
+          ':ConsolNo': String(consoleNo),
           ':consolidation': 'N',
         },
       };
@@ -605,16 +569,6 @@ function getFinalShipperAndConsigneeData({ confirmationCostData, shipperData, co
   return { finalShipperData, finalConsigneeData };
 }
 
-async function fetchAparTableForConsole({ orderNo }) {
-  try {
-    const aparParamsForConsole = getParamsByTableName(orderNo, 'omni-wt-rt-shipment-apar-console');
-    return _.get(await queryDynamoDB(aparParamsForConsole), 'Items', false);
-  } catch (e) {
-    console.error('🙂 -> file: helper.js:415 -> e:', e);
-    return [];
-  }
-}
-
 async function fetchCommonTableData({ shipmentAparData }) {
   const tables = ['omni-wt-rt-confirmation-cost', 'omni-wt-rt-shipper', 'omni-wt-rt-consignee'];
 
@@ -675,7 +629,7 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
         return _.get(response, 'Items', []);
       })
     );
-    const userData = await getUserData({ shipmentHeaderData });
+    const userData = await queryUserTable({ userId: _.get(shipmentAparData, 'UpdatedBy') });
     console.info('🚀 ~ file: helper.js:491 ~ userData:', userData);
     return {
       shipmentHeaderData,
@@ -693,54 +647,6 @@ async function fetchNonConsoleTableData({ shipmentAparData }) {
       customersData: [],
       userData: [],
     };
-  }
-}
-
-async function getUserData({ shipmentHeaderData }) {
-  try {
-    console.info('🚀 ~ file: test.js:720 ~ getUserId ~ shipmentHeaderData:', shipmentHeaderData);
-
-    let userId = _.get(shipmentHeaderData, '[0].AcctManager', '');
-    console.info('🚀 ~ file: test.js:723 ~ getUserId ~ userId:', userId);
-    if (userId === '') {
-      userId = _.get(shipmentHeaderData, '[0].UserId', '');
-      console.info('🚀 ~ file: test.js:727 ~ getUserId ~ userId:', userId);
-      if (userId) {
-        const result1 = await queryUserTable({ userId });
-        if (result1.length === 0) {
-          userId = await queryTrackingNotes({
-            orderNo: _.get(shipmentHeaderData, '[0].PK_OrderNo'),
-          });
-        } else {
-          return result1;
-        }
-      }
-    }
-    return await queryUserTable({ userId });
-  } catch (error) {
-    console.error('🚀 ~ file: helper.js:770 ~ getUserData ~ error:', error);
-    throw error;
-  }
-}
-
-async function queryTrackingNotes({ orderNo }) {
-  try {
-    const params = {
-      TableName: TRACKING_NOTES_TABLE,
-      IndexName: TRACKING_NOTES_ORDERNO_INDEX,
-      KeyConditionExpression: 'FK_OrderNo = :orderno',
-      ExpressionAttributeValues: {
-        ':orderno': String(orderNo),
-      },
-      Limit: 1,
-    };
-    console.info('🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:', params);
-    const response = await dynamoDB.query(params).promise();
-    console.info('🚀 ~ file: test.js:757 ~ queryTrackingNotes ~ response:', response);
-    return _.get(response, 'Items[0].FK_UserId', []);
-  } catch (error) {
-    console.error('🚀 ~ file: helper.js:792 ~ queryTrackingNotes ~ error:', error);
-    throw error;
   }
 }
 
@@ -764,16 +670,11 @@ async function queryUserTable({ userId }) {
 
 async function fetchConsoleTableData({ shipmentAparData }) {
   try {
-    const tables = [
-      'omni-wt-rt-shipment-header-console',
-      'omni-wt-rt-shipment-desc',
-      'omni-wt-rt-tracking-notes',
-    ];
-
-    const [shipmentHeaderData, shipmentDescData, trackingNotesData] = await Promise.all(
+    const tables = ['omni-wt-rt-shipment-apar-console'];
+    const [shipmentAparConsolData] = await Promise.all(
       tables.map(async (table) => {
         const param = getParamsByTableName(
-          _.get(shipmentAparData, 'FK_OrderNo'),
+          '',
           table,
           '',
           '',
@@ -782,12 +683,27 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         );
         console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
         const response = await queryDynamoDB(param);
-        console.info('🚀 ~ file: helper.js:510 ~ response:', response);
+        console.info('🚀 ~ file: helper.js:779 ~ tables.map ~ response:', response);
+        return _.get(response, 'Items[0]', {});
+      })
+    );
+    console.info(
+      '🚀 ~ file: helper.js:782 ~ fetchConsoleTableData ~ shipmentAparConsolData:',
+      shipmentAparConsolData
+    );
+
+    const tables1 = ['omni-wt-rt-shipment-header-console'];
+
+    const [shipmentHeaderData] = await Promise.all(
+      tables1.map(async (table) => {
+        const param = getParamsByTableName(_.get(shipmentAparConsolData, 'FK_OrderNo'), table);
+        console.info('🙂 -> file: index.js:35 -> tables.map -> param:', table, param);
+        const response = await queryDynamoDB(param);
         return _.get(response, 'Items', []);
       })
     );
-    if (shipmentHeaderData === 0 || trackingNotesData === 0) {
-      throw new Error('Missing data in customers or users');
+    if (shipmentHeaderData.length === 0) {
+      throw new Error('Missing data in shipment header');
     }
     const tables2 = ['omni-wt-rt-customers'];
     const [customersData] = await Promise.all(
@@ -804,40 +720,25 @@ async function fetchConsoleTableData({ shipmentAparData }) {
         return _.get(response, 'Items', []);
       })
     );
-    let userData = await Promise.all(
-      trackingNotesData.map(async (trackingNote) => {
-        const param = getParamsByTableName(
-          '',
-          'omni-wt-rt-users',
-          '',
-          '',
-          _.get(trackingNote, 'FK_UserId')
-        );
-        console.info(
-          '🙂 -> file: index.js:35 -> tables.map -> param:',
-          trackingNote,
-          'omni-wt-rt-users',
-          param
-        );
-        const response = await queryDynamoDB(param);
-        console.info('🚀 ~ file: helper.js:529 ~ response:', response);
-        return _.get(response, 'Items[0]', false);
-      })
+    const param = getParamsByTableName(
+      '',
+      'omni-wt-rt-users',
+      '',
+      '',
+      _.get(shipmentAparData, 'UpdatedBy')
     );
-    userData = [userData.filter((item) => item && _.has(item, 'UserEmail'))[0]];
+    console.info('🚀 ~ file: helper.js:824 User Params:', param);
+    let userData = await queryDynamoDB(param);
+    console.info('🚀 ~ file: helper.js:822 ~ userData:', userData);
+    userData = userData.Items;
     return {
       shipmentHeaderData,
-      shipmentDescData,
-      trackingNotesData,
       customersData,
       userData,
     };
   } catch (err) {
     console.info('🙂 -> file: helper.js:526 -> err:', err);
     return {
-      shipmentHeaderData: [],
-      shipmentDescData: [],
-      trackingNotesData: [],
       customersData: [],
       userData: [],
     };
@@ -1200,27 +1101,12 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     const refResult = await dynamoDB.query(refparams).promise();
     references.push(...refResult.Items);
 
-    const tnparams = {
-      TableName: TRACKING_NOTES_TABLE,
-      IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
-      KeyConditionExpression: 'ConsolNo = :ConsolNo',
-      ExpressionAttributeValues: {
-        ':ConsolNo': CONSOL_NO.toString(),
-      },
-    };
-
-    const trackingNotesResult = await dynamoDB.query(tnparams).promise();
-    console.info('🚀 ~ file: helper.js:777 ~ trackingNotesResult:', trackingNotesResult);
-
-    if (trackingNotesResult.Items.length === 0) {
-      throw new Error(`No data found in tracking notes table for ConsolNo:${CONSOL_NO}`);
-    }
     let users = [];
     const userparams = {
       TableName: USERS_TABLE,
       KeyConditionExpression: 'PK_UserId = :PK_UserId',
       ExpressionAttributeValues: {
-        ':PK_UserId': _.get(trackingNotesResult, 'Items[0].FK_UserId', ''),
+        ':PK_UserId': _.get(uniqueShipmentApar, '[0]UpdatedBy'),
       },
     };
     console.info('🚀 ~ file: helper.js:787 ~ userparams:', userparams);
@@ -1228,7 +1114,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     users = usersResult.Items;
     if (users.length === 0) {
       throw new Error(
-        `No users data found for PK_UserId: ${_.get(trackingNotesResult, 'Items[0].FK_UserId', '')}`
+        `No users data found for PK_UserId: ${_.get(uniqueShipmentApar, '[0]UpdatedBy')}`
       );
     }
 
@@ -1265,12 +1151,6 @@ async function populateStops(
     const locationId = locationIds[index];
     const isPickup = stopHeader.ConsolStopPickupOrDelivery === 'false';
     const stoptype = isPickup ? 'PU' : 'SO';
-    const timeZoneCode = await getTimezone({
-      stopCity: _.get(stopHeader, 'ConsolStopCity', ''),
-      state: _.get(stopHeader, 'FK_ConsolStopState', ''),
-      country: _.get(stopHeader, 'FK_ConsolStopCountry', ''),
-      address1: _.get(stopHeader, 'ConsolStopAddress1', ''),
-    });
 
     const referenceNumbersArray = [
       generateReferenceNumbers({ references }),
@@ -1340,11 +1220,9 @@ async function populateStops(
       phone: _.get(stopHeader, 'ConsolStopPhone', 0),
       sched_arrive_early: await getCstTime({
         datetime: earlyDatetime,
-        timezone: timeZoneCode,
       }),
       sched_arrive_late: await getCstTime({
         datetime: lateDatetime,
-        timezone: timeZoneCode,
       }),
       status: 'A',
       order_sequence: parseInt(stopHeader.ConsolStopNumber ?? 0, 10) + 1,
@@ -1503,22 +1381,18 @@ function getUniqueObjects(array) {
   return Array.from(uniqueSet, JSON.parse);
 }
 
-async function getCstTime({ datetime, timezone }) {
+async function getCstTime({ datetime }) {
   try {
     // Calculate UTC offset (including DST) for the timezone
-    const utcOffset = getNormalizedUtcOffset(datetime, timezone);
+    const utcOffset = getNormalizedUtcOffset(datetime, 'America/Chicago');
     console.info('🚀 ~ updated offset:', utcOffset);
 
     // Combine date and time
     let formattedDateTime = datetime + utcOffset;
     console.info('🚀 ~ file: helper.js:1315 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
     formattedDateTime = moment(formattedDateTime, 'YYYY-MM-DD HH:mm:ss.SSSZZ')
-      .tz(timezone)
-      .format('YYYYMMDDHHmmss');
-    const cstOffset = getNormalizedUtcOffset(new Date(datetime), 'America/Chicago');
-    console.info('🚀 ~ file: helper.js:1374 ~ getCstTime ~ cstOffset:', cstOffset);
-    console.info('🚀 ~ file: test.js:25 ~ getCstTime ~ formattedDateTime:', formattedDateTime);
-    formattedDateTime += cstOffset;
+      .tz('America/Chicago')
+      .format('YYYYMMDDHHmmssZZ');
     return formattedDateTime;
   } catch (error) {
     console.error(error);
@@ -1625,7 +1499,7 @@ function stationCodeInfo(stationCode) {
     MSP: { PbBillTo: 'STPACOTX' },
     PHX: { PbBillTo: 'PHEOCOTX' },
     TAN: { PbBillTo: 'OMNICOT9' },
-    YYZ: { PbBillTo: 'ONTACOTX' }, 
+    YYZ: { PbBillTo: 'ONTACOTX' },
     DFW: { PbBillTo: 'OMNICOTX' },
     IND: { PbBillTo: 'OMNIDATX' },
     ELP: { PbBillTo: 'OMNIELTX' },
@@ -1644,43 +1518,6 @@ function stationCodeInfo(stationCode) {
     return PbBillTo;
   }
   return 'NA';
-}
-
-async function getTimezoneFormGoogleApi({ address }) {
-  const { lat, lng } = await checkAddressByGoogleApi(address);
-  const googleRes = await getTimezoneByGoogleApi(lat, lng);
-  return googleRes;
-}
-
-async function getTimezone({ stopCity, state, country, address1 }) {
-  const address = `${address1}, ${stopCity}, ${state}, ${country}`;
-
-  const cityListForState = timezoneInfo[state];
-  let timezone = null;
-
-  if (cityListForState && cityListForState.length > 1) {
-    timezone = _.find(cityListForState, (timezone1) => {
-      return _.isEqual(
-        _.toUpper(_.replace(timezone1.city, /[^a-zA-Z]/g, '')),
-        _.toUpper(_.replace(stopCity, /[^a-zA-Z]/g, ''))
-      );
-    })?.timezone;
-  } else {
-    timezone = _.get(cityListForState, '[0].timezone', null);
-  }
-
-  if (!timezone) {
-    try {
-      // Call Google API to fetch timezone based on address
-      const googleRes = await getTimezoneFormGoogleApi({ address });
-      timezone = googleRes;
-    } catch (error) {
-      console.error('Error fetching timezone from Google API:', error);
-      throw error;
-    }
-  }
-
-  return timezone;
 }
 
 function generateReferenceNumbers({ references }) {
@@ -1790,7 +1627,6 @@ module.exports = {
   queryDynamoDB,
   fetchLocationId,
   getFinalShipperAndConsigneeData,
-  fetchAparTableForConsole,
   fetchCommonTableData,
   fetchNonConsoleTableData,
   fetchConsoleTableData,
@@ -1808,10 +1644,9 @@ module.exports = {
   generateStopforConsole,
   getHousebillData,
   descDataForConsole,
-  getTimezone,
   stationCodeInfo,
   getReferencesData,
   getUserEmail,
   sendSESEmail,
-  getEquipmentCodeForMT
+  getEquipmentCodeForMT,
 };
