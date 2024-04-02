@@ -37,11 +37,11 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function publishSNSTopic({ message, stationCode, orderNo, houseBillString }) {
+async function publishSNSTopic({ message, stationCode, subject }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} /FK_OrderNo: ${orderNo}`,
+      Subject: subject,
       Message: `An error occurred in ${functionName}: ${message}`,
       MessageAttributes: {
         stationCode: {
@@ -84,7 +84,7 @@ async function checkTable(tableData) {
   const headerResult = await queryDynamoDB(get(tableData, 'FK_OrderNo'));
   console.info('🙂 -> file: index.js:66 -> headerResult:', headerResult);
   const userEmail = await getUserEmail({ userId: get(tableData, 'ShipmentAparData.UpdatedBy') });
-  const houseBillString = get(headerResult, '[0]Housebill');
+  const houseBillString = get(headerResult, '[0]Housebill', 0);
   let handlingStation;
   if (type === TYPES.NON_CONSOLE) {
     handlingStation =
@@ -159,29 +159,58 @@ async function checkTable(tableData) {
         (pendingTable) => CONSOLE_WISE_REQUIRED_FIELDS[type][pendingTable]
       );
       missingFields = missingFields.flat().join('\n');
-      await publishSNSTopic({
-        message: `All tables are not populated for order id: ${orderNo}.
+      if (type === TYPES.CONSOLE) {
+        await publishSNSTopic({
+          message: `All tables are not populated for ConsolNo: ${orderNo}.
+        \n Please check if all the below feilds are populated: 
+        \n${missingFields}. 
+        \n Please check ${STATUS_TABLE} to see which table does not have data. 
+        \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+          stationCode: handlingStation,
+          orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
+          houseBillString,
+          subject: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${orderNo}`,
+        });
+        await sendSESEmail({
+          functionName,
+          message: `All tables are not populated for ConsolNo: ${orderNo}.
+        \n Please check if all the below feilds are populated: 
+        \n${missingFields}. 
+        \n Please check ${STATUS_TABLE} to see which table does not have data. 
+        \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+          userEmail,
+          subject: {
+            Data: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
+            Charset: 'UTF-8',
+          },
+        });
+      } else {
+        await publishSNSTopic({
+          message: `All tables are not populated for order id: ${orderNo}.
       \n Please check if all the below feilds are populated: 
       \n${missingFields}. 
       \n Please check ${STATUS_TABLE} to see which table does not have data. 
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
-        stationCode: handlingStation,
-        orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
-        houseBillString,
-      });
-      await sendSESEmail({
-        functionName,
-        message: `All tables are not populated for order id: ${orderNo}.
-      \n Please check if all the below feilds are populated: 
-      \n${missingFields}. 
-      \n Please check ${STATUS_TABLE} to see which table does not have data. 
-      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
-        userEmail,
-        subject: {
-          Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
-          Charset: 'UTF-8',
-        },
-      });
+          stationCode: handlingStation,
+          orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
+          houseBillString,
+          subject: `PB ERROR NOTIFICATION - ${STAGE} ~  Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
+        });
+        await sendSESEmail({
+          functionName,
+          message: `All tables are not populated for order id: ${orderNo}.
+        \n Please check if all the below feilds are populated: 
+        \n${missingFields}. 
+        \n Please check ${STATUS_TABLE} to see which table does not have data. 
+        \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+          userEmail,
+          subject: {
+            Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
+            Charset: 'UTF-8',
+          },
+        });
+      }
+
       return false;
     }
 

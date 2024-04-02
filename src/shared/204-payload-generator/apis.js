@@ -59,6 +59,7 @@ async function getLocationId(name, address1, address2, state) {
     const queryParams = new URLSearchParams(combination);
     const apiUrl = `${apiUrlBase}?${queryParams}`;
 
+    console.info('🚀 ~ file: apis.js:62 ~ getLocationId ~ apiUrl:', apiUrl)
     try {
       const response = await axios.get(apiUrl, { headers });
       const responseData = _.get(response, 'data', {});
