@@ -52,7 +52,7 @@ async function ChargableWeight(tableValue) {
       ChargableWeight += Number(val.ChargableWeight)
     }))
     return Number(ChargableWeight);
-  } catch {
+  } catch (error) {
     throw error
   }
 }
@@ -82,6 +82,9 @@ async function getPickupTime(dateTime, dateTimeZone, timeZoneTable) {
 
 async function getTime(dateTime, dateTimeZone, timeZoneTable) {
   try {
+    if (dateTime == 0 || dateTime == null || dateTime == "" || dateTime.substring(0, 4) == "1900") {
+      return ""
+    }
     const inputDate = moment(dateTime);
     if (dateTimeZone == "" || dateTimeZone == null) {
       dateTimeZone = "CST"
@@ -262,62 +265,62 @@ async function getDynamodbData(value){
 }
 
 async function MappingDataToInsert(data, timeZoneTable) {
-    const payload = {
-      "fileNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, null),
-      "HouseBillNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, null),
-      "masterbill": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].MasterAirWaybill`, null),
-      "shipmentDate": await getShipmentDate(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].ShipmentDateTime`, null)),
-      "handlingStation": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].HandlingStation`, null),
-      "originPort": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrgAirport`, null),
-      "destinationPort": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].DestAirport`, null),
-      "shipper": {
-        "name": get(data, `${process.env.SHIPPER_TABLE}[0].ShipName`, null),
-        "address": get(data, `${process.env.SHIPPER_TABLE}[0].ShipAddress1`, null),
-        "city": get(data, `${process.env.SHIPPER_TABLE}[0].ShipCity`, null),
-        "state": get(data, `${process.env.SHIPPER_TABLE}[0].FK_ShipState`, null),
-        "zip": get(data, `${process.env.SHIPPER_TABLE}[0].ShipZip`, null),
-        "country": get(data, `${process.env.SHIPPER_TABLE}[0].FK_ShipCountry`, null)
-      },
-      "consignee": {
-        "name": get(data, `${process.env.CONSIGNEE_TABLE}[0].ConName`, null),
-        "address": get(data, `${process.env.CONSIGNEE_TABLE}[0].ConAddress1`, null),
-        "city": get(data, `${process.env.CONSIGNEE_TABLE}[0].ConCity`, null),
-        "state": get(data, `${process.env.CONSIGNEE_TABLE}[0].FK_ConState`, null),
-        "zip": get(data, `${process.env.CONSIGNEE_TABLE}[0].ConZip`, null),
-        "country": get(data, `${process.env.CONSIGNEE_TABLE}[0].FK_ConCountry`, null)
-      },
-      "pieces": await pieces(get(data, `${process.env.SHIPMENT_DESC_TABLE}`, null)),
-      "actualWeight": await actualWeight(get(data, `${process.env.SHIPMENT_DESC_TABLE}`, 0)),
-      "chargeableWeight": await ChargableWeight(get(data, `${process.env.SHIPMENT_DESC_TABLE}`, 0)),
-      "weightUOM": await weightUOM(get(data, `${process.env.SHIPMENT_DESC_TABLE}[0].WeightDimension`, null)),
-      "pickupTime": await getPickupTime(get(data, `${process.env.SHIPMENT_MILESTONE_DETAIL_TABLE}[0].EventDateTime`, null), get(data, `${process.env.SHIPMENT_MILESTONE_DETAIL_TABLE}[0].EventTimeZone`, null), timeZoneTable),
-      "estimatedDepartureTime": "",
-      "estimatedArrivalTime": await getTime(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].ETADateTime`, null), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].ETADateTimeZone`, null), timeZoneTable),
-      "scheduledDeliveryTime": await getTime(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].ScheduledDateTime`, null), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].ScheduledDateTimeZone`, null), timeZoneTable),
-      "deliveryTime": await getTime(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PODDateTime`, null), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PODDateTimeZone`, null), timeZoneTable),
-      "podName": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PODName`, null),
-      "serviceLevelCode": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].FK_ServiceLevelId`, null),
-      "serviceLevelDescription": get(data, `${process.env.SERVICE_LEVEL_TABLE}[0].ServiceLevel`, null),
-      "customerReference": [
-        {
-          "refParty": await refParty(get(data, `${process.env.REFERENCE_TABLE}[0].CustomerType`, null)),
-          "refType": get(data, `${process.env.REFERENCE_TABLE}[0].FK_RefTypeId`, null),
-          "refNumber": get(data, `${process.env.REFERENCE_TABLE}[0].ReferenceNo`, null)
-        }
-      ],
-      "milestones": [{
-        "statusCode": get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderStatusId`, null),
-        "statusDescription": get(data, `${process.env.MILESTONE_TABLE}[0].Description`, null),
-        "statusTime": await getTime(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, null), get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventTimeZone`, null), timeZoneTable)
-      }],
-      "locations": await locationFunc(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, null), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, null)),
-      "EventDateTime": get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00 00:00:00.000'),
-      "EventDate": moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00')).format("YYYY-MM-DD"),
-      "EventYear": moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900')).format("YYYY"),
-      "OrderDateTime": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00 00:00:00.000'),
-      "OrderDate": moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00')).format("YYYY-MM-DD"),
-      "OrderYear": moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY"),
-    }
+  const payload = {
+    "fileNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, ""),
+    "HouseBillNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, ""),
+    "masterbill": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].MasterAirWaybill`, ""),
+    "shipmentDate": await getShipmentDate(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].ShipmentDateTime`, "")),
+    "handlingStation": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].HandlingStation`, ""),
+    "originPort": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrgAirport`, ""),
+    "destinationPort": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].DestAirport`, ""),
+    "shipper": {
+      "name": get(data, `${process.env.SHIPPER_TABLE}[0].ShipName`, ""),
+      "address": get(data, `${process.env.SHIPPER_TABLE}[0].ShipAddress1`, ""),
+      "city": get(data, `${process.env.SHIPPER_TABLE}[0].ShipCity`, ""),
+      "state": get(data, `${process.env.SHIPPER_TABLE}[0].FK_ShipState`, ""),
+      "zip": get(data, `${process.env.SHIPPER_TABLE}[0].ShipZip`, ""),
+      "country": get(data, `${process.env.SHIPPER_TABLE}[0].FK_ShipCountry`, "")
+    },
+    "consignee": {
+      "name": get(data, `${process.env.CONSIGNEE_TABLE}[0].ConName`, ""),
+      "address": get(data, `${process.env.CONSIGNEE_TABLE}[0].ConAddress1`, ""),
+      "city": get(data, `${process.env.CONSIGNEE_TABLE}[0].ConCity`, ""),
+      "state": get(data, `${process.env.CONSIGNEE_TABLE}[0].FK_ConState`, ""),
+      "zip": get(data, `${process.env.CONSIGNEE_TABLE}[0].ConZip`, ""),
+      "country": get(data, `${process.env.CONSIGNEE_TABLE}[0].FK_ConCountry`, "")
+    },
+    "pieces": await pieces(get(data, `${process.env.SHIPMENT_DESC_TABLE}`, 0)),
+    "actualWeight": await actualWeight(get(data, `${process.env.SHIPMENT_DESC_TABLE}`, 0)),
+    "chargeableWeight": await ChargableWeight(get(data, `${process.env.SHIPMENT_DESC_TABLE}`, 0)),
+    "weightUOM": await weightUOM(get(data, `${process.env.SHIPMENT_DESC_TABLE}[0].WeightDimension`, "")),
+    "pickupTime": await getPickupTime(get(data, `${process.env.SHIPMENT_MILESTONE_DETAIL_TABLE}[0].EventDateTime`, ""), get(data, `${process.env.SHIPMENT_MILESTONE_DETAIL_TABLE}[0].EventTimeZone`, ""), timeZoneTable),
+    "estimatedDepartureTime": "",
+    "estimatedArrivalTime": await getTime(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].ETADateTime`, ""), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].ETADateTimeZone`, ""), timeZoneTable),
+    "scheduledDeliveryTime": await getTime(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].ScheduledDateTime`, ""), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].ScheduledDateTimeZone`, ""), timeZoneTable),
+    "deliveryTime": await getTime(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PODDateTime`, ""), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PODDateTimeZone`, ""), timeZoneTable),
+    "podName": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PODName`, ""),
+    "serviceLevelCode": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].FK_ServiceLevelId`, ""),
+    "serviceLevelDescription": get(data, `${process.env.SERVICE_LEVEL_TABLE}[0].ServiceLevel`, ""),
+    "customerReference": [
+      {
+        "refParty": await refParty(get(data, `${process.env.REFERENCE_TABLE}[0].CustomerType`, "")),
+        "refType": get(data, `${process.env.REFERENCE_TABLE}[0].FK_RefTypeId`, ""),
+        "refNumber": get(data, `${process.env.REFERENCE_TABLE}[0].ReferenceNo`, "")
+      }
+    ],
+    "milestones": [{
+      "statusCode": get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderStatusId`, ""),
+      "statusDescription": get(data, `${process.env.MILESTONE_TABLE}[0].Description`, ""),
+      "statusTime": await getTime(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, ""), get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventTimeZone`, ""), timeZoneTable)
+    }],
+    "locations": await locationFunc(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, ""), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, "")),
+    "EventDateTime": get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00 00:00:00.000'),
+    "EventDate": moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00')).format("YYYY-MM-DD"),
+    "EventYear": moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900')).format("YYYY"),
+    "OrderDateTime": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00 00:00:00.000'),
+    "OrderDate": moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00')).format("YYYY-MM-DD"),
+    "OrderYear": moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY"),
+  }
     
     const ignoreFields = ['masterbill', 'pickupTime', 'estimatedDepartureTime', 'estimatedArrivalTime', 'scheduledDeliveryTime', 'deliveryTime', 'podName'];
   
