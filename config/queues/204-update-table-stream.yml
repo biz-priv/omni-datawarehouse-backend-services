@@ -1,0 +1,13 @@
+ConfirmationCostSNSTopicSubscription:
+  Type: 'AWS::SNS::Subscription'
+  Properties:
+    Protocol: 'sqs'
+    TopicArn: 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-confirmation-cost-dev'
+    Endpoint: !GetAtt 204UpdateTableStreamQueue.Arn
+
+ConsolStopHeaderSNSTopicSubscription:
+  Type: 'AWS::SNS::Subscription'
+  Properties:
+    Protocol: 'sqs'
+    TopicArn: 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-consol-stop-headers-dev'
+    Endpoint: !GetAtt 204UpdateTableStreamQueue.Arn
