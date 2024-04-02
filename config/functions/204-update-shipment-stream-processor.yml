@@ -9,6 +9,7 @@ function:
   events:
     - sqs:
         arn: !GetAtt 204UpdateTableStreamQueue.Arn
+        batchSize: 1
   package:
     patterns:
       - '!**/*'
