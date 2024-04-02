@@ -1,6 +1,6 @@
 'use strict';
 
-const { get, pickBy } = require('lodash');
+const { get, pickBy, every, isEmpty } = require('lodash');
 const AWS = require('aws-sdk');
 const {
   STATUSES,
@@ -13,7 +13,8 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
 
-const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, STAGE, SHIPMENT_HEADER_TABLE } = process.env;
+const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, STAGE, SHIPMENT_HEADER_TABLE, CONFIRMATION_COST } =
+  process.env;
 
 let functionName;
 module.exports.handler = async (event, context) => {
@@ -229,6 +230,61 @@ async function checkTable(tableData) {
 async function fetchItemFromTable({ params }) {
   try {
     console.info('🙂 -> file: index.js:135 -> params:', params);
+    if (get(params, 'TableName', '') === CONFIRMATION_COST) {
+      const data = await dynamoDb.query(params).promise();
+      console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+      const confirmationCost = get(data, 'Items', []);
+      if (
+        confirmationCost.length > 0 &&
+        confirmationCost.every((item) => {
+          const {
+            // eslint-disable-next-line camelcase
+            ShipName,
+            ShipAddress1,
+            ShipZip,
+            ShipCity,
+            // eslint-disable-next-line camelcase
+            FK_ShipState,
+            // eslint-disable-next-line camelcase
+            FK_ShipCountry,
+            ConName,
+            ConAddress1,
+            ConZip,
+            ConCity,
+            // eslint-disable-next-line camelcase
+            FK_ConState,
+            // eslint-disable-next-line camelcase
+            FK_ConCountry,
+          } = item;
+
+          return every(
+            [
+              ShipName,
+              ShipAddress1,
+              ShipZip,
+              ShipCity,
+              // eslint-disable-next-line camelcase
+              FK_ShipState,
+              // eslint-disable-next-line camelcase
+              FK_ShipCountry,
+              ConName,
+              ConAddress1,
+              ConZip,
+              ConCity,
+              // eslint-disable-next-line camelcase
+              FK_ConState,
+              // eslint-disable-next-line camelcase
+              FK_ConCountry,
+            ],
+            (value) => !isEmpty(value) && value !== 'NULL'
+          );
+        })
+      ) {
+        return STATUSES.READY;
+      }
+      return STATUSES.PENDING;
+    }
+    // For other tables, proceed with regular logic
     const data = await dynamoDb.query(params).promise();
     console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items', []).length > 0 ? STATUSES.READY : STATUSES.PENDING;

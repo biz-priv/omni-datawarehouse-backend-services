@@ -21,10 +21,9 @@ async function getLocationId(name, address1, address2, state) {
   const handleSpecialCharacters = (inputString) => {
     if (/[^a-zA-Z0-9 ]/.test(inputString)) {
       let outputString = inputString.replace(/[^a-zA-Z0-9 ]/g, '*');
-      let starPosition = outputString.indexOf('*');
+      const starPosition = outputString.indexOf('*');
       if (starPosition === 0) {
-        outputString = outputString.substring(1);
-        starPosition = outputString.indexOf('*');
+        outputString = '*'
       }
       if (starPosition !== -1) {
         outputString = outputString.substring(0, starPosition + 1);
