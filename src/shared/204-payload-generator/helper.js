@@ -1130,7 +1130,7 @@ async function fetchDataFromTablesList(CONSOL_NO) {
     };
   } catch (error) {
     console.error('error', error);
-    return {};
+    throw error;
   }
 }
 
