@@ -47,6 +47,7 @@ async function getLocationId(name, address1, address2, state) {
     { name: modifiedName, address1: modifiedAddress1, state },
     { name: modifiedName, address1: modifiedAddress1 },
     { name: modifiedName },
+    { address1: modifiedAddress1 },
   ];
 
   const apiUrlBase = `${GET_LOC_URL}`;
