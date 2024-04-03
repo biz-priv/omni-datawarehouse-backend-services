@@ -61,32 +61,37 @@ async function getLocationId(name, address1, address2, state) {
     console.info('🚀 ~ file: apis.js:62 ~ getLocationId ~ apiUrl:', apiUrl);
     try {
       const response = await axios.get(apiUrl, { headers });
-      const responseData = _.get(response, 'data', {});
+      const responseData = _.get(response, 'data', []);
 
-      // Remove asterisks from modifiedName, modifiedAddress1, and modifiedAddress2
-      const cleanedName = modifiedName.replace('*', '');
-      const cleanedAddress1 = modifiedAddress1.replace('*', '');
-      const cleanedAddress2 = modifiedAddress2
-        ? modifiedAddress2.replace('*', '')
-        : modifiedAddress2;
+      // Add a check to ensure responseData is not null before filtering
+      if (responseData !== null && responseData.length > 0) {
+        // Remove asterisks from modifiedName, modifiedAddress1, and modifiedAddress2
+        const cleanedName = modifiedName.replace('*', '');
+        const cleanedAddress1 = modifiedAddress1.replace('*', '');
+        const cleanedAddress2 = modifiedAddress2
+          ? modifiedAddress2.replace('*', '')
+          : modifiedAddress2;
 
-      // Filter response data to ensure all fields match the provided parameters
-      const filteredData = responseData.filter(
-        (item) =>
-          (_.toUpper(cleanedName) === _.toUpper(item.name) ||
-            _.startsWith(_.toUpper(item.name), _.toUpper(cleanedName))) &&
-          (_.toUpper(cleanedAddress1) === _.toUpper(item.address1) ||
-            _.startsWith(_.toUpper(item.address1), _.toUpper(cleanedAddress1))) &&
-          (_.isEmpty(cleanedAddress2) ||
-            _.toUpper(cleanedAddress2) === _.toUpper(item.address2) ||
-            _.startsWith(_.toUpper(item.address2), _.toUpper(cleanedAddress2))) &&
-          _.toUpper(item.state) === _.toUpper(state)
-      );
+        // Filter response data to ensure all fields match the provided parameters
+        const filteredData = responseData.filter(
+          (item) =>
+            (_.toUpper(cleanedName) === _.toUpper(item.name) ||
+              _.startsWith(_.toUpper(item.name), _.toUpper(cleanedName))) &&
+            (_.toUpper(cleanedAddress1) === _.toUpper(item.address1) ||
+              _.startsWith(_.toUpper(item.address1), _.toUpper(cleanedAddress1))) &&
+            (_.isEmpty(cleanedAddress2) ||
+              _.toUpper(cleanedAddress2) === _.toUpper(item.address2) ||
+              _.startsWith(_.toUpper(item.address2), _.toUpper(cleanedAddress2))) &&
+            _.toUpper(item.state) === _.toUpper(state)
+        );
 
-      if (!_.isEmpty(filteredData)) {
-        console.info('🙂 -> filteredData[0]:', filteredData[0]);
-        console.info('🙂 -> filteredData[0].id:', filteredData[0].id);
-        return _.get(filteredData, '[0].id', false);
+        if (!_.isEmpty(filteredData)) {
+          console.info('🙂 -> filteredData[0]:', filteredData[0]);
+          console.info('🙂 -> filteredData[0].id:', filteredData[0].id);
+          return _.get(filteredData, '[0].id', false);
+        }
+      } else {
+        console.error('🙂 -> file: apis.js:34 -> getLocationId -> responseData is null');
       }
     } catch (error) {
       console.error('🙂 -> file: apis.js:34 -> getLocationId -> error:', error);
