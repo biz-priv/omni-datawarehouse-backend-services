@@ -12,10 +12,8 @@ const {
   TRACKING_NOTES_API_URL,
   API_PASS,
   API_USER_ID,
-  ADDRESS_MAPPING_G_API_KEY,
+  GET_ORDERS_API_ENDPOINT,
 } = process.env;
-
-const apiKey = ADDRESS_MAPPING_G_API_KEY;
 
 async function getLocationId(name, address1, address2, state) {
   const handleSpecialCharacters = (inputString) => {
@@ -60,7 +58,7 @@ async function getLocationId(name, address1, address2, state) {
     const queryParams = new URLSearchParams(combination);
     const apiUrl = `${apiUrlBase}?${queryParams}`;
 
-    console.info('🚀 ~ file: apis.js:62 ~ getLocationId ~ apiUrl:', apiUrl)
+    console.info('🚀 ~ file: apis.js:62 ~ getLocationId ~ apiUrl:', apiUrl);
     try {
       const response = await axios.get(apiUrl, { headers });
       const responseData = _.get(response, 'data', {});
@@ -68,7 +66,9 @@ async function getLocationId(name, address1, address2, state) {
       // Remove asterisks from modifiedName, modifiedAddress1, and modifiedAddress2
       const cleanedName = modifiedName.replace('*', '');
       const cleanedAddress1 = modifiedAddress1.replace('*', '');
-      const cleanedAddress2 = modifiedAddress2 ? modifiedAddress2.replace('*', '') : modifiedAddress2;
+      const cleanedAddress2 = modifiedAddress2
+        ? modifiedAddress2.replace('*', '')
+        : modifiedAddress2;
 
       // Filter response data to ensure all fields match the provided parameters
       const filteredData = responseData.filter(
@@ -94,6 +94,30 @@ async function getLocationId(name, address1, address2, state) {
     }
   }
   return false;
+}
+
+async function getOrders({ id }) {
+  const apiUrl = `${GET_ORDERS_API_ENDPOINT}/${id}`;
+
+  const headers = {
+    Accept: 'application/json',
+    Authorization: AUTH,
+  };
+
+  try {
+    const response = await axios.get(apiUrl, {
+      headers,
+    });
+
+    // Handle the response using lodash or other methods as needed
+    const responseData = _.get(response, 'data', {});
+    console.info('🙂 -> file: apis.js:30 -> getOrders -> responseData:', responseData);
+    // Return the location ID or perform additional processing as needed
+    return responseData;
+  } catch (error) {
+    console.error('🙂 -> file: apis.js:34 -> getOrders -> error:', error);
+    return false;
+  }
 }
 
 async function createLocation({ data, orderId, consolNo = 0, country, houseBill }) {
@@ -249,49 +273,11 @@ async function liveSendUpdate(houseBill, shipmentId) {
   }
 }
 
-async function checkAddressByGoogleApi(address) {
-  try {
-    const geocodeResponse = await axios.get(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
-    );
-
-    if (geocodeResponse.data.status !== 'OK') {
-      throw new Error(`Unable to geocode ${address}`);
-    }
-
-    const { lat, lng } = _.get(geocodeResponse, 'data.results[0].geometry.location', {});
-    return { lat, lng };
-  } catch (error) {
-    console.error(`Error geocoding address "${address}":`, error.message);
-    throw error;
-  }
-}
-
-async function getTimezoneByGoogleApi(lat, long) {
-  try {
-    const timestamp = Date.now() / 1000;
-    const timezoneResponse = await axios.get(
-      `https://maps.googleapis.com/maps/api/timezone/json?location=${lat}%2C${long}&timestamp=${timestamp}&key=${apiKey}`
-    );
-
-    if (timezoneResponse.data.status !== 'OK') {
-      throw new Error(`Unable to fetch timezone for coordinates (${lat}, ${long})`);
-    }
-
-    const timeZoneId = _.get(timezoneResponse, 'data.timeZoneId');
-    return timeZoneId;
-  } catch (error) {
-    console.error(`Error fetching timezone for coordinates (${lat}, ${long}):`, error.message);
-    throw error;
-  }
-}
-
 module.exports = {
   getLocationId,
   createLocation,
   sendPayload,
   updateOrders,
   liveSendUpdate,
-  checkAddressByGoogleApi,
-  getTimezoneByGoogleApi,
+  getOrders,
 };
