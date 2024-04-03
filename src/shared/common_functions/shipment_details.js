@@ -2,92 +2,82 @@ const AWS = require("aws-sdk");
 const moment = require('moment');
 const { get } = require('lodash');
 const ddb = new AWS.DynamoDB.DocumentClient();
-const s3 = new AWS.S3();
-const athena = new AWS.Athena();
-
-const util = require('util');
-const setTimeoutPromise = util.promisify(setTimeout);
-
-const tracking_notes_table = process.env.TRACKING_NOTES_TABLE
 
 const { tableValues, weightDimensionValue, INDEX_VALUES, customerTypeValue } = require("../constants/shipment_details");
 
 async function refParty(customerType) {
   try {
-    let refParty = get(customerTypeValue, `${customerType}`, null)
+    let refParty = get(customerTypeValue, `${customerType}`, null);
     if (refParty == null) {
-      refParty = get(customerTypeValue, "default", null)
+      refParty = get(customerTypeValue, "default", null);
     }
     return refParty;
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 async function pieces(tableValue) {
   try {
-    let pieces = 0
+    let pieces = 0;
     await Promise.all(tableValue.map(async (val) => {
-      pieces += val.Pieces
-    }))
+      pieces += val.Pieces;
+    }));
     return Number(pieces);
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 async function actualWeight(tableValue) {
   try {
-    let actualWeight = 0
+    let actualWeight = 0;
     await Promise.all(tableValue.map(async (val) => {
-      actualWeight += Number(val.Weight)
-    }))
+      actualWeight += Number(val.Weight);
+    }));
     return Number(actualWeight);
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 async function ChargableWeight(tableValue) {
   try {
-    let ChargableWeight = 0
+    let ChargableWeight = 0;
     await Promise.all(tableValue.map(async (val) => {
-      ChargableWeight += Number(val.ChargableWeight)
-    }))
+      ChargableWeight += Number(val.ChargableWeight);
+    }));
     return Number(ChargableWeight);
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 async function weightUOM(weightDimension) {
   try {
-    let weightUOM = get(weightDimensionValue, `${weightDimension}`, null)
+    let weightUOM = get(weightDimensionValue, `${weightDimension}`, null);
     if (weightUOM == null) {
-      weightUOM = get(weightDimensionValue, "default", null)
+      weightUOM = get(weightDimensionValue, "default", null);
     }
     return weightUOM;
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 
 async function getPickupTime(dateTime, dateTimeZone, timeZoneTable) {
   try {
-    const result = await getTime(dateTime, dateTimeZone, timeZoneTable)
-    // if (result == 0 || result == null || result == "" || result.substring(0, 4) == "1900") {
-    //   return ""
-    // }
-    return result
+    const result = await getTime(dateTime, dateTimeZone, timeZoneTable);
+    return result;
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 
 async function getTime(dateTime, dateTimeZone, timeZoneTable) {
   try {
     if (dateTime == 0 || dateTime == null || dateTime == "" || dateTime.substring(0, 4) == "1900") {
-      return ""
+      return "";
     }
     const inputDate = moment(dateTime);
     if (dateTimeZone == "" || dateTimeZone == null) {
-      dateTimeZone = "CST"
+      dateTimeZone = "CST";
     }
     const weekNumber = inputDate.isoWeek();
     inputDate.subtract(Number(timeZoneTable[dateTimeZone].HoursAway), 'hours');
@@ -100,17 +90,17 @@ async function getTime(dateTime, dateTimeZone, timeZoneTable) {
       convertedDate = convertedDate + "-06:00";
     }
     if (convertedDate == 0 || convertedDate == null || convertedDate == "" || convertedDate.substring(0, 4) == "1900") {
-      return ""
+      return "";
     }
     return convertedDate;
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 
 async function locationFunc(pKeyValue, houseBill) {
   try {
-    let mainArray = []
+    let mainArray = [];
     let params = {
       TableName: process.env.TRACKING_NOTES_TABLE,
       IndexName: INDEX_VALUES.TRACKING_NOTES.INDEX,
@@ -123,8 +113,8 @@ async function locationFunc(pKeyValue, houseBill) {
     };
     const data = await ddb.query(params).promise();
     if (data.Items.length !== 0) {
-      const trackingNotesLocation = await trackingNotesDataParse(data.Items[0])
-      mainArray.push(trackingNotesLocation)
+      const trackingNotesLocation = await trackingNotesDataParse(data.Items[0]);
+      mainArray.push(trackingNotesLocation);
     }
     let locationParams = {
       TableName: process.env.P44_LOCATION_UPDATE_TABLE,
@@ -132,43 +122,43 @@ async function locationFunc(pKeyValue, houseBill) {
       ExpressionAttributeValues: {
         ":HouseBillNo": houseBill
       }
-    }
+    };
     const locationdata = await ddb.query(locationParams).promise();
     await Promise.all(locationdata.Items.map(async (item) => {
-      const itemArray = [item.UTCTimeStamp, item.longitude, item.latitude]
-      mainArray.push(itemArray)
-    }))
+      const itemArray = [item.UTCTimeStamp, item.longitude, item.latitude];
+      mainArray.push(itemArray);
+    }));
     return mainArray;
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 
 async function trackingNotesDataParse(item) {
   try {
-    const note = item.Note
-    const parseArray = note.split(" ")
-    const latitude = parseArray[2].split("=")[1]
-    const longitute = parseArray[3].split("=")[1]
-    return [item.EventDateTime, latitude, longitute]
+    const note = item.Note;
+    const parseArray = note.split(" ");
+    const latitude = parseArray[2].split("=")[1];
+    const longitute = parseArray[3].split("=")[1];
+    return [item.EventDateTime, latitude, longitute];
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 
 async function getShipmentDate(dateTime) {
   try {
     if (dateTime == 0 || dateTime == null) {
-      return ""
+      return "";
     } else {
-      return dateTime.substring(0, 10)
+      return dateTime.substring(0, 10);
     }
   } catch (error) {
-    throw error
+    throw error;
   }
 }
 
-async function getDynamodbData(value){
+async function getDynamodbData(value) {
   let mainResponse = {};
   let timeZoneTable = {};
   const dynamodbData = {};
@@ -203,9 +193,9 @@ async function getDynamodbData(value){
       })
     );
 
-    const PK_ServiceLevelId = get(dynamodbData,`${process.env.SHIPMENT_HEADER_TABLE}[0].FK_ServiceLevelId`,null);
-  
-    if (PK_ServiceLevelId != null || PK_ServiceLevelId != "") {
+    const PK_ServiceLevelId = get(dynamodbData, `${process.env.SHIPMENT_HEADER_TABLE}[0].FK_ServiceLevelId`, "");
+
+    if (PK_ServiceLevelId != "") {
       /*
        *Dynamodb data from service level table
        */
@@ -220,14 +210,14 @@ async function getDynamodbData(value){
         },
       };
       const servicelevelsTableResult = await ddb.query(servicelevelsTableParams).promise();
-      dynamodbData[process.env.SERVICE_LEVEL_TABLE] =servicelevelsTableResult.Items;
+      dynamodbData[process.env.SERVICE_LEVEL_TABLE] = servicelevelsTableResult.Items;
     }
 
-    const FK_ServiceLevelId = get(dynamodbData,`${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_ServiceLevelId`,null);
-    const FK_OrderStatusId = get(dynamodbData,`${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderStatusId`,null);
-  
-    if (FK_ServiceLevelId == null ||FK_ServiceLevelId == " " ||FK_ServiceLevelId == "" ||FK_OrderStatusId == null ||FK_OrderStatusId == "") {
-      console.info("no servicelevelId for ",get(dynamodbData,`${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderNo `, null ));
+    const FK_ServiceLevelId = get(dynamodbData, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_ServiceLevelId`, null);
+    const FK_OrderStatusId = get(dynamodbData, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderStatusId`, null);
+
+    if (FK_ServiceLevelId == null || FK_ServiceLevelId == " " || FK_ServiceLevelId == "" || FK_OrderStatusId == null || FK_OrderStatusId == "") {
+      console.info("no servicelevelId for ", get(dynamodbData, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderNo `, null));
     } else {
       /*
        *Dynamodb data from milestone table
@@ -249,13 +239,13 @@ async function getDynamodbData(value){
       const milestoneTableResult = await ddb.query(milestoneTableParams).promise();
       dynamodbData[process.env.MILESTONE_TABLE] = milestoneTableResult.Items;
     }
-    
+
     let shipmentDetailObj = [];
     shipmentDetailObj.push(
       await MappingDataToInsert(dynamodbData, timeZoneTable)
     );
     console.info("shipmentDetailObj", shipmentDetailObj);
-  
+
     await upsertItem(process.env.SHIPMENT_DETAILS_Collector_TABLE, {
       ...shipmentDetailObj[0],
     });
@@ -265,6 +255,10 @@ async function getDynamodbData(value){
 }
 
 async function MappingDataToInsert(data, timeZoneTable) {
+  const formattedEventDate = get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
+  const formattedEventYear = get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900')).format("YYYY") : '1900';
+  const formattedOrderDate = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
+  const formattedOrderYear = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY") : '1900';
   const payload = {
     "fileNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, ""),
     "HouseBillNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, ""),
@@ -315,128 +309,128 @@ async function MappingDataToInsert(data, timeZoneTable) {
     }],
     "locations": await locationFunc(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, ""), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, "")),
     "EventDateTime": get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00 00:00:00.000'),
-    "EventDate": moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00')).format("YYYY-MM-DD"),
-    "EventYear": moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900')).format("YYYY"),
+    "EventDate": formattedEventDate,
+    "EventYear": formattedEventYear,
     "OrderDateTime": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00 00:00:00.000'),
-    "OrderDate": moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00')).format("YYYY-MM-DD"),
-    "OrderYear": moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY"),
-  }
-    
-    const ignoreFields = ['masterbill', 'pickupTime', 'estimatedDepartureTime', 'estimatedArrivalTime', 'scheduledDeliveryTime', 'deliveryTime', 'podName'];
-  
-    const values = Object.entries(payload).map(([key, value]) => {
-      if (ignoreFields.includes(key)) {
-        return true; 
-      }
-      return value;
-    });
-  
-    const hasNullOrEmptyValue = values.some(value => value === null || value === '');
-  
-    const status = hasNullOrEmptyValue ? 'Pending' : 'Ready';
-    payload.status = status;
-    return payload;
-  }
-  
-  async function upsertItem(tableName, item) {
-    const houseBillNumber = item.HouseBillNumber;
-    let params;
-  
-    try {
-      const existingItem = await ddb.get({
+    "OrderDate": formattedOrderDate,
+    "OrderYear": formattedOrderYear,
+  };
+  console.log("payload", payload);
+  const ignoreFields = ['masterbill', 'pickupTime', 'estimatedDepartureTime', 'estimatedArrivalTime', 'scheduledDeliveryTime', 'deliveryTime', 'podName'];
+
+  const values = Object.entries(payload).map(([key, value]) => {
+    if (ignoreFields.includes(key)) {
+      return true;
+    }
+    return value;
+  });
+
+  const hasNullOrEmptyValue = values.some(value => value === null || value === '');
+
+  const status = hasNullOrEmptyValue ? 'Pending' : 'Ready';
+  payload.status = status;
+  return payload;
+}
+
+async function upsertItem(tableName, item) {
+  const houseBillNumber = item.HouseBillNumber;
+  let params;
+
+  try {
+    const existingItem = await ddb.get({
+      TableName: tableName,
+      Key: {
+        HouseBillNumber: houseBillNumber,
+      },
+    }).promise();
+
+
+    if (existingItem.Item) {
+      params = {
         TableName: tableName,
         Key: {
           HouseBillNumber: houseBillNumber,
         },
-      }).promise();
-  
-  
-      if (existingItem.Item) {
-        params = {
-          TableName: tableName,
-          Key: {
-            HouseBillNumber: houseBillNumber,
-          },
-          UpdateExpression: 'SET #fileNumber = :fileNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear, #status = :status',
-          ExpressionAttributeNames: {
-            '#fileNumber': 'fileNumber',
-            '#masterbill': 'masterbill',
-            '#shipmentDate': 'shipmentDate',
-            '#handlingStation': 'handlingStation',
-            '#originPort': 'originPort',
-            '#destinationPort': 'destinationPort',
-            '#shipper': 'shipper',
-            '#consignee': 'consignee',
-            '#pieces': 'pieces',
-            '#actualWeight': 'actualWeight',
-            '#chargeableWeight': 'chargeableWeight',
-            '#weightUOM': 'weightUOM',
-            '#pickupTime': 'pickupTime',
-            '#estimatedDepartureTime': 'estimatedDepartureTime',
-            '#estimatedArrivalTime': 'estimatedArrivalTime',
-            '#scheduledDeliveryTime': 'scheduledDeliveryTime',
-            '#deliveryTime': 'deliveryTime',
-            '#podName': 'podName',
-            '#serviceLevelCode': 'serviceLevelCode',
-            '#serviceLevelDescription': 'serviceLevelDescription',
-            '#customerReference': 'customerReference',
-            '#milestones': 'milestones',
-            '#locations': 'locations',
-            '#EventDateTime': 'EventDateTime',
-            '#EventDate': 'EventDate',
-            '#EventYear': 'EventYear',
-            '#OrderDateTime': 'OrderDateTime',
-            '#OrderDate': 'OrderDate',
-            '#OrderYear': 'OrderYear',
-            '#status': 'status',
-          },
-          ExpressionAttributeValues: {
-            ':fileNumber': item.fileNumber,
-            ':masterbill': item.masterbill,
-            ':shipmentDate': item.shipmentDate,
-            ':handlingStation': item.handlingStation,
-            ':originPort': item.originPort,
-            ':destinationPort': item.destinationPort,
-            ':shipper': item.shipper,
-            ':consignee': item.consignee,
-            ':pieces': item.pieces,
-            ':actualWeight': item.actualWeight,
-            ':chargeableWeight': item.chargeableWeight,
-            ':weightUOM': item.weightUOM,
-            ':pickupTime': item.pickupTime,
-            ':estimatedDepartureTime': item.estimatedDepartureTime,
-            ':estimatedArrivalTime': item.estimatedArrivalTime,
-            ':scheduledDeliveryTime': item.scheduledDeliveryTime,
-            ':deliveryTime': item.deliveryTime,
-            ':podName': item.podName,
-            ':serviceLevelCode': item.serviceLevelCode,
-            ':serviceLevelDescription': item.serviceLevelDescription,
-            ':customerReference': item.customerReference,
-            ':milestones': item.milestones,
-            ':locations': item.locations,
-            ':EventDateTime': item.EventDateTime,
-            ':EventDate': item.EventDate,
-            ':EventYear': item.EventYear,
-            ':OrderDateTime': item.OrderDateTime,
-            ':OrderDate': item.OrderDate,
-            ':OrderYear': item.OrderYear,
-            ':status': item.status,
-          },
-        };
-        console.info("Updated")
-        return await ddb.update(params).promise();
-      } else {
-        params = {
-          TableName: tableName,
-          Item: item,
-        };
-        console.info("inserted")
-        return await ddb.put(params).promise();
-      }
-    } catch (e) {
-      console.error("Put Item Error: ", e, "\nPut params: ", params);
-      throw "PutItemError";
+        UpdateExpression: 'SET #fileNumber = :fileNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear, #status = :status',
+        ExpressionAttributeNames: {
+          '#fileNumber': 'fileNumber',
+          '#masterbill': 'masterbill',
+          '#shipmentDate': 'shipmentDate',
+          '#handlingStation': 'handlingStation',
+          '#originPort': 'originPort',
+          '#destinationPort': 'destinationPort',
+          '#shipper': 'shipper',
+          '#consignee': 'consignee',
+          '#pieces': 'pieces',
+          '#actualWeight': 'actualWeight',
+          '#chargeableWeight': 'chargeableWeight',
+          '#weightUOM': 'weightUOM',
+          '#pickupTime': 'pickupTime',
+          '#estimatedDepartureTime': 'estimatedDepartureTime',
+          '#estimatedArrivalTime': 'estimatedArrivalTime',
+          '#scheduledDeliveryTime': 'scheduledDeliveryTime',
+          '#deliveryTime': 'deliveryTime',
+          '#podName': 'podName',
+          '#serviceLevelCode': 'serviceLevelCode',
+          '#serviceLevelDescription': 'serviceLevelDescription',
+          '#customerReference': 'customerReference',
+          '#milestones': 'milestones',
+          '#locations': 'locations',
+          '#EventDateTime': 'EventDateTime',
+          '#EventDate': 'EventDate',
+          '#EventYear': 'EventYear',
+          '#OrderDateTime': 'OrderDateTime',
+          '#OrderDate': 'OrderDate',
+          '#OrderYear': 'OrderYear',
+          '#status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':fileNumber': item.fileNumber,
+          ':masterbill': item.masterbill,
+          ':shipmentDate': item.shipmentDate,
+          ':handlingStation': item.handlingStation,
+          ':originPort': item.originPort,
+          ':destinationPort': item.destinationPort,
+          ':shipper': item.shipper,
+          ':consignee': item.consignee,
+          ':pieces': item.pieces,
+          ':actualWeight': item.actualWeight,
+          ':chargeableWeight': item.chargeableWeight,
+          ':weightUOM': item.weightUOM,
+          ':pickupTime': item.pickupTime,
+          ':estimatedDepartureTime': item.estimatedDepartureTime,
+          ':estimatedArrivalTime': item.estimatedArrivalTime,
+          ':scheduledDeliveryTime': item.scheduledDeliveryTime,
+          ':deliveryTime': item.deliveryTime,
+          ':podName': item.podName,
+          ':serviceLevelCode': item.serviceLevelCode,
+          ':serviceLevelDescription': item.serviceLevelDescription,
+          ':customerReference': item.customerReference,
+          ':milestones': item.milestones,
+          ':locations': item.locations,
+          ':EventDateTime': item.EventDateTime,
+          ':EventDate': item.EventDate,
+          ':EventYear': item.EventYear,
+          ':OrderDateTime': item.OrderDateTime,
+          ':OrderDate': item.OrderDate,
+          ':OrderYear': item.OrderYear,
+          ':status': item.status,
+        },
+      };
+      console.info("Updated");
+      return await ddb.update(params).promise();
+    } else {
+      params = {
+        TableName: tableName,
+        Item: item,
+      };
+      console.info("inserted");
+      return await ddb.put(params).promise();
     }
+  } catch (e) {
+    console.error("Put Item Error: ", e, "\nPut params: ", params);
+    throw "PutItemError";
   }
-  
-module.exports = { refParty, pieces, actualWeight, ChargableWeight, weightUOM, getTime, locationFunc, getShipmentDate, getPickupTime, upsertItem, MappingDataToInsert, getDynamodbData }
+}
+
+module.exports = { refParty, pieces, actualWeight, ChargableWeight, weightUOM, getTime, locationFunc, getShipmentDate, getPickupTime, upsertItem, MappingDataToInsert, getDynamodbData };
