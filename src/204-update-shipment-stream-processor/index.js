@@ -465,19 +465,15 @@ async function updateONDeliveryFields(stopData, newImage) {
   } else {
     stopData.location_id = locationId;
   }
-
-  _.unset(stopData, [
-    'address',
-    'address2',
-    'city_name',
-    'state',
-    'zip_code',
-    'city_id',
-    'zone_id',
-    'location_name',
-  ]);
+  delete stopData.zone_id;
+  _.unset(stopData, 'address');
+  _.unset(stopData, 'address2');
+  _.unset(stopData, 'city_name');
+  _.unset(stopData, 'state');
+  _.unset(stopData, 'zip_code');
+  _.unset(stopData, 'city_id');
+  _.unset(stopData, 'location_name');
 }
-
 async function updateRecordForMt({ consolNo, UpdateCount, updatedResponse, oldResponse }) {
   const timestamp = moment.tz('America/Chicago').format();
   oldResponse[timestamp] = updatedResponse;
