@@ -411,16 +411,16 @@ async function updateONPickupFields(stopData, newImage) {
     stopData.location_id = locationId;
   }
 
-  _.unset(stopData, [
-    'address',
-    'address2',
-    'city_name',
-    'state',
-    'zip_code',
-    'city_id',
-    'zone_id',
-    'location_name',
-  ]);
+  _.unset(stopData, 'address');
+  _.unset(stopData, 'address2');
+  _.unset(stopData, 'city_name');
+  _.unset(stopData, 'state');
+  _.unset(stopData, 'zip_code');
+  _.unset(stopData, 'city_id');
+  _.unset(stopData, 'location_name');
+  _.unset(stopData, 'longitude');
+  _.unset(stopData, 'latitude');
+  _.unset(stopData, 'zone_id');
 }
 
 function updateONBCDeliveryFields(stop, changedFields) {
@@ -465,7 +465,6 @@ async function updateONDeliveryFields(stopData, newImage) {
   } else {
     stopData.location_id = locationId;
   }
-  delete stopData.zone_id;
   _.unset(stopData, 'address');
   _.unset(stopData, 'address2');
   _.unset(stopData, 'city_name');
@@ -473,7 +472,10 @@ async function updateONDeliveryFields(stopData, newImage) {
   _.unset(stopData, 'zip_code');
   _.unset(stopData, 'city_id');
   _.unset(stopData, 'location_name');
-}
+  _.unset(stopData, 'longitude');
+  _.unset(stopData, 'latitude');
+  _.unset(stopData, 'zone_id');
+} 
 async function updateRecordForMt({ consolNo, UpdateCount, updatedResponse, oldResponse }) {
   const timestamp = moment.tz('America/Chicago').format();
   oldResponse[timestamp] = updatedResponse;
@@ -586,16 +588,16 @@ async function updateONFields(stop, newImage) {
     stop.location_id = locationId;
   }
 
-  _.unset(stop, [
-    'address',
-    'address2',
-    'city_name',
-    'state',
-    'zip_code',
-    'city_id',
-    'zone_id',
-    'location_name',
-  ]);
+  _.unset(stop, 'address');
+  _.unset(stop, 'address2');
+  _.unset(stop, 'city_name');
+  _.unset(stop, 'state');
+  _.unset(stop, 'zip_code');
+  _.unset(stop, 'city_id');
+  _.unset(stop, 'location_name');
+  _.unset(stop, 'longitude');
+  _.unset(stop, 'latitude');
+  _.unset(stop, 'zone_id');
 }
 
 async function updatetimeFields(changedFields, newImage) {
