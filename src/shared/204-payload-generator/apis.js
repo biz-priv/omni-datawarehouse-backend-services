@@ -12,7 +12,7 @@ const {
   TRACKING_NOTES_API_URL,
   API_PASS,
   API_USER_ID,
-  GET_ORDERS_API_ENDPOINT
+  GET_ORDERS_API_ENDPOINT,
 } = process.env;
 
 async function getLocationId(name, address1, address2, state) {
@@ -58,7 +58,7 @@ async function getLocationId(name, address1, address2, state) {
     const queryParams = new URLSearchParams(combination);
     const apiUrl = `${apiUrlBase}?${queryParams}`;
 
-    console.info('🚀 ~ file: apis.js:62 ~ getLocationId ~ apiUrl:', apiUrl)
+    console.info('🚀 ~ file: apis.js:62 ~ getLocationId ~ apiUrl:', apiUrl);
     try {
       const response = await axios.get(apiUrl, { headers });
       const responseData = _.get(response, 'data', {});
@@ -66,7 +66,9 @@ async function getLocationId(name, address1, address2, state) {
       // Remove asterisks from modifiedName, modifiedAddress1, and modifiedAddress2
       const cleanedName = modifiedName.replace('*', '');
       const cleanedAddress1 = modifiedAddress1.replace('*', '');
-      const cleanedAddress2 = modifiedAddress2 ? modifiedAddress2.replace('*', '') : modifiedAddress2;
+      const cleanedAddress2 = modifiedAddress2
+        ? modifiedAddress2.replace('*', '')
+        : modifiedAddress2;
 
       // Filter response data to ensure all fields match the provided parameters
       const filteredData = responseData.filter(
@@ -277,5 +279,5 @@ module.exports = {
   sendPayload,
   updateOrders,
   liveSendUpdate,
-  getOrders
+  getOrders,
 };
