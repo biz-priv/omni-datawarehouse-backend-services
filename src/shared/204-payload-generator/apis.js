@@ -12,19 +12,16 @@ const {
   TRACKING_NOTES_API_URL,
   API_PASS,
   API_USER_ID,
-  ADDRESS_MAPPING_G_API_KEY,
+  GET_ORDERS_API_ENDPOINT
 } = process.env;
-
-const apiKey = ADDRESS_MAPPING_G_API_KEY;
 
 async function getLocationId(name, address1, address2, state) {
   const handleSpecialCharacters = (inputString) => {
     if (/[^a-zA-Z0-9 ]/.test(inputString)) {
       let outputString = inputString.replace(/[^a-zA-Z0-9 ]/g, '*');
-      let starPosition = outputString.indexOf('*');
+      const starPosition = outputString.indexOf('*');
       if (starPosition === 0) {
-        outputString = outputString.substring(1);
-        starPosition = outputString.indexOf('*');
+        outputString = '*';
       }
       if (starPosition !== -1) {
         outputString = outputString.substring(0, starPosition + 1);
@@ -34,54 +31,89 @@ async function getLocationId(name, address1, address2, state) {
     }
     return inputString;
   };
-  // Apply special character handling to name, address1, and address2
-  name = handleSpecialCharacters(name);
-  console.info('🚀 ~ file: test.js:1182 ~ getLocationId ~ name:', name);
-  address1 = handleSpecialCharacters(address1);
-  console.info('🚀 ~ file: test.js:1184 ~ getLocationId ~ address1:', address1);
-  address2 = handleSpecialCharacters(address2);
-  console.info('🚀 ~ file: test.js:1186 ~ getLocationId ~ address2:', address2);
 
-  const apiUrl = `${GET_LOC_URL}?name=${name}&address1=${address1}&address2=${address2 ?? ''}&state=${state}`;
+  // Create local variables to store modified values
+  const modifiedName = handleSpecialCharacters(name);
+  console.info('🚀 ~ file: test.js:1182 ~ getLocationId ~ modifiedName:', modifiedName);
+  const modifiedAddress1 = handleSpecialCharacters(address1);
+  console.info('🚀 ~ file: test.js:1184 ~ getLocationId ~ modifiedAddress1:', modifiedAddress1);
+  const modifiedAddress2 = handleSpecialCharacters(address2);
+  console.info('🚀 ~ file: test.js:1186 ~ getLocationId ~ modifiedAddress2:', modifiedAddress2);
 
-  console.info('🚀 ~ file: apis.js:40 ~ apiUrl:', apiUrl);
+  const combinations = [
+    { name: modifiedName, address1: modifiedAddress1, address2: modifiedAddress2, state },
+    { name: modifiedName, address1: modifiedAddress1, state },
+    { name: modifiedName, address1: modifiedAddress1 },
+    { name: modifiedName },
+    { address1: modifiedAddress1 },
+  ];
+
+  const apiUrlBase = `${GET_LOC_URL}`;
+  const headers = {
+    Accept: 'application/json',
+    Authorization: AUTH,
+  };
+
+  for (const combination of combinations) {
+    const queryParams = new URLSearchParams(combination);
+    const apiUrl = `${apiUrlBase}?${queryParams}`;
+
+    console.info('🚀 ~ file: apis.js:62 ~ getLocationId ~ apiUrl:', apiUrl)
+    try {
+      const response = await axios.get(apiUrl, { headers });
+      const responseData = _.get(response, 'data', {});
+
+      // Remove asterisks from modifiedName, modifiedAddress1, and modifiedAddress2
+      const cleanedName = modifiedName.replace('*', '');
+      const cleanedAddress1 = modifiedAddress1.replace('*', '');
+      const cleanedAddress2 = modifiedAddress2 ? modifiedAddress2.replace('*', '') : modifiedAddress2;
+
+      // Filter response data to ensure all fields match the provided parameters
+      const filteredData = responseData.filter(
+        (item) =>
+          (_.toUpper(cleanedName) === _.toUpper(item.name) ||
+            _.startsWith(_.toUpper(item.name), _.toUpper(cleanedName))) &&
+          (_.toUpper(cleanedAddress1) === _.toUpper(item.address1) ||
+            _.startsWith(_.toUpper(item.address1), _.toUpper(cleanedAddress1))) &&
+          (_.isEmpty(cleanedAddress2) ||
+            _.toUpper(cleanedAddress2) === _.toUpper(item.address2) ||
+            _.startsWith(_.toUpper(item.address2), _.toUpper(cleanedAddress2))) &&
+          _.toUpper(item.state) === _.toUpper(state)
+      );
+
+      if (!_.isEmpty(filteredData)) {
+        console.info('🙂 -> filteredData[0]:', filteredData[0]);
+        console.info('🙂 -> filteredData[0].id:', filteredData[0].id);
+        return _.get(filteredData, '[0].id', false);
+      }
+    } catch (error) {
+      console.error('🙂 -> file: apis.js:34 -> getLocationId -> error:', error);
+      return false;
+    }
+  }
+  return false;
+}
+
+async function getOrders({ id }) {
+  const apiUrl = `${GET_ORDERS_API_ENDPOINT}/${id}`;
+
   const headers = {
     Accept: 'application/json',
     Authorization: AUTH,
   };
 
   try {
-    const response = await axios.get(apiUrl, { headers });
-    const responseData = _.get(response, 'data', {});
-    console.info('🙂 -> responseData:', responseData);
-
-    // Remove asterisks from name, address1, and address2
-    name = name.replace('*', '');
-    address1 = address1.replace('*', '');
-    address2 = address2 ? address2.replace('*', '') : address2;
-    // Filter response data to ensure all fields start with name, address1, address2, and equal to state
-    const filteredData = _.filter(responseData, (item) => {
-      return (
-        (_.toUpper(name) === _.toUpper(item.name) ||
-          _.startsWith(_.toUpper(item.name), _.toUpper(name))) &&
-        (_.toUpper(address1) === _.toUpper(item.address1) ||
-          _.startsWith(_.toUpper(item.address1), _.toUpper(address1))) &&
-        (_.isEmpty(address2) ||
-          _.toUpper(address2) === _.toUpper(item.address2) ||
-          _.startsWith(_.toUpper(item.address2), _.toUpper(address2))) &&
-        _.toUpper(item.state) === _.toUpper(state)
-      );
+    const response = await axios.get(apiUrl, {
+      headers,
     });
 
-    if (!_.isEmpty(filteredData)) {
-      console.info('🙂 -> filteredData[0]:', filteredData[0]);
-      console.info('🙂 -> filteredData[0].id:', filteredData[0].id);
-      // Return the location ID or perform additional processing as needed
-      return _.get(filteredData, '[0].id', false);
-    }
-    return false;
+    // Handle the response using lodash or other methods as needed
+    const responseData = _.get(response, 'data', {});
+    console.info('🙂 -> file: apis.js:30 -> getOrders -> responseData:', responseData);
+    // Return the location ID or perform additional processing as needed
+    return responseData;
   } catch (error) {
-    console.error('🙂 -> file: apis.js:34 -> getLocationId -> error:', error);
+    console.error('🙂 -> file: apis.js:34 -> getOrders -> error:', error);
     return false;
   }
 }
@@ -239,49 +271,11 @@ async function liveSendUpdate(houseBill, shipmentId) {
   }
 }
 
-async function checkAddressByGoogleApi(address) {
-  try {
-    const geocodeResponse = await axios.get(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
-    );
-
-    if (geocodeResponse.data.status !== 'OK') {
-      throw new Error(`Unable to geocode ${address}`);
-    }
-
-    const { lat, lng } = _.get(geocodeResponse, 'data.results[0].geometry.location', {});
-    return { lat, lng };
-  } catch (error) {
-    console.error(`Error geocoding address "${address}":`, error.message);
-    throw error;
-  }
-}
-
-async function getTimezoneByGoogleApi(lat, long) {
-  try {
-    const timestamp = Date.now() / 1000;
-    const timezoneResponse = await axios.get(
-      `https://maps.googleapis.com/maps/api/timezone/json?location=${lat}%2C${long}&timestamp=${timestamp}&key=${apiKey}`
-    );
-
-    if (timezoneResponse.data.status !== 'OK') {
-      throw new Error(`Unable to fetch timezone for coordinates (${lat}, ${long})`);
-    }
-
-    const timeZoneId = _.get(timezoneResponse, 'data.timeZoneId');
-    return timeZoneId;
-  } catch (error) {
-    console.error(`Error fetching timezone for coordinates (${lat}, ${long}):`, error.message);
-    throw error;
-  }
-}
-
 module.exports = {
   getLocationId,
   createLocation,
   sendPayload,
   updateOrders,
   liveSendUpdate,
-  checkAddressByGoogleApi,
-  getTimezoneByGoogleApi,
+  getOrders
 };
