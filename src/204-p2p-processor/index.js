@@ -1,6 +1,6 @@
 'use strict';
 
-const { get, pickBy } = require('lodash');
+const { get, pickBy, every, isEmpty } = require('lodash');
 const AWS = require('aws-sdk');
 const {
   STATUSES,
@@ -13,7 +13,8 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
 const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
 
-const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, STAGE, SHIPMENT_HEADER_TABLE } = process.env;
+const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, STAGE, SHIPMENT_HEADER_TABLE, CONFIRMATION_COST } =
+  process.env;
 
 let functionName;
 module.exports.handler = async (event, context) => {
@@ -36,11 +37,11 @@ module.exports.handler = async (event, context) => {
   }
 };
 
-async function publishSNSTopic({ message, stationCode, orderNo, houseBillString }) {
+async function publishSNSTopic({ message, stationCode, subject }) {
   try {
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
-      Subject: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} /FK_OrderNo: ${orderNo}`,
+      Subject: subject,
       Message: `An error occurred in ${functionName}: ${message}`,
       MessageAttributes: {
         stationCode: {
@@ -83,7 +84,7 @@ async function checkTable(tableData) {
   const headerResult = await queryDynamoDB(get(tableData, 'FK_OrderNo'));
   console.info('🙂 -> file: index.js:66 -> headerResult:', headerResult);
   const userEmail = await getUserEmail({ userId: get(tableData, 'ShipmentAparData.UpdatedBy') });
-  const houseBillString = get(headerResult, '[0]Housebill');
+  const houseBillString = get(headerResult, '[0]Housebill', 0);
   let handlingStation;
   if (type === TYPES.NON_CONSOLE) {
     handlingStation =
@@ -158,29 +159,58 @@ async function checkTable(tableData) {
         (pendingTable) => CONSOLE_WISE_REQUIRED_FIELDS[type][pendingTable]
       );
       missingFields = missingFields.flat().join('\n');
-      await publishSNSTopic({
-        message: `All tables are not populated for order id: ${orderNo}.
+      if (type === TYPES.CONSOLE) {
+        await publishSNSTopic({
+          message: `All tables are not populated for ConsolNo: ${orderNo}.
+        \n Please check if all the below feilds are populated: 
+        \n${missingFields}. 
+        \n Please check ${STATUS_TABLE} to see which table does not have data. 
+        \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+          stationCode: handlingStation,
+          orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
+          houseBillString,
+          subject: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${orderNo}`,
+        });
+        await sendSESEmail({
+          functionName,
+          message: `All tables are not populated for ConsolNo: ${orderNo}.
+        \n Please check if all the below feilds are populated: 
+        \n${missingFields}. 
+        \n Please check ${STATUS_TABLE} to see which table does not have data. 
+        \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+          userEmail,
+          subject: {
+            Data: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
+            Charset: 'UTF-8',
+          },
+        });
+      } else {
+        await publishSNSTopic({
+          message: `All tables are not populated for order id: ${orderNo}.
       \n Please check if all the below feilds are populated: 
       \n${missingFields}. 
       \n Please check ${STATUS_TABLE} to see which table does not have data. 
       \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
-        stationCode: handlingStation,
-        orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
-        houseBillString,
-      });
-      await sendSESEmail({
-        functionName,
-        message: `All tables are not populated for order id: ${orderNo}.
-      \n Please check if all the below feilds are populated: 
-      \n${missingFields}. 
-      \n Please check ${STATUS_TABLE} to see which table does not have data. 
-      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
-        userEmail,
-        subject: {
-          Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
-          Charset: 'UTF-8',
-        },
-      });
+          stationCode: handlingStation,
+          orderNo: get(tableData, 'ShipmentAparData.FK_OrderNo'),
+          houseBillString,
+          subject: `PB ERROR NOTIFICATION - ${STAGE} ~  Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
+        });
+        await sendSESEmail({
+          functionName,
+          message: `All tables are not populated for order id: ${orderNo}.
+        \n Please check if all the below feilds are populated: 
+        \n${missingFields}. 
+        \n Please check ${STATUS_TABLE} to see which table does not have data. 
+        \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+          userEmail,
+          subject: {
+            Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
+            Charset: 'UTF-8',
+          },
+        });
+      }
+
       return false;
     }
 
@@ -229,6 +259,61 @@ async function checkTable(tableData) {
 async function fetchItemFromTable({ params }) {
   try {
     console.info('🙂 -> file: index.js:135 -> params:', params);
+    if (get(params, 'TableName', '') === CONFIRMATION_COST) {
+      const data = await dynamoDb.query(params).promise();
+      console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+      const confirmationCost = get(data, 'Items', []);
+      if (
+        confirmationCost.length > 0 &&
+        confirmationCost.every((item) => {
+          const {
+            // eslint-disable-next-line camelcase
+            ShipName,
+            ShipAddress1,
+            ShipZip,
+            ShipCity,
+            // eslint-disable-next-line camelcase
+            FK_ShipState,
+            // eslint-disable-next-line camelcase
+            FK_ShipCountry,
+            ConName,
+            ConAddress1,
+            ConZip,
+            ConCity,
+            // eslint-disable-next-line camelcase
+            FK_ConState,
+            // eslint-disable-next-line camelcase
+            FK_ConCountry,
+          } = item;
+
+          return every(
+            [
+              ShipName,
+              ShipAddress1,
+              ShipZip,
+              ShipCity,
+              // eslint-disable-next-line camelcase
+              FK_ShipState,
+              // eslint-disable-next-line camelcase
+              FK_ShipCountry,
+              ConName,
+              ConAddress1,
+              ConZip,
+              ConCity,
+              // eslint-disable-next-line camelcase
+              FK_ConState,
+              // eslint-disable-next-line camelcase
+              FK_ConCountry,
+            ],
+            (value) => !isEmpty(value) && value !== 'NULL'
+          );
+        })
+      ) {
+        return STATUSES.READY;
+      }
+      return STATUSES.PENDING;
+    }
+    // For other tables, proceed with regular logic
     const data = await dynamoDb.query(params).promise();
     console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
     return get(data, 'Items', []).length > 0 ? STATUSES.READY : STATUSES.PENDING;
