@@ -158,8 +158,31 @@ async function getShipmentDate(dateTime) {
   }
 }
 
+async function getDescription(orderStatusId,serviceLevelId) {
+  const milestoneTableParams = {
+    TableName: process.env.MILESTONE_TABLE,
+    KeyConditionExpression: `#pKey = :pKey and #sKey = :sKey`,
+    FilterExpression: "IsPublic = :IsPublic",
+    ExpressionAttributeNames: {
+      "#pKey": "FK_OrderStatusId",
+      "#sKey": "FK_ServiceLevelId",
+    },
+    ExpressionAttributeValues: {
+      ":pKey": orderStatusId,
+      ":sKey": serviceLevelId,
+      ":IsPublic": "Y",
+    },
+  };
+  try {
+    const milestoneTableResult = await ddb.query(milestoneTableParams).promise();
+    return get(milestoneTableResult.Items, '[0].Description', "");
+  } catch (error) {
+    console.error("Query Error:", error);
+    throw error;
+  }
+}
+
 async function getDynamodbData(value) {
-  let mainResponse = {};
   let timeZoneTable = {};
   const dynamodbData = {};
   try {
@@ -213,33 +236,6 @@ async function getDynamodbData(value) {
       dynamodbData[process.env.SERVICE_LEVEL_TABLE] = servicelevelsTableResult.Items;
     }
 
-    const FK_ServiceLevelId = get(dynamodbData, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_ServiceLevelId`, null);
-    const FK_OrderStatusId = get(dynamodbData, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderStatusId`, null);
-
-    if (FK_ServiceLevelId == null || FK_ServiceLevelId == " " || FK_ServiceLevelId == "" || FK_OrderStatusId == null || FK_OrderStatusId == "") {
-      console.info("no servicelevelId for ", get(dynamodbData, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderNo `, null));
-    } else {
-      /*
-       *Dynamodb data from milestone table
-       */
-      const milestoneTableParams = {
-        TableName: process.env.MILESTONE_TABLE,
-        KeyConditionExpression: `#pKey = :pKey and #sKey = :sKey`,
-        FilterExpression: "IsPublic = :IsPublic",
-        ExpressionAttributeNames: {
-          "#pKey": "FK_OrderStatusId",
-          "#sKey": "FK_ServiceLevelId",
-        },
-        ExpressionAttributeValues: {
-          ":pKey": FK_OrderStatusId,
-          ":sKey": FK_ServiceLevelId,
-          ":IsPublic": "Y",
-        },
-      };
-      const milestoneTableResult = await ddb.query(milestoneTableParams).promise();
-      dynamodbData[process.env.MILESTONE_TABLE] = milestoneTableResult.Items;
-    }
-
     let shipmentDetailObj = [];
     shipmentDetailObj.push(
       await MappingDataToInsert(dynamodbData, timeZoneTable)
@@ -259,6 +255,24 @@ async function MappingDataToInsert(data, timeZoneTable) {
   const formattedEventYear = get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900')).format("YYYY") : '1900';
   const formattedOrderDate = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
   const formattedOrderYear = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY") : '1900';
+  const milestonePromises = data[process.env.SHIPMENT_MILESTONE_TABLE].map(async milestone => {
+    return {
+      statusCode: get(milestone, 'FK_OrderStatusId', ""),
+      statusDescription: await getDescription(get(milestone, 'FK_OrderStatusId', ""),get(milestone, 'FK_ServiceLevelId', "")),
+      statusTime: await getTime(get(milestone, 'EventDateTime', ""), get(milestone, 'EventTimeZone', ""), timeZoneTable)
+    };
+  });
+  const allMilestone = await Promise.all(milestonePromises);
+
+  const referencePromises = data[process.env.REFERENCE_TABLE].map(async reference => {
+    return {
+      refParty: await refParty(get(reference, 'CustomerType', "")),
+      refType: get(reference, 'FK_RefTypeId', ""),
+      refNumber: get(reference, 'ReferenceNo', "")
+    };
+  });
+
+  const allReference = await Promise.all(referencePromises);
   const payload = {
     "fileNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, ""),
     "HouseBillNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, ""),
@@ -295,18 +309,8 @@ async function MappingDataToInsert(data, timeZoneTable) {
     "podName": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PODName`, ""),
     "serviceLevelCode": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].FK_ServiceLevelId`, ""),
     "serviceLevelDescription": get(data, `${process.env.SERVICE_LEVEL_TABLE}[0].ServiceLevel`, ""),
-    "customerReference": [
-      {
-        "refParty": await refParty(get(data, `${process.env.REFERENCE_TABLE}[0].CustomerType`, "")),
-        "refType": get(data, `${process.env.REFERENCE_TABLE}[0].FK_RefTypeId`, ""),
-        "refNumber": get(data, `${process.env.REFERENCE_TABLE}[0].ReferenceNo`, "")
-      }
-    ],
-    "milestones": [{
-      "statusCode": get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].FK_OrderStatusId`, ""),
-      "statusDescription": get(data, `${process.env.MILESTONE_TABLE}[0].Description`, ""),
-      "statusTime": await getTime(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, ""), get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventTimeZone`, ""), timeZoneTable)
-    }],
+    "customerReference": allReference,
+    "milestones": allMilestone,
     "locations": await locationFunc(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, ""), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, "")),
     "EventDateTime": get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00 00:00:00.000'),
     "EventDate": formattedEventDate,
