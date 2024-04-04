@@ -475,7 +475,7 @@ async function updateONDeliveryFields(stopData, newImage) {
   _.unset(stopData, 'longitude');
   _.unset(stopData, 'latitude');
   _.unset(stopData, 'zone_id');
-} 
+}
 async function updateRecordForMt({ consolNo, UpdateCount, updatedResponse, oldResponse }) {
   const timestamp = moment.tz('America/Chicago').format();
   oldResponse[timestamp] = updatedResponse;
