@@ -180,7 +180,11 @@ module.exports.handler = async (event, context) => {
           console.info('🚀 ~ file: index.js:182 ~ promises ~ equipmentType:', equipmentType);
           if (equipmentType === 'NA') {
             throw new Error(
-              `\nPlease populate the equipment type to tender this load.\nPayload: ${JSON.stringify(payload)}`
+              `\nError Description:
+               \nThe system encountered an error while processing the payload. It appears that the equipment type is not populated, which is necessary to tender this load.
+
+               \nPayload:
+               \n\n${JSON.stringify(payload)}`
             );
           }
           const result = await fetch204TableDataForConsole({
