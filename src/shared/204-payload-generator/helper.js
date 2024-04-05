@@ -17,8 +17,6 @@ const {
   CONSIGNEE_TABLE,
   SHIPPER_TABLE,
   USERS_TABLE,
-  TRACKING_NOTES_TABLE,
-  TRACKING_NOTES_CONSOLENO_INDEX_KEY,
   SHIPMENT_APAR_INDEX_KEY_NAME,
   INSTRUCTIONS_INDEX_KEY_NAME,
   INSTRUCTIONS_TABLE,
@@ -457,15 +455,6 @@ function getParamsByTableName(orderNo, tableName, timezone, billno, userId, cons
           ':PK_UserId': userId,
         },
       };
-    case 'omni-wt-rt-tracking-notes':
-      return {
-        TableName: TRACKING_NOTES_TABLE,
-        IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
-        KeyConditionExpression: 'ConsolNo = :ConsolNo',
-        ExpressionAttributeValues: {
-          ':ConsolNo': String(consoleNo),
-        },
-      };
     case 'omni-wt-rt-instructions':
       return {
         TableName: INSTRUCTIONS_TABLE,
@@ -659,7 +648,7 @@ async function queryUserTable({ userId }) {
         ':PK_UserId': userId,
       },
     };
-    console.info('🚀 ~ file: helper.js:759 ~ queryTrackingNotes ~ param:', params);
+    console.info('🚀 ~ file: helper.js:759 ~ queryUserTable ~ param:', params);
     const response = await dynamoDB.query(params).promise();
     return _.get(response, 'Items', []);
   } catch (error) {

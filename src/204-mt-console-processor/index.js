@@ -1,6 +1,6 @@
 'use strict';
 
-const { get, pickBy, includes, every, isEmpty } = require('lodash');
+const { get, pickBy, every, isEmpty } = require('lodash');
 const AWS = require('aws-sdk');
 
 const {
@@ -13,7 +13,6 @@ const moment = require('moment-timezone');
 
 const {
   LIVE_SNS_TOPIC_ARN,
-  STATUS_TABLE,
   CONSOLE_STATUS_TABLE,
   CONSOL_STOP_HEADERS,
   STAGE,
@@ -134,10 +133,6 @@ async function checkMultiStop(tableData) {
             }
           })
         );
-        await checkAndUpdateOrderTable({
-          orderNo: orderNoForConsol,
-          originalTableStatuses: originalTableStatuses[orderNoForConsol],
-        });
       })
     );
     console.info('🙂 -> file: index.js:149 -> originalTableStatuses:', originalTableStatuses);
@@ -300,72 +295,6 @@ async function updateConosleStatusTable({ consolNo, originalTableStatuses, retry
     return await dynamoDb.update(updateParam).promise();
   } catch (error) {
     console.error('error in updateConosleStatusTable - index.js ~ 180: ', error);
-    throw error;
-  }
-}
-
-async function updateOrderStatusTable({ orderNo, originalTableStatuses }) {
-  try {
-    const status = !includes(originalTableStatuses, STATUSES.PENDING)
-      ? STATUSES.READY
-      : STATUSES.PENDING;
-
-    const updateParam = {
-      TableName: STATUS_TABLE,
-      Key: { FK_OrderNo: orderNo },
-      UpdateExpression:
-        'set TableStatuses = :tableStatuses, #Status = :status ,LastUpdateBy = :lastUpdateBy, LastUpdatedAt = :lastUpdatedAt',
-      ExpressionAttributeNames: { '#Status': 'Status' },
-      ExpressionAttributeValues: {
-        ':tableStatuses': originalTableStatuses,
-        ':status': status,
-        ':lastUpdateBy': functionName,
-        ':lastUpdatedAt': moment.tz('America/Chicago').format(),
-      },
-    };
-    console.info('🙂 -> file: index.js:125 -> updateParam:', updateParam);
-    return await dynamoDb.update(updateParam).promise();
-  } catch (error) {
-    console.error('🚀 ~ file: index.js:207 ~ error in updateOrderStatusTable:', error);
-    throw error;
-  }
-}
-
-async function checkAndUpdateOrderTable({ orderNo, originalTableStatuses }) {
-  try {
-    const existingOrderParam = {
-      TableName: STATUS_TABLE,
-      KeyConditionExpression: 'FK_OrderNo = :orderNo',
-      ExpressionAttributeValues: {
-        ':orderNo': orderNo,
-      },
-    };
-    console.info(
-      '🚀 ~ file: index.js:221 ~ checkAndUpdateOrderTable ~ existingOrderParam:',
-      existingOrderParam
-    );
-
-    const existingOrder = await fetchItemFromTable({
-      params: existingOrderParam,
-    });
-    console.info(
-      '🙂 -> file: index.js:65 -> module.exports.handler= -> existingOrder:',
-      existingOrder
-    );
-
-    if (existingOrder === STATUSES.PENDING) {
-      return false;
-    }
-
-    if (existingOrder === STATUSES.READY) {
-      return await updateOrderStatusTable({
-        orderNo,
-        originalTableStatuses,
-      });
-    }
-    return true;
-  } catch (error) {
-    console.error('🚀 ~ file: index.js:240 ~ checkAndUpdateOrderTable ~ error:', error);
     throw error;
   }
 }

@@ -30,8 +30,6 @@ function:
     CUSTOMER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customer/ddb.tableName~true}
     CONFIRMATION_COST_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/confirmation-cost/ddb.orderNoIndex}
     USERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/users/ddb.tableName~true}
-    TRACKING_NOTES_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.tableName~true}
-    TRACKING_NOTES_CONSOLENO_INDEX_KEY: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.ConsolNoIndex}
     AUTH: ${ssm:/omni-204-create-shipment/${self:provider.stage}/apis.auth}
     GET_LOC_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/get-location.url}
     CREATE_LOC_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/create-location.url}
@@ -44,12 +42,10 @@ function:
     TRACKING_NOTES_API_URL: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/url}
     API_USER_ID: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/userId}
     API_PASS: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/password}
-    ADDRESS_MAPPING_G_API_KEY: ${ssm:/omni-ivia/${self:provider.stage}/google/api.Key~true}
     INSTRUCTIONS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.tableName~true}
     INSTRUCTIONS_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.orderNoIndex}
     REFERENCES_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.tableName~true}
     REFERENCES_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.orderNoIndex}
-    TRACKING_NOTES_ORDERNO_INDEX: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/tracking-notes/ddb.orderNoIndex}
     OMNI_DEV_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-dev/email}
     OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}
 
