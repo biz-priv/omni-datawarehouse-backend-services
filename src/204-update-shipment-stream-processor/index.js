@@ -54,6 +54,7 @@ async function handleUpdatesForP2P(newImage, oldImage) {
   try {
     const orderNo = _.get(newImage, 'FK_OrderNo');
     const changedFields = findChangedFields(newImage, oldImage);
+    console.info('🚀 ~ file: index.js:57 ~ handleUpdatesForP2P ~ changedFields:', changedFields)
 
     // Query log table
     const logQueryResult = await queryOrderStatusTable(orderNo);
@@ -606,7 +607,7 @@ async function updatetimeFields(changedFields, newImage) {
     _.get(changedFields, 'ConsolStopTimeEnd') ||
     _.get(changedFields, 'ConsolStopDate')
   ) {
-    if (changedFields.ConsolStopTimeBegin) {
+    if (changedFields.ConsolStopTimeBegin || _.get(changedFields, 'ConsolStopDate')) {
       const consolStopDate = _.get(newImage, 'ConsolStopDate');
       console.info('🚀 ~ file: index.js:611 ~ updatetimeFields ~ consolStopDate:', consolStopDate);
       const consolStopTimeBegin = _.get(changedFields, 'ConsolStopTimeBegin');
@@ -627,7 +628,7 @@ async function updatetimeFields(changedFields, newImage) {
         );
       }
     }
-    if (changedFields.ConsolStopTimeEnd) {
+    if (changedFields.ConsolStopTimeEnd || _.get(changedFields, 'ConsolStopDate')) {
       const consolStopDate = _.get(newImage, 'ConsolStopDate');
       console.info('🚀 ~ file: index.js:633 ~ updatetimeFields ~ consolStopDate:', consolStopDate);
       const consolStopTimeEnd = _.get(changedFields, 'ConsolStopTimeEnd');
