@@ -8,8 +8,6 @@ const {
   CONFIRMATION_COST_INDEX_KEY_NAME,
   CONSIGNEE_TABLE,
   SHIPPER_TABLE,
-  TRACKING_NOTES_TABLE,
-  TRACKING_NOTES_CONSOLENO_INDEX_KEY,
   CONSOL_STOP_HEADERS_CONSOL_INDEX,
   CONSOL_STOP_HEADERS,
 } = process.env;
@@ -31,7 +29,6 @@ const TYPES = {
 const CONSOLE_WISE_TABLES = {
   [TYPES.CONSOLE]: {
     tbl_ConfirmationCost: STATUSES.PENDING,
-    tbl_TrackingNotes: STATUSES.PENDING,
   },
   [TYPES.NON_CONSOLE]: {
     tbl_ConfirmationCost: STATUSES.PENDING,
@@ -43,7 +40,6 @@ const CONSOLE_WISE_TABLES = {
     tbl_ShipmentHeader: STATUSES.PENDING,
     tbl_ConsolStopItems: STATUSES.PENDING,
     tbl_ShipmentDesc: STATUSES.PENDING,
-    tbl_TrackingNotes: STATUSES.PENDING,
     tbl_ConsolStopHeaders: STATUSES.PENDING,
   },
 };
@@ -56,14 +52,6 @@ const TABLE_PARAMS = {
       KeyConditionExpression: 'FK_OrderNo = :orderNo',
       ExpressionAttributeValues: {
         ':orderNo': orderNo,
-      },
-    }),
-    tbl_TrackingNotes: ({ consoleNo }) => ({
-      TableName: TRACKING_NOTES_TABLE,
-      IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
-      KeyConditionExpression: 'ConsolNo = :ConsolNo',
-      ExpressionAttributeValues: {
-        ':ConsolNo': String(consoleNo),
       },
     }),
   },
@@ -120,14 +108,6 @@ const TABLE_PARAMS = {
         ':FK_OrderNo': orderNo,
       },
     }),
-    tbl_TrackingNotes: ({ consoleNo }) => ({
-      TableName: TRACKING_NOTES_TABLE,
-      IndexName: TRACKING_NOTES_CONSOLENO_INDEX_KEY,
-      KeyConditionExpression: 'ConsolNo = :ConsolNo',
-      ExpressionAttributeValues: {
-        ':ConsolNo': String(consoleNo),
-      },
-    }),
     tbl_ConsolStopHeaders: ({ consoleNo }) => ({
       TableName: CONSOL_STOP_HEADERS,
       IndexName: CONSOL_STOP_HEADERS_CONSOL_INDEX,
@@ -153,7 +133,6 @@ const CONSOLE_WISE_REQUIRED_FIELDS = {
       'Shipper State',
       'Shipper Country',
     ],
-    tbl_TrackingNotes: ['UserId'],
   },
   [TYPES.NON_CONSOLE]: {
     tbl_ConfirmationCost: [
@@ -196,7 +175,6 @@ const CONSOLE_WISE_REQUIRED_FIELDS = {
   [TYPES.MULTI_STOP]: {
     tbl_ShipmentHeader: ['EquipmentCode', 'Insurance', 'ServiceLevelId', 'Housebill'],
     tbl_ShipmentDesc: ['Hazmat', 'Pieces', 'Weight', 'Length', 'Width', 'Height', 'Description'],
-    tbl_TrackingNotes: ['UserId'],
     tbl_ConsolStopHeaders: [
       'Consol Number',
       'ConsolStop Name',
