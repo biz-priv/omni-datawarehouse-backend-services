@@ -28,5 +28,5 @@
           Condition:
             ArnEquals:
               aws:SourceArn:
-                - 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-confirmation-cost-dev'
-                - 'arn:aws:sns:us-east-1:332281781429:omni-wt-rt-consol-stop-headers-dev'
+                - ${ssm:/omni-wt-rt-updates/${self:provider.stage}/confirmation-cost/sns.arn~true}
+                - ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-headers/sns.arn~true}

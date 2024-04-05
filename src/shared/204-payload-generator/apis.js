@@ -68,9 +68,6 @@ async function getLocationId(name, address1, address2, state) {
         // Remove asterisks from modifiedName, modifiedAddress1, and modifiedAddress2
         const cleanedName = modifiedName.replace('*', '');
         const cleanedAddress1 = modifiedAddress1.replace('*', '');
-        const cleanedAddress2 = modifiedAddress2
-          ? modifiedAddress2.replace('*', '')
-          : modifiedAddress2;
 
         // Filter response data to ensure all fields match the provided parameters
         const filteredData = responseData.filter(
@@ -86,13 +83,6 @@ async function getLocationId(name, address1, address2, state) {
               _.startsWith(
                 _.toUpper(removePunctuation(item.address1)),
                 _.toUpper(removePunctuation(cleanedAddress1))
-              )) &&
-            (_.isEmpty(cleanedAddress2) ||
-              _.toUpper(removePunctuation(cleanedAddress2)) ===
-                _.toUpper(removePunctuation(item.address2)) ||
-              _.startsWith(
-                _.toUpper(removePunctuation(item.address2)),
-                _.toUpper(removePunctuation(cleanedAddress2))
               )) &&
             _.toUpper(removePunctuation(item.state)) === _.toUpper(removePunctuation(state))
         );
