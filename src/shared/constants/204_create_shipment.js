@@ -208,7 +208,7 @@ const CONSOLE_WISE_REQUIRED_FIELDS = {
       'ConsolStop TimeEnd',
       'ConsolStop Date',
     ],
-    tbl_ConsolStopItems: ['File Number'],
+    tbl_ConsolStopItems: ['File Number ~ Please add these housebills to the consol'],
   },
 };
 
