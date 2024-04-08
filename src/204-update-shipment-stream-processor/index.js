@@ -54,7 +54,7 @@ async function handleUpdatesForP2P(newImage, oldImage) {
   try {
     const orderNo = _.get(newImage, 'FK_OrderNo');
     const changedFields = findChangedFields(newImage, oldImage);
-    console.info('🚀 ~ file: index.js:57 ~ handleUpdatesForP2P ~ changedFields:', changedFields)
+    console.info('🚀 ~ file: index.js:57 ~ handleUpdatesForP2P ~ changedFields:', changedFields);
 
     // Query log table
     const logQueryResult = await queryOrderStatusTable(orderNo);
