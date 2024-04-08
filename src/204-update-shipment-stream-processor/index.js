@@ -610,7 +610,7 @@ async function updatetimeFields(changedFields, newImage) {
     if (changedFields.ConsolStopTimeBegin || _.get(changedFields, 'ConsolStopDate')) {
       const consolStopDate = _.get(newImage, 'ConsolStopDate');
       console.info('🚀 ~ file: index.js:611 ~ updatetimeFields ~ consolStopDate:', consolStopDate);
-      const consolStopTimeBegin = _.get(changedFields, 'ConsolStopTimeBegin');
+      const consolStopTimeBegin = _.get(newImage, 'ConsolStopTimeBegin');
       console.info(
         '🚀 ~ file: index.js:613 ~ updatetimeFields ~ consolStopTimeBegin:',
         consolStopTimeBegin
@@ -631,7 +631,7 @@ async function updatetimeFields(changedFields, newImage) {
     if (changedFields.ConsolStopTimeEnd || _.get(changedFields, 'ConsolStopDate')) {
       const consolStopDate = _.get(newImage, 'ConsolStopDate');
       console.info('🚀 ~ file: index.js:633 ~ updatetimeFields ~ consolStopDate:', consolStopDate);
-      const consolStopTimeEnd = _.get(changedFields, 'ConsolStopTimeEnd');
+      const consolStopTimeEnd = _.get(newImage, 'ConsolStopTimeEnd');
       console.info(
         '🚀 ~ file: index.js:635 ~ updatetimeFields ~ consolStopTimeEnd:',
         consolStopTimeEnd
