@@ -107,19 +107,19 @@ async function handleUpdatesForP2P(newImage, oldImage) {
       }
 
       await updateOrders({ payload: updatedResponse });
-      let updatedFieldsMessage;
+      let updatedFieldsMessage = '';
       if (changedFields) {
+        console.info('🚀 ~ file: index.js:112 ~ handleUpdatesForP2P ~ changedFields:', changedFields)
+        
+        if (_.get(changedFields, 'PickupDateTime') || _.get(changedFields, 'PickupTimeRange')) {
+          updatedFieldsMessage += `Pick up time has been changed. \nNew pickup time: ${_.get(newImage, 'PickupDateTime')}\n`;
+        }
+        
+        if (_.get(changedFields, 'DeliveryDateTime') || _.get(changedFields, 'DeliveryTimeRange')) {
+          updatedFieldsMessage += `Delivery time has been changed. \nNew delivery time: ${_.get(newImage, 'DeliveryDateTime')}\n`;
+        }
+        
         if (
-          _.includes(changedFields, 'PickupDateTime') ||
-          _.includes(changedFields, 'PickupTimeRange')
-        ) {
-          updatedFieldsMessage = `Pick up time has been changed. \nNew pickup time: ${_.get(newImage, 'PickupDateTime')}`;
-        } else if (
-          _.includes(changedFields, 'DeliveryDateTime') ||
-          _.includes(changedFields, 'DeliveryTimeRange')
-        ) {
-          updatedFieldsMessage = `Delivery time has been changed. \nNew delivery time: ${_.get(newImage, 'DeliveryDateTime')}`;
-        } else if (
           changedFields.ShipName ||
           changedFields.ShipAddress1 ||
           changedFields.ShipAddress2 ||
@@ -128,8 +128,10 @@ async function handleUpdatesForP2P(newImage, oldImage) {
           changedFields.ShipZip ||
           changedFields.FK_ShipCountry
         ) {
-          updatedFieldsMessage = `Pick up location has been changed. \nChanged Address: ${newImage.ShipName}, ${newImage.ShipAddress1}, ${newImage.ShipCity}, ${newImage.FK_ShipState}`;
-        } else if (
+          updatedFieldsMessage += `Pick up location has been changed. \nChanged Address: ${newImage.ShipName}, ${newImage.ShipAddress1}, ${newImage.ShipCity}, ${newImage.FK_ShipState}\n`;
+        }
+        
+        if (
           changedFields.ConName ||
           changedFields.ConAddress1 ||
           changedFields.ConAddress2 ||
@@ -138,14 +140,17 @@ async function handleUpdatesForP2P(newImage, oldImage) {
           changedFields.ConZip ||
           changedFields.FK_ConCountry
         ) {
-          updatedFieldsMessage = `Delivery location has been changed. \nChanged Address: ${newImage.ConName}, ${newImage.ConAddress1}, ${newImage.ConCity}, ${newImage.FK_ConState}`;
+          updatedFieldsMessage += `Delivery location has been changed. \nChanged Address: ${newImage.ConName}, ${newImage.ConAddress1}, ${newImage.ConCity}, ${newImage.FK_ConState}\n`;
         }
+        
         console.info(
           '🚀 ~ file: index.js:115 ~ handleUpdatesForP2P ~ updatedFieldsMessage:',
           updatedFieldsMessage
         );
       }
-      await sendSESEmail({message: updatedFieldsMessage, orderId: orderNo, consolNo })
+      
+      await sendSESEmail({ message: updatedFieldsMessage, orderId: orderNo, consolNo });
+      
       console.info('🚀 ~ file: index.js:119 ~ handleUpdatesForP2P ~ Sent Update Notification successfully');
       await updateRecord({
         orderNo,
