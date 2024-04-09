@@ -5,9 +5,9 @@ const _ = require('lodash');
 const moment = require('moment-timezone');
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
-
+const ses = new AWS.SES();
 // Constants from environment variables
-const { STATUS_TABLE, CONSOL_STOP_HEADERS, CONSOLE_STATUS_TABLE } = process.env;
+const { STATUS_TABLE, CONSOL_STOP_HEADERS, CONSOLE_STATUS_TABLE, STAGE } = process.env;
 
 // Constants from shared files
 const { STATUSES } = require('../shared/constants/204_create_shipment');
@@ -53,6 +53,7 @@ async function processRecord(record) {
 async function handleUpdatesForP2P(newImage, oldImage) {
   try {
     const orderNo = _.get(newImage, 'FK_OrderNo');
+    const consolNo = _.get(newImage, 'ConsolNo');
     const changedFields = findChangedFields(newImage, oldImage);
     console.info('🚀 ~ file: index.js:57 ~ handleUpdatesForP2P ~ changedFields:', changedFields);
 
@@ -106,6 +107,46 @@ async function handleUpdatesForP2P(newImage, oldImage) {
       }
 
       await updateOrders({ payload: updatedResponse });
+      let updatedFieldsMessage;
+      if (changedFields) {
+        if (
+          _.includes(changedFields, 'PickupDateTime') ||
+          _.includes(changedFields, 'PickupTimeRange')
+        ) {
+          updatedFieldsMessage = `Pick up time has been changed. \nNew pickup time: ${_.get(newImage, 'PickupDateTime')}`;
+        } else if (
+          _.includes(changedFields, 'DeliveryDateTime') ||
+          _.includes(changedFields, 'DeliveryTimeRange')
+        ) {
+          updatedFieldsMessage = `Delivery time has been changed. \nNew delivery time: ${_.get(newImage, 'DeliveryDateTime')}`;
+        } else if (
+          changedFields.ShipName ||
+          changedFields.ShipAddress1 ||
+          changedFields.ShipAddress2 ||
+          changedFields.ShipCity ||
+          changedFields.FK_ShipState ||
+          changedFields.ShipZip ||
+          changedFields.FK_ShipCountry
+        ) {
+          updatedFieldsMessage = `Pick up location has been changed. \nChanged Address: ${newImage.ShipName}, ${newImage.ShipAddress1}, ${newImage.ShipCity}, ${newImage.FK_ShipState}`;
+        } else if (
+          changedFields.ConName ||
+          changedFields.ConAddress1 ||
+          changedFields.ConAddress2 ||
+          changedFields.ConCity ||
+          changedFields.FK_ConState ||
+          changedFields.ConZip ||
+          changedFields.FK_ConCountry
+        ) {
+          updatedFieldsMessage = `Delivery location has been changed. \nChanged Address: ${newImage.ConName}, ${newImage.ConAddress1}, ${newImage.ConCity}, ${newImage.FK_ConState}`;
+        }
+        console.info(
+          '🚀 ~ file: index.js:115 ~ handleUpdatesForP2P ~ updatedFieldsMessage:',
+          updatedFieldsMessage
+        );
+      }
+      await sendSESEmail({message: updatedFieldsMessage, orderId: orderNo, consolNo })
+      console.info('🚀 ~ file: index.js:119 ~ handleUpdatesForP2P ~ Sent Update Notification successfully');
       await updateRecord({
         orderNo,
         UpdateCount: _.get(logQueryResult, '[0].UpdateCount', 0),
@@ -115,6 +156,35 @@ async function handleUpdatesForP2P(newImage, oldImage) {
     }
   } catch (error) {
     console.error('Error handling order updates:', error);
+    throw error;
+  }
+}
+
+async function sendSESEmail({ message, orderId = 0, consolNo = 0 }) {
+  try {
+    const params = {
+      Destination: {
+        ToAddresses: ['mohammed.sazeed@bizcloudexperts.com'],
+      },
+      Message: {
+        Body: {
+          Text: {
+            Data: `204 Updates Notification: \n${message}`,
+            Charset: 'UTF-8',
+          },
+        },
+        Subject: {
+          Data: `PB UPDATES NOTIFICATION - ${STAGE} ~ FileNo: ${orderId} / Consol: ${consolNo}`,
+          Charset: 'UTF-8',
+        },
+      },
+      Source: 'no-reply@omnilogistics.com',
+    };
+    console.info('🚀 ~ file: helper.js:1747 ~ sendSESEmail ~ params:', params);
+
+    await ses.sendEmail(params).promise();
+  } catch (error) {
+    console.error('Error sending email with SES:', error);
     throw error;
   }
 }
