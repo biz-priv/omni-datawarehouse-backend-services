@@ -18,7 +18,7 @@ function:
       - 'src/shared/204-payload-generator/**'
       - 'src/shared/timezoneInfo/**'
   environment:
-    #   STAGE: ${self:provider.stage}
+    STAGE: ${self:provider.stage}
     #   LIVE_SNS_TOPIC_ARN: ${ssm:/omni-power-broker/${self:provider.stage}/error-notification/sns/arn}
     STATUS_TABLE: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.name}
     AUTH: ${ssm:/omni-204-create-shipment/${self:provider.stage}/apis.auth}

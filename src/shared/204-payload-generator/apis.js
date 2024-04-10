@@ -68,21 +68,23 @@ async function getLocationId(name, address1, address2, state) {
         // Remove asterisks from modifiedName, modifiedAddress1, and modifiedAddress2
         const cleanedName = modifiedName.replace('*', '');
         const cleanedAddress1 = modifiedAddress1.replace('*', '');
-        const cleanedAddress2 = modifiedAddress2
-          ? modifiedAddress2.replace('*', '')
-          : modifiedAddress2;
 
         // Filter response data to ensure all fields match the provided parameters
         const filteredData = responseData.filter(
           (item) =>
-            (_.toUpper(cleanedName) === _.toUpper(item.name) ||
-              _.startsWith(_.toUpper(item.name), _.toUpper(cleanedName))) &&
-            (_.toUpper(cleanedAddress1) === _.toUpper(item.address1) ||
-              _.startsWith(_.toUpper(item.address1), _.toUpper(cleanedAddress1))) &&
-            (_.isEmpty(cleanedAddress2) ||
-              _.toUpper(cleanedAddress2) === _.toUpper(item.address2) ||
-              _.startsWith(_.toUpper(item.address2), _.toUpper(cleanedAddress2))) &&
-            _.toUpper(item.state) === _.toUpper(state)
+            (_.toUpper(removePunctuation(cleanedName)) ===
+              _.toUpper(removePunctuation(item.name)) ||
+              _.startsWith(
+                _.toUpper(removePunctuation(item.name)),
+                _.toUpper(removePunctuation(cleanedName))
+              )) &&
+            (_.toUpper(removePunctuation(cleanedAddress1)) ===
+              _.toUpper(removePunctuation(item.address1)) ||
+              _.startsWith(
+                _.toUpper(removePunctuation(item.address1)),
+                _.toUpper(removePunctuation(cleanedAddress1))
+              )) &&
+            _.toUpper(removePunctuation(item.state)) === _.toUpper(removePunctuation(state))
         );
 
         if (!_.isEmpty(filteredData)) {
@@ -99,6 +101,10 @@ async function getLocationId(name, address1, address2, state) {
     }
   }
   return false;
+}
+
+function removePunctuation(str) {
+  return str.replace(/[^\w\s]/g, '');
 }
 
 async function getOrders({ id }) {
