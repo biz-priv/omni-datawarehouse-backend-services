@@ -258,7 +258,7 @@ async function getDynamodbData(value) {
 }
 
 async function MappingDataToInsert(data, timeZoneTable) {
-  const shipmentMilestoneData = data['omni-wt-rt-shipment-milestone-dev'];
+  const shipmentMilestoneData = data[process.env.SHIPMENT_MILESTONE_TABLE];
   let highestEventDateTimeObject= {};
   if (shipmentMilestoneData.length > 0) {
     highestEventDateTimeObject = shipmentMilestoneData[0];
@@ -272,7 +272,7 @@ async function MappingDataToInsert(data, timeZoneTable) {
       }
     }
   } else {
-    console.log("No data found in omni-wt-rt-shipment-milestone-dev array.");
+    console.log(`No data found in '${process.env.SHIPMENT_MILESTONE_TABLE} array.`);
   }
   const formattedEventDate = get(highestEventDateTimeObject, 'EventDateTime', '') !== '' ? moment(get(highestEventDateTimeObject, 'EventDateTime', '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
   const formattedEventYear = get(highestEventDateTimeObject, 'EventDateTime', '') !== '' ? moment(get(highestEventDateTimeObject, 'EventDateTime', '1900')).format("YYYY") : '1900';
