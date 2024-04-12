@@ -158,9 +158,10 @@ async function getShipmentDate(dateTime) {
   }
 }
 
-async function getDescription(orderStatusId,serviceLevelId) {
+async function getDescription(orderStatusId, serviceLevelId) {
   const milestoneTableParams = {
     TableName: process.env.MILESTONE_TABLE,
+    IndexName: "FK_OrderStatusId-FK_ServiceLevelId",
     KeyConditionExpression: `#pKey = :pKey and #sKey = :sKey`,
     FilterExpression: "IsPublic = :IsPublic",
     ExpressionAttributeNames: {
@@ -175,7 +176,13 @@ async function getDescription(orderStatusId,serviceLevelId) {
   };
   try {
     const milestoneTableResult = await ddb.query(milestoneTableParams).promise();
-    return get(milestoneTableResult.Items, '[0].Description', "");
+    if (milestoneTableResult.Items.length === 0) {
+      console.info(`No Description for the FK_OrderStatusId ${orderStatusId} and FK_ServiceLevelId ${serviceLevelId}`);
+      return "";
+    }
+    else {
+      return get(milestoneTableResult.Items, '[0].Description', "");
+    }
   } catch (error) {
     console.error("Query Error:", error);
     throw error;
@@ -251,14 +258,30 @@ async function getDynamodbData(value) {
 }
 
 async function MappingDataToInsert(data, timeZoneTable) {
-  const formattedEventDate = get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
-  const formattedEventYear = get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900')).format("YYYY") : '1900';
+  const shipmentMilestoneData = data['omni-wt-rt-shipment-milestone-dev'];
+  let highestEventDateTimeObject= {};
+  if (shipmentMilestoneData.length > 0) {
+    highestEventDateTimeObject = shipmentMilestoneData[0];
+
+    for (let i = 1; i < shipmentMilestoneData.length; i++) {
+      const currentEventDateTime = new Date(shipmentMilestoneData[i].EventDateTime);
+      const highestEventDateTime = new Date(highestEventDateTimeObject.EventDateTime);
+
+      if (currentEventDateTime > highestEventDateTime) {
+        highestEventDateTimeObject = shipmentMilestoneData[i];
+      }
+    }
+  } else {
+    console.log("No data found in omni-wt-rt-shipment-milestone-dev array.");
+  }
+  const formattedEventDate = get(highestEventDateTimeObject, 'EventDateTime', '') !== '' ? moment(get(highestEventDateTimeObject, 'EventDateTime', '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
+  const formattedEventYear = get(highestEventDateTimeObject, 'EventDateTime', '') !== '' ? moment(get(highestEventDateTimeObject, 'EventDateTime', '1900')).format("YYYY") : '1900';
   const formattedOrderDate = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
   const formattedOrderYear = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY") : '1900';
   const milestonePromises = data[process.env.SHIPMENT_MILESTONE_TABLE].map(async milestone => {
     return {
       statusCode: get(milestone, 'FK_OrderStatusId', ""),
-      statusDescription: await getDescription(get(milestone, 'FK_OrderStatusId', ""),get(milestone, 'FK_ServiceLevelId', "")),
+      statusDescription: await getDescription(get(milestone, 'FK_OrderStatusId', ""), get(milestone, 'FK_ServiceLevelId', "")),
       statusTime: await getTime(get(milestone, 'EventDateTime', ""), get(milestone, 'EventTimeZone', ""), timeZoneTable)
     };
   });
@@ -312,27 +335,26 @@ async function MappingDataToInsert(data, timeZoneTable) {
     "customerReference": allReference,
     "milestones": allMilestone,
     "locations": await locationFunc(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, ""), get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, "")),
-    "EventDateTime": get(data, `${process.env.SHIPMENT_MILESTONE_TABLE}[0].EventDateTime`, '1900-00-00 00:00:00.000'),
+    "EventDateTime": get(highestEventDateTimeObject, 'EventDateTime', '1900-00-00 00:00:00.000'),
     "EventDate": formattedEventDate,
     "EventYear": formattedEventYear,
     "OrderDateTime": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00 00:00:00.000'),
     "OrderDate": formattedOrderDate,
     "OrderYear": formattedOrderYear,
   };
-  console.log("payload", payload);
-  const ignoreFields = ['masterbill', 'pickupTime', 'estimatedDepartureTime', 'estimatedArrivalTime', 'scheduledDeliveryTime', 'deliveryTime', 'podName'];
+  // const ignoreFields = ['masterbill', 'pickupTime', 'estimatedDepartureTime', 'estimatedArrivalTime', 'scheduledDeliveryTime', 'deliveryTime', 'podName'];
 
-  const values = Object.entries(payload).map(([key, value]) => {
-    if (ignoreFields.includes(key)) {
-      return true;
-    }
-    return value;
-  });
+  // const values = Object.entries(payload).map(([key, value]) => {
+  //   if (ignoreFields.includes(key)) {
+  //     return true;
+  //   }
+  //   return value;
+  // });
 
-  const hasNullOrEmptyValue = values.some(value => value === null || value === '');
+  // const hasNullOrEmptyValue = values.some(value => value === null || value === '');
 
-  const status = hasNullOrEmptyValue ? 'Pending' : 'Ready';
-  payload.status = status;
+  // const status = hasNullOrEmptyValue ? 'Pending' : 'Ready';
+  // payload.status = status;
   return payload;
 }
 
@@ -355,7 +377,7 @@ async function upsertItem(tableName, item) {
         Key: {
           HouseBillNumber: houseBillNumber,
         },
-        UpdateExpression: 'SET #fileNumber = :fileNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear, #status = :status',
+        UpdateExpression: 'SET #fileNumber = :fileNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear',
         ExpressionAttributeNames: {
           '#fileNumber': 'fileNumber',
           '#masterbill': 'masterbill',
@@ -386,7 +408,6 @@ async function upsertItem(tableName, item) {
           '#OrderDateTime': 'OrderDateTime',
           '#OrderDate': 'OrderDate',
           '#OrderYear': 'OrderYear',
-          '#status': 'status',
         },
         ExpressionAttributeValues: {
           ':fileNumber': item.fileNumber,
@@ -418,7 +439,6 @@ async function upsertItem(tableName, item) {
           ':OrderDateTime': item.OrderDateTime,
           ':OrderDate': item.OrderDate,
           ':OrderYear': item.OrderYear,
-          ':status': item.status,
         },
       };
       console.info("Updated");
