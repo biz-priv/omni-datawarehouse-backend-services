@@ -1,229 +1,229 @@
 {
-    "Records": [
-        {
-            "eventID": "ad407419e81e47c89bbf1f68b54d590f",
-            "eventName": "INSERT",
-            "eventVersion": "1.1",
-            "eventSource": "aws:dynamodb",
-            "awsRegion": "us-east-1",
-            "dynamodb": {
-                "ApproximateCreationDateTime": 1699386050,
-                "Keys": {
-                    "FK_ShipOrderNo": {
-                        "S": "5344021"
-                    }
-                },
-                "NewImage": {
-                    "ShipName": {
-                        "S": "FOXCONN DELL-EL PASO"
-                    },
-                    "ShipZone": {
-                        "S": "0"
-                    },
-                    "ShipContact": {
-                        "S": ""
-                    },
-                    "ShipCity": {
-                        "S": "EL PASO"
-                    },
-                    "FK_ShipState": {
-                        "S": "TX"
-                    },
-                    "ShipNo": {
-                        "S": "24572"
-                    },
-                    "FK_ShipOrderNo": {
-                        "S": "5344021"
-                    },
-                    "FK_ShipRefTypeId": {
-                        "S": ""
-                    },
-                    "ShipRefNo": {
-                        "S": ""
-                    },
-                    "FK_ShipCountry": {
-                        "S": "US"
-                    },
-                    "ShipEmail": {
-                        "S": ""
-                    },
-                    "InsertedTimeStamp": {
-                        "S": "2023:11:07 13:40:49"
-                    },
-                    "ShipFax": {
-                        "S": ""
-                    },
-                    "ShipAlpha": {
-                        "S": "FOXCONN DE"
-                    },
-                    "ShipZip": {
-                        "S": "79906"
-                    },
-                    "ShipAddress2": {
-                        "S": "DELL TEAM"
-                    },
-                    "ShipPhone": {
-                        "S": "915-774-0335"
-                    },
-                    "ShipAddress1": {
-                        "S": "7 FOUNDERS BLVD"
-                    }
-                },
-                "SequenceNumber": "2133726700000000059330601733",
-                "SizeBytes": 323,
-                "StreamViewType": "NEW_AND_OLD_IMAGES"
-            },
-            "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipper-dev/stream/2023-02-27T08:04:35.256"
+  "Records": [
+    {
+      "eventID": "ad407419e81e47c89bbf1f68b54d590f",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386050,
+        "Keys": {
+          "FK_ShipOrderNo": {
+            "S": "5344021"
+          }
         },
-        {
-            "eventID": "1e19260959ebb07781ddf8306a3a39ba",
-            "eventName": "INSERT",
-            "eventVersion": "1.1",
-            "eventSource": "aws:dynamodb",
-            "awsRegion": "us-east-1",
-            "dynamodb": {
-                "ApproximateCreationDateTime": 1699386050,
-                "Keys": {
-                    "FK_ShipOrderNo": {
-                        "S": "5344024"
-                    }
-                },
-                "NewImage": {
-                    "ShipName": {
-                        "S": "FOXCONN DELL-EL PASO"
-                    },
-                    "ShipZone": {
-                        "S": "0"
-                    },
-                    "ShipContact": {
-                        "S": ""
-                    },
-                    "ShipCity": {
-                        "S": "EL PASO"
-                    },
-                    "FK_ShipState": {
-                        "S": "TX"
-                    },
-                    "ShipNo": {
-                        "S": "24572"
-                    },
-                    "FK_ShipOrderNo": {
-                        "S": "5344024"
-                    },
-                    "FK_ShipRefTypeId": {
-                        "S": ""
-                    },
-                    "ShipRefNo": {
-                        "S": ""
-                    },
-                    "FK_ShipCountry": {
-                        "S": "US"
-                    },
-                    "ShipEmail": {
-                        "S": ""
-                    },
-                    "InsertedTimeStamp": {
-                        "S": "2023:11:07 13:40:49"
-                    },
-                    "ShipFax": {
-                        "S": ""
-                    },
-                    "ShipAlpha": {
-                        "S": "FOXCONN DE"
-                    },
-                    "ShipZip": {
-                        "S": "79906"
-                    },
-                    "ShipAddress2": {
-                        "S": "DELL TEAM"
-                    },
-                    "ShipPhone": {
-                        "S": "915-774-0335"
-                    },
-                    "ShipAddress1": {
-                        "S": "7 FOUNDERS BLVD"
-                    }
-                },
-                "SequenceNumber": "2133726800000000059330601840",
-                "SizeBytes": 323,
-                "StreamViewType": "NEW_AND_OLD_IMAGES"
-            },
-            "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipper-dev/stream/2023-02-27T08:04:35.256"
+        "NewImage": {
+          "ShipName": {
+            "S": "FOXCONN DELL-EL PASO"
+          },
+          "ShipZone": {
+            "S": "0"
+          },
+          "ShipContact": {
+            "S": ""
+          },
+          "ShipCity": {
+            "S": "EL PASO"
+          },
+          "FK_ShipState": {
+            "S": "TX"
+          },
+          "ShipNo": {
+            "S": "24572"
+          },
+          "FK_ShipOrderNo": {
+            "S": "5344021"
+          },
+          "FK_ShipRefTypeId": {
+            "S": ""
+          },
+          "ShipRefNo": {
+            "S": ""
+          },
+          "FK_ShipCountry": {
+            "S": "US"
+          },
+          "ShipEmail": {
+            "S": ""
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "ShipFax": {
+            "S": ""
+          },
+          "ShipAlpha": {
+            "S": "FOXCONN DE"
+          },
+          "ShipZip": {
+            "S": "79906"
+          },
+          "ShipAddress2": {
+            "S": "DELL TEAM"
+          },
+          "ShipPhone": {
+            "S": "915-774-0335"
+          },
+          "ShipAddress1": {
+            "S": "7 FOUNDERS BLVD"
+          }
         },
-        {
-            "eventID": "b1faebba16f3c02cc6606036b6608184",
-            "eventName": "INSERT",
-            "eventVersion": "1.1",
-            "eventSource": "aws:dynamodb",
-            "awsRegion": "us-east-1",
-            "dynamodb": {
-                "ApproximateCreationDateTime": 1699386050,
-                "Keys": {
-                    "FK_ShipOrderNo": {
-                        "S": "5344029"
-                    }
-                },
-                "NewImage": {
-                    "ShipName": {
-                        "S": "FOXCONN DELL-EL PASO"
-                    },
-                    "ShipZone": {
-                        "S": "0"
-                    },
-                    "ShipContact": {
-                        "S": ""
-                    },
-                    "ShipCity": {
-                        "S": "EL PASO"
-                    },
-                    "FK_ShipState": {
-                        "S": "TX"
-                    },
-                    "ShipNo": {
-                        "S": "24572"
-                    },
-                    "FK_ShipOrderNo": {
-                        "S": "5344029"
-                    },
-                    "FK_ShipRefTypeId": {
-                        "S": ""
-                    },
-                    "ShipRefNo": {
-                        "S": ""
-                    },
-                    "FK_ShipCountry": {
-                        "S": "US"
-                    },
-                    "ShipEmail": {
-                        "S": ""
-                    },
-                    "InsertedTimeStamp": {
-                        "S": "2023:11:07 13:40:49"
-                    },
-                    "ShipFax": {
-                        "S": ""
-                    },
-                    "ShipAlpha": {
-                        "S": "FOXCONN DE"
-                    },
-                    "ShipZip": {
-                        "S": "79906"
-                    },
-                    "ShipAddress2": {
-                        "S": "DELL TEAM"
-                    },
-                    "ShipPhone": {
-                        "S": "915-774-0335"
-                    },
-                    "ShipAddress1": {
-                        "S": "7 FOUNDERS BLVD"
-                    }
-                },
-                "SequenceNumber": "2133726900000000059330601841",
-                "SizeBytes": 323,
-                "StreamViewType": "NEW_AND_OLD_IMAGES"
-            },
-            "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipper-dev/stream/2023-02-27T08:04:35.256"
-        }
-    ]
+        "SequenceNumber": "2133726700000000059330601733",
+        "SizeBytes": 323,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipper-dev/stream/2023-02-27T08:04:35.256"
+    },
+    {
+      "eventID": "1e19260959ebb07781ddf8306a3a39ba",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386050,
+        "Keys": {
+          "FK_ShipOrderNo": {
+            "S": "5344024"
+          }
+        },
+        "NewImage": {
+          "ShipName": {
+            "S": "FOXCONN DELL-EL PASO"
+          },
+          "ShipZone": {
+            "S": "0"
+          },
+          "ShipContact": {
+            "S": ""
+          },
+          "ShipCity": {
+            "S": "EL PASO"
+          },
+          "FK_ShipState": {
+            "S": "TX"
+          },
+          "ShipNo": {
+            "S": "24572"
+          },
+          "FK_ShipOrderNo": {
+            "S": "5344024"
+          },
+          "FK_ShipRefTypeId": {
+            "S": ""
+          },
+          "ShipRefNo": {
+            "S": ""
+          },
+          "FK_ShipCountry": {
+            "S": "US"
+          },
+          "ShipEmail": {
+            "S": ""
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "ShipFax": {
+            "S": ""
+          },
+          "ShipAlpha": {
+            "S": "FOXCONN DE"
+          },
+          "ShipZip": {
+            "S": "79906"
+          },
+          "ShipAddress2": {
+            "S": "DELL TEAM"
+          },
+          "ShipPhone": {
+            "S": "915-774-0335"
+          },
+          "ShipAddress1": {
+            "S": "7 FOUNDERS BLVD"
+          }
+        },
+        "SequenceNumber": "2133726800000000059330601840",
+        "SizeBytes": 323,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipper-dev/stream/2023-02-27T08:04:35.256"
+    },
+    {
+      "eventID": "b1faebba16f3c02cc6606036b6608184",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386050,
+        "Keys": {
+          "FK_ShipOrderNo": {
+            "S": "5344029"
+          }
+        },
+        "NewImage": {
+          "ShipName": {
+            "S": "FOXCONN DELL-EL PASO"
+          },
+          "ShipZone": {
+            "S": "0"
+          },
+          "ShipContact": {
+            "S": ""
+          },
+          "ShipCity": {
+            "S": "EL PASO"
+          },
+          "FK_ShipState": {
+            "S": "TX"
+          },
+          "ShipNo": {
+            "S": "24572"
+          },
+          "FK_ShipOrderNo": {
+            "S": "5344029"
+          },
+          "FK_ShipRefTypeId": {
+            "S": ""
+          },
+          "ShipRefNo": {
+            "S": ""
+          },
+          "FK_ShipCountry": {
+            "S": "US"
+          },
+          "ShipEmail": {
+            "S": ""
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "ShipFax": {
+            "S": ""
+          },
+          "ShipAlpha": {
+            "S": "FOXCONN DE"
+          },
+          "ShipZip": {
+            "S": "79906"
+          },
+          "ShipAddress2": {
+            "S": "DELL TEAM"
+          },
+          "ShipPhone": {
+            "S": "915-774-0335"
+          },
+          "ShipAddress1": {
+            "S": "7 FOUNDERS BLVD"
+          }
+        },
+        "SequenceNumber": "2133726900000000059330601841",
+        "SizeBytes": 323,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipper-dev/stream/2023-02-27T08:04:35.256"
+    }
+  ]
 }

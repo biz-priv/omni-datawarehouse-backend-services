@@ -693,7 +693,7 @@ function updateONBCDeliveryFields(stop, changedFields) {
 
 async function updateONDeliveryFields(stopData, newImage, shipmentHeaderData) {
   const houseBills = _.join(_.map(shipmentHeaderData, 'Housebill'));
-  console.info('🚀 ~ file: index.js:696 ~ updateONDeliveryFields ~ houseBills:', houseBills)
+  console.info('🚀 ~ file: index.js:696 ~ updateONDeliveryFields ~ houseBills:', houseBills);
   const locationId = await getLocationId(
     newImage.ConName,
     newImage.ConAddress1,
