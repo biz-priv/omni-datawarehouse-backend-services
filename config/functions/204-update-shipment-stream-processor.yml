@@ -19,7 +19,7 @@ function:
       - 'src/shared/timezoneInfo/**'
   environment:
     STAGE: ${self:provider.stage}
-    #   LIVE_SNS_TOPIC_ARN: ${ssm:/omni-power-broker/${self:provider.stage}/error-notification/sns/arn}
+    LIVE_SNS_TOPIC_ARN: ${ssm:/omni-power-broker/${self:provider.stage}/error-notification/sns/arn}
     STATUS_TABLE: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.name}
     AUTH: ${ssm:/omni-204-create-shipment/${self:provider.stage}/apis.auth}
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
