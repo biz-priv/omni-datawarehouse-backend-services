@@ -95,27 +95,23 @@ async function handleUpdatesForP2P(newImage, oldImage) {
     let shipmentAparData;
     let shipmentHeaderData;
     if (consolNo > 0) {
-      shipmentAparData = shipmentAparDataForConsols({ consolNo });
+      shipmentAparData = await shipmentAparDataForConsols({ consolNo });
       shipmentHeaderData = await fetchShipmentHeaderData({
         orderNo: _.get(shipmentAparData, '[0]FK_OrderNo'),
       });
       console.info(
-        '🚀 ~ file: index.js:66 ~ handleUpdatesForP2P ~ shipmentAparParams:',
+        '🚀 ~ file: index.js:66 ~ handleUpdatesForP2P ~ shipmentAparData:',
         shipmentAparData
       );
     } else {
-      shipmentAparData = shipmentAparDataForNC({ orderNo });
+      shipmentAparData = await shipmentAparDataForNC({ orderNo });
       shipmentHeaderData = await fetchShipmentHeaderData({ orderNo });
       console.info(
-        '🚀 ~ file: index.js:69 ~ handleUpdatesForP2P ~ shipmentAparParams:',
+        '🚀 ~ file: index.js:69 ~ handleUpdatesForP2P ~ shipmentAparData:',
         shipmentAparData
       );
     }
 
-    console.info(
-      '🚀 ~ file: index.js:74 ~ handleUpdatesForP2P ~ shipmentHeaderData:',
-      shipmentHeaderData
-    );
     const stationCode =
       _.get(shipmentAparData, '[0]FK_HandlingStation', '') ||
       _.get(shipmentHeaderData, '[0]ControllingStation', '');
@@ -314,7 +310,7 @@ async function sendSESEmail({ message, orderId = 0, consolNo = 0, id, to }) {
       Source: sender,
       Destination: {
         // ToAddresses: [to, OMNI_DEV_EMAIL], // uncomment this after testing.
-        ToAddresses: ['mohammed.sazeed@bizclouldexperts.com'], // added my email for testing.
+        ToAddresses: ['mohammed.sazeed@bizcloudexperts.com'], // added my email for testing.
       },
       Message: {
         Subject: {
