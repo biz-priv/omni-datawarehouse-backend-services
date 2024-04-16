@@ -18,7 +18,7 @@ const {
   SHIPMENT_APAR_INDEX_KEY_NAME,
   SHIPMENT_HEADER_TABLE,
   LIVE_SNS_TOPIC_ARN,
-  STAGE
+  STAGE,
 } = process.env;
 
 // Constants from shared files
@@ -29,7 +29,11 @@ const {
   getLocationId,
   createLocation,
 } = require('../shared/204-payload-generator/apis');
-const { getCstTime, sendSESEmail, getUserEmail } = require('../shared/204-payload-generator/helper');
+const {
+  getCstTime,
+  sendSESEmail,
+  getUserEmail,
+} = require('../shared/204-payload-generator/helper');
 
 let functionName;
 module.exports.handler = async (event, context) => {
@@ -90,7 +94,7 @@ async function handleUpdatesForP2P(newImage, oldImage) {
   const orderNo = _.get(newImage, 'FK_OrderNo');
   const consolNo = _.get(newImage, 'ConsolNo');
   let userEmail;
-  let houseBillString
+  let houseBillString;
   try {
     const changedFields = findChangedFields(newImage, oldImage);
     console.info('🚀 ~ file: index.js:57 ~ handleUpdatesForP2P ~ changedFields:', changedFields);
@@ -110,8 +114,11 @@ async function handleUpdatesForP2P(newImage, oldImage) {
       shipmentHeaderData = await Promise.all(shipmentHeaderDataPromises);
 
       shipmentHeaderData = _.flatMap(shipmentHeaderData, _.identity);
-      houseBillString = _.join(_.map(shipmentHeaderData, 'Housebill'));      
-      console.info('🚀 ~ file: index.js:116 ~ handleUpdatesForP2P ~ houseBillString:', houseBillString)
+      houseBillString = _.join(_.map(shipmentHeaderData, 'Housebill'));
+      console.info(
+        '🚀 ~ file: index.js:116 ~ handleUpdatesForP2P ~ houseBillString:',
+        houseBillString
+      );
       console.info(
         '🚀 ~ file: index.js:110 ~ handleUpdatesForP2P ~ shipmentHeaderData:',
         shipmentHeaderData
@@ -339,7 +346,6 @@ async function sendSESEmailForUpdates({ message, orderId = 0, consolNo = 0, id, 
       Destination: {
         // ToAddresses: [to, OMNI_DEV_EMAIL],
         ToAddresses: [OMNI_DEV_EMAIL],
-
       },
       Message: {
         Subject: {
@@ -386,7 +392,7 @@ async function handleUpdatesforMt(newImage, oldImage) {
 
     shipmentHeaderData = _.flatMap(shipmentHeaderData, _.identity);
 
-    houseBillString = _.join(_.map(shipmentHeaderData, 'Housebill'));      
+    houseBillString = _.join(_.map(shipmentHeaderData, 'Housebill'));
 
     console.info(
       '🚀 ~ file: index.js:363 ~ handleUpdatesforMt ~ shipmentHeaderData:',
@@ -651,26 +657,14 @@ async function updateStopsFromChangedFields(
       await updatePickupFields(stop, changedFields, brokerageStatus, newImage, houseBillString);
       // eslint-disable-next-line camelcase
     } else if (order_sequence === 2) {
-      await updateDeliveryFields(
-        stop,
-        changedFields,
-        brokerageStatus,
-        newImage,
-        houseBillString
-      );
+      await updateDeliveryFields(stop, changedFields, brokerageStatus, newImage, houseBillString);
     }
   }
 
   return stops;
 }
 
-async function updatePickupFields(
-  stop,
-  changedFields,
-  brokerageStatus,
-  newImage,
-  houseBillString
-) {
+async function updatePickupFields(stop, changedFields, brokerageStatus, newImage, houseBillString) {
   const isBrokerageStatusOBNC = ['OPEN', 'BOOKED', 'NEWOMNI', 'COVERED'].includes(brokerageStatus);
   const isBrokerageStatusON = ['OPEN', 'NEWOMNI'].includes(brokerageStatus);
 
@@ -939,7 +933,7 @@ function updateONBCFields(stop, changedFields) {
 }
 
 async function updateONFields(stop, newImage, houseBillString) {
-  console.info('🚀 ~ file: index.js:939 ~ updateONFields ~ houseBillString:', houseBillString)
+  console.info('🚀 ~ file: index.js:939 ~ updateONFields ~ houseBillString:', houseBillString);
   const locationId = await getLocationId(
     newImage.ConsolStopName,
     newImage.ConsolStopAddress1,
