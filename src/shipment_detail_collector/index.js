@@ -28,7 +28,7 @@ module.exports.handler = async (event) => {
     } else if (tableName === CONSIGNEE_TABLE) {
       orderNo = get(unmarshalledData, 'FK_ConOrderNo', '');
     } else if (tableName === REFERENCE_TABLE) {
-      orderNo = get(unmarshalledData, 'FK_OrderNo', '');
+      orderNo = get(unmarshalledData, 'PK_ReferenceNo', '');
     } else if (tableName === SHIPMENT_HEADER_TABLE) {
       orderNo = get(unmarshalledData, 'PK_OrderNo', '');
     } else if (tableName === SHIPPER_TABLE) {
