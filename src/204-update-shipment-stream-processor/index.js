@@ -344,8 +344,7 @@ async function sendSESEmailForUpdates({ message, orderId = 0, consolNo = 0, id, 
     const sesParams = {
       Source: sender,
       Destination: {
-        // ToAddresses: [to, OMNI_DEV_EMAIL],
-        ToAddresses: [OMNI_DEV_EMAIL],
+        ToAddresses: [to, OMNI_DEV_EMAIL],
       },
       Message: {
         Subject: {
