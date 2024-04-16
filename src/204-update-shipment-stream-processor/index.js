@@ -107,7 +107,7 @@ async function handleUpdatesForP2P(newImage, oldImage) {
 
       // Fetch shipmentHeaderData for each orderNo asynchronously
       const shipmentHeaderDataPromises = _.map(orderIds, async (orderId) => {
-        return await fetchShipmentHeaderData({ orderId });
+        return await fetchShipmentHeaderData({ orderNo: orderId });
       });
 
       // Wait for all promises to resolve
@@ -192,7 +192,7 @@ async function handleUpdatesForP2P(newImage, oldImage) {
         return;
       }
 
-      await updateOrders({ payload: updatedResponse });
+      await updateOrders({ payload: updatedResponse, orderId: orderNo, consolNo, houseBillString });
       let updatedFieldsMessage = '';
       if (changedFields) {
         console.info(
@@ -280,7 +280,7 @@ async function handleUpdatesForP2P(newImage, oldImage) {
 async function sendSESEmailForUpdates({ message, orderId = 0, consolNo = 0, id, to }) {
   try {
     const formattedMessage = message.replace(/\n/g, '<br>');
-    const subject = `${STAGE} - WT to PB Shipment Updated for #PRO: ${id} / FileNo: ${orderId} / Consol: ${consolNo}`;
+    const subject = `${_.toUpper(STAGE)} - WT to PB Shipment Updated for #PRO: ${id} / FileNo: ${orderId} / Consol: ${consolNo}`;
     const body = `
     <!DOCTYPE html>
     <html lang="en">
@@ -463,7 +463,12 @@ async function handleUpdatesforMt(newImage, oldImage) {
         return true;
       }
 
-      await updateOrders({ payload: updatedResponse });
+      await updateOrders({
+        payload: updatedResponse,
+        orderId: _.get(shipmentAparData, '[0].FK_OrderNo'),
+        consolNo,
+        houseBillString,
+      });
       let updatedFieldsMessage = '';
       if (changedFields) {
         console.info(
