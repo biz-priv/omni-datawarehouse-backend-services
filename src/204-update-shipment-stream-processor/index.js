@@ -96,9 +96,21 @@ async function handleUpdatesForP2P(newImage, oldImage) {
     let shipmentHeaderData;
     if (consolNo > 0) {
       shipmentAparData = await shipmentAparDataForConsols({ consolNo });
-      shipmentHeaderData = await fetchShipmentHeaderData({
-        orderNo: _.get(shipmentAparData, '[0]FK_OrderNo'),
+
+      // Retrieve all FK_OrderNo values from shipmentAparData
+      const orderIds = _.map(shipmentAparData, 'FK_OrderNo');
+
+      // Fetch shipmentHeaderData for each orderNo asynchronously
+      const shipmentHeaderDataPromises = _.map(orderIds, async (orderId) => {
+        return await fetchShipmentHeaderData({ orderId });
       });
+
+      // Wait for all promises to resolve
+      shipmentHeaderData = await Promise.all(shipmentHeaderDataPromises);
+      console.info(
+        '🚀 ~ file: index.js:110 ~ handleUpdatesForP2P ~ shipmentHeaderData:',
+        shipmentHeaderData
+      );
       console.info(
         '🚀 ~ file: index.js:66 ~ handleUpdatesForP2P ~ shipmentAparData:',
         shipmentAparData
@@ -339,7 +351,22 @@ async function handleUpdatesforMt(newImage, oldImage) {
   const consolNo = _.get(newImage, 'FK_ConsolNo');
   try {
     const changedFields = findChangedFields(newImage, oldImage);
+    const shipmentAparData = await shipmentAparDataForConsols({ consolNo });
 
+    // Retrieve all FK_OrderNo values from shipmentAparData
+    const orderNos = _.map(shipmentAparData, 'FK_OrderNo');
+
+    // Fetch shipmentHeaderData for each orderNo asynchronously
+    const shipmentHeaderDataPromises = _.map(orderNos, async (orderNo) => {
+      return await fetchShipmentHeaderData({ orderNo });
+    });
+
+    // Wait for all promises to resolve
+    const shipmentHeaderData = await Promise.all(shipmentHeaderDataPromises);
+    console.info(
+      '🚀 ~ file: index.js:363 ~ handleUpdatesforMt ~ shipmentHeaderData:',
+      shipmentHeaderData
+    );
     console.info('🚀 ~ file: index.js:66 ~ event.Records.map ~ changedFields:', changedFields);
     // Query log table
     const logQueryResult = await queryConsolStatusTable(consolNo);
@@ -382,11 +409,16 @@ async function handleUpdatesforMt(newImage, oldImage) {
         '🚀 ~ file: index.js:81 ~ event.Records.map ~ stopsFromResponse:',
         stopsFromResponse
       );
+      const stationCode =
+        _.get(shipmentAparData, '[0].FK_ConsolStationId', '') ||
+        _.get(shipmentHeaderData, '[0].ControllingStation', '');
+      console.info('🚀 ~ file: payloads.js:44 ~ stationCode:', stationCode);
       const updatedStops = await updateStopsForMt(
         stopsFromResponse,
         changedFields,
         brokerageStatus,
-        newImage
+        newImage,
+        shipmentHeaderData
       );
       console.info('🚀 ~ file: index.js:82 ~ event.Records.map ~ updatedStops:', updatedStops);
 
@@ -401,6 +433,49 @@ async function handleUpdatesforMt(newImage, oldImage) {
       }
 
       await updateOrders({ payload: updatedResponse });
+      let updatedFieldsMessage = '';
+      if (changedFields) {
+        console.info(
+          '🚀 ~ file: index.js:112 ~ handleUpdatesForP2P ~ changedFields:',
+          changedFields
+        );
+
+        if (_.get(changedFields, 'ConsolStopTimeBegin')) {
+          updatedFieldsMessage += `Pick up time has been changed for the stop_sequence ${_.get(changedFields, 'orderSequence')}. New pickup time: <strong> ${_.get(changedFields, 'ConsolStopTimeBegin')} </strong>\n`;
+        }
+
+        if (_.get(changedFields, 'ConsolStopTimeEnd')) {
+          updatedFieldsMessage += `Delivery time has been changed for the stop_sequence ${_.get(changedFields, 'orderSequence')}. New delivery time: <strong>${_.get(changedFields, 'ConsolStopTimeEnd')} </strong>\n`;
+        }
+
+        if (
+          changedFields.ConsolStopName ||
+          changedFields.ConsolStopAddress1 ||
+          changedFields.ConsolStopAddress2 ||
+          changedFields.ConsolStopCity ||
+          changedFields.FK_ConsolStopState ||
+          changedFields.ConsolStopZip ||
+          changedFields.FK_ConsolStopCountry
+        ) {
+          updatedFieldsMessage += `Stop location has been changed for the stop_sequence ${_.get(changedFields, 'orderSequence')}. Changed Address: <strong> ${newImage.ConsolStopName}, ${newImage.ConsolStopAddress1}, ${newImage.ConsolStopCity}, ${newImage.FK_ConsolStopState} </strong>\n`;
+        }
+
+        console.info(
+          '🚀 ~ file: index.js:115 ~ handleUpdatesForP2P ~ updatedFieldsMessage:',
+          updatedFieldsMessage
+        );
+      }
+
+      await sendSESEmail({
+        message: updatedFieldsMessage,
+        consolNo,
+        id,
+        to: getEmail(stationCode),
+      });
+      console.info('live ops email:', getEmail(stationCode));
+      console.info(
+        '🚀 ~ file: index.js:119 ~ handleUpdatesForP2P ~ Sent Update Notification successfully'
+      );
       await updateRecordForMt({
         consolNo,
         UpdateCount: _.get(logQueryResult, '[0].UpdateCount', 0),
@@ -757,14 +832,27 @@ async function updateRecordForMt({ consolNo, UpdateCount, updatedResponse, oldRe
   }
 }
 
-async function updateStopsForMt(stopsFromResponse, changedFields, brokerageStatus, newImage) {
+async function updateStopsForMt(
+  stopsFromResponse,
+  changedFields,
+  brokerageStatus,
+  newImage,
+  shipmentHeaderData
+) {
   try {
     const { ConsolStopNumber } = newImage;
     const orderSequence = _.toNumber(ConsolStopNumber) + 1;
 
     for (const stop of stopsFromResponse) {
       if (stop.order_sequence === orderSequence) {
-        await updateChangedFieldsforMt(stop, changedFields, brokerageStatus, newImage);
+        changedFields.orderSequence = orderSequence;
+        await updateChangedFieldsforMt(
+          stop,
+          changedFields,
+          brokerageStatus,
+          newImage,
+          shipmentHeaderData
+        );
         break;
       }
     }
@@ -775,7 +863,13 @@ async function updateStopsForMt(stopsFromResponse, changedFields, brokerageStatu
   }
 }
 
-async function updateChangedFieldsforMt(stop, changedFields, brokerageStatus, newImage) {
+async function updateChangedFieldsforMt(
+  stop,
+  changedFields,
+  brokerageStatus,
+  newImage,
+  shipmentHeaderData
+) {
   const isBrokerageStatusOBNC = ['OPEN', 'BOOKED', 'NEWOMNI', 'COVERED'].includes(brokerageStatus);
   const isBrokerageStatusON = ['OPEN', 'NEWOMNI'].includes(brokerageStatus);
 
@@ -793,7 +887,7 @@ async function updateChangedFieldsforMt(stop, changedFields, brokerageStatus, ne
       changedFields.ConsolStopZip ||
       changedFields.FK_ConsolStopCountry
     ) {
-      await updateONFields(stop, newImage);
+      await updateONFields(stop, newImage, shipmentHeaderData);
     }
   }
 }
@@ -812,7 +906,8 @@ function updateONBCFields(stop, changedFields) {
   });
 }
 
-async function updateONFields(stop, newImage) {
+async function updateONFields(stop, newImage, shipmentHeaderData) {
+  console.info('houseBills:', _.join(_.map(shipmentHeaderData, 'Housebill')));
   const locationId = await getLocationId(
     newImage.ConsolStopName,
     newImage.ConsolStopAddress1,
@@ -835,6 +930,7 @@ async function updateONFields(stop, newImage) {
       },
       consolNo: newImage.FK_ConsolNo,
       country: newImage.FK_ConsolStopCountry,
+      houseBill: _.join(_.map(shipmentHeaderData, 'Housebill')),
     });
 
     stop.location_id = newLocation;
