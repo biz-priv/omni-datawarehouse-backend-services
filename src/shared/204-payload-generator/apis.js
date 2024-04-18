@@ -12,6 +12,7 @@ const {
   TRACKING_NOTES_API_URL,
   API_PASS,
   API_USER_ID,
+  GET_ORDERS_API_ENDPOINT,
 } = process.env;
 
 async function getLocationId(name, address1, address2, state) {
@@ -104,6 +105,30 @@ async function getLocationId(name, address1, address2, state) {
 
 function removePunctuation(str) {
   return str.replace(/[^\w\s]/g, '');
+}
+
+async function getOrders({ id }) {
+  const apiUrl = `${GET_ORDERS_API_ENDPOINT}/${id}`;
+
+  const headers = {
+    Accept: 'application/json',
+    Authorization: AUTH,
+  };
+
+  try {
+    const response = await axios.get(apiUrl, {
+      headers,
+    });
+
+    // Handle the response using lodash or other methods as needed
+    const responseData = _.get(response, 'data', {});
+    console.info('🙂 -> file: apis.js:30 -> getOrders -> responseData:', responseData);
+    // Return the location ID or perform additional processing as needed
+    return responseData;
+  } catch (error) {
+    console.error('🙂 -> file: apis.js:34 -> getOrders -> error:', error);
+    return false;
+  }
 }
 
 async function createLocation({ data, orderId, consolNo = 0, country, houseBill }) {
@@ -265,4 +290,5 @@ module.exports = {
   sendPayload,
   updateOrders,
   liveSendUpdate,
+  getOrders,
 };

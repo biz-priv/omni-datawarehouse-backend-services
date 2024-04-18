@@ -1,0 +1,13 @@
+ConfirmationCostSNSTopicSubscription:
+  Type: 'AWS::SNS::Subscription'
+  Properties:
+    Protocol: 'sqs'
+    TopicArn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/confirmation-cost/sns.arn~true}
+    Endpoint: !GetAtt 204UpdateTableStreamQueue.Arn
+
+ConsolStopHeaderSNSTopicSubscription:
+  Type: 'AWS::SNS::Subscription'
+  Properties:
+    Protocol: 'sqs'
+    TopicArn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-headers/sns.arn~true}
+    Endpoint: !GetAtt 204UpdateTableStreamQueue.Arn
