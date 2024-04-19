@@ -16,10 +16,9 @@ function:
       - 'src/204-update-shipment-stream-processor/**'
       - 'src/shared/constants/204_create_shipment.js'
       - 'src/shared/204-payload-generator/**'
-      - 'src/shared/timezoneInfo/**'
   environment:
-    #   STAGE: ${self:provider.stage}
-    #   LIVE_SNS_TOPIC_ARN: ${ssm:/omni-power-broker/${self:provider.stage}/error-notification/sns/arn}
+    STAGE: ${self:provider.stage}
+    LIVE_SNS_TOPIC_ARN: ${ssm:/omni-power-broker/${self:provider.stage}/error-notification/sns/arn}
     STATUS_TABLE: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.name}
     AUTH: ${ssm:/omni-204-create-shipment/${self:provider.stage}/apis.auth}
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
@@ -28,3 +27,9 @@ function:
     CREATE_LOC_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/create-location.url}
     CONSOL_STOP_HEADERS: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/consol-stop-headers/ddb.tableName~true}
     CONSOLE_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
+    OMNI_DEV_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-dev/email}
+    OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}
+    SHIPMENT_HEADER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.tableName~true}
+    SHIPMENT_APAR_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.tableName~true}
+    SHIPMENT_APAR_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.ConsolNoIndex}
+    USERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/users/ddb.tableName~true}

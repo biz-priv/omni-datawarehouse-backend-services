@@ -4,10 +4,22 @@ const AWS = require('aws-sdk');
 const _ = require('lodash');
 const moment = require('moment-timezone');
 
+const sns = new AWS.SNS();
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
-
+const ses = new AWS.SES();
 // Constants from environment variables
-const { STATUS_TABLE, CONSOL_STOP_HEADERS, CONSOLE_STATUS_TABLE } = process.env;
+const {
+  STATUS_TABLE,
+  CONSOL_STOP_HEADERS,
+  CONSOLE_STATUS_TABLE,
+  OMNI_NO_REPLY_EMAIL,
+  OMNI_DEV_EMAIL,
+  SHIPMENT_APAR_TABLE,
+  SHIPMENT_APAR_INDEX_KEY_NAME,
+  SHIPMENT_HEADER_TABLE,
+  LIVE_SNS_TOPIC_ARN,
+  STAGE,
+} = process.env;
 
 // Constants from shared files
 const { STATUSES } = require('../shared/constants/204_create_shipment');
@@ -17,9 +29,16 @@ const {
   getLocationId,
   createLocation,
 } = require('../shared/204-payload-generator/apis');
-const { getCstTime } = require('../shared/204-payload-generator/helper');
+const {
+  getCstTime,
+  sendSESEmail,
+  getUserEmail,
+} = require('../shared/204-payload-generator/helper');
 
-module.exports.handler = async (event) => {
+let functionName;
+module.exports.handler = async (event, context) => {
+  functionName = _.get(context, 'functionName');
+  console.info('🙂 -> file: index.js:8 -> functionName:', functionName);
   try {
     console.info('Event:', event);
 
@@ -50,12 +69,79 @@ async function processRecord(record) {
   }
 }
 
-async function handleUpdatesForP2P(newImage, oldImage) {
+async function publishSNSTopic({ message, stationCode, subject }) {
   try {
-    const orderNo = _.get(newImage, 'FK_OrderNo');
-    const changedFields = findChangedFields(newImage, oldImage);
-    console.info('🚀 ~ file: index.js:57 ~ handleUpdatesForP2P ~ changedFields:', changedFields)
+    const params = {
+      TopicArn: LIVE_SNS_TOPIC_ARN,
+      Subject: subject,
+      Message: `An error occurred in ${functionName}: \n${message}`,
+      MessageAttributes: {
+        stationCode: {
+          DataType: 'String',
+          StringValue: stationCode.toString(),
+        },
+      },
+    };
 
+    await sns.publish(params).promise();
+  } catch (error) {
+    console.error('Error publishing to SNS topic:', error);
+    throw error;
+  }
+}
+
+async function handleUpdatesForP2P(newImage, oldImage) {
+  const orderNo = _.get(newImage, 'FK_OrderNo');
+  const consolNo = _.get(newImage, 'ConsolNo');
+  let userEmail;
+  let houseBillString;
+  try {
+    const changedFields = findChangedFields(newImage, oldImage);
+    console.info('🚀 ~ file: index.js:57 ~ handleUpdatesForP2P ~ changedFields:', changedFields);
+    let shipmentAparData;
+    let shipmentHeaderData;
+    if (consolNo > 0) {
+      shipmentAparData = await shipmentAparDataForConsols({ consolNo });
+      // Retrieve all FK_OrderNo values from shipmentAparData
+      const orderIds = _.map(shipmentAparData, 'FK_OrderNo');
+
+      // Fetch shipmentHeaderData for each orderNo asynchronously
+      const shipmentHeaderDataPromises = _.map(orderIds, async (orderId) => {
+        return await fetchShipmentHeaderData({ orderNo: orderId });
+      });
+
+      // Wait for all promises to resolve
+      shipmentHeaderData = await Promise.all(shipmentHeaderDataPromises);
+
+      shipmentHeaderData = _.flatMap(shipmentHeaderData, _.identity);
+      houseBillString = _.join(_.map(shipmentHeaderData, 'Housebill'));
+      console.info(
+        '🚀 ~ file: index.js:116 ~ handleUpdatesForP2P ~ houseBillString:',
+        houseBillString
+      );
+      console.info(
+        '🚀 ~ file: index.js:110 ~ handleUpdatesForP2P ~ shipmentHeaderData:',
+        shipmentHeaderData
+      );
+      console.info(
+        '🚀 ~ file: index.js:66 ~ handleUpdatesForP2P ~ shipmentAparData:',
+        shipmentAparData
+      );
+    } else {
+      shipmentAparData = await shipmentAparDataForNC({ orderNo });
+      shipmentHeaderData = await fetchShipmentHeaderData({ orderNo });
+      houseBillString = _.get(shipmentHeaderData, '[0].Housebill');
+      console.info(
+        '🚀 ~ file: index.js:69 ~ handleUpdatesForP2P ~ shipmentAparData:',
+        shipmentAparData
+      );
+    }
+    userEmail = await getUserEmail({ userId: _.get(shipmentAparData, '[0].UpdatedBy') });
+
+    const stationCode =
+      _.get(shipmentAparData, '[0]FK_HandlingStation', '') ||
+      _.get(shipmentHeaderData, '[0]ControllingStation', '');
+    console.info('🚀 ~ file: index.js:93 ~ handleUpdatesForP2P ~ stationCode:', stationCode);
     // Query log table
     const logQueryResult = await queryOrderStatusTable(orderNo);
     const status = _.get(logQueryResult, '[0].Status', '');
@@ -63,7 +149,7 @@ async function handleUpdatesForP2P(newImage, oldImage) {
     if (!_.isEmpty(logQueryResult) && status === STATUSES.FAILED) {
       await updateOrderStatusTable({ orderNo });
     } else if (!_.isEmpty(logQueryResult) && status === STATUSES.SENT) {
-      const response = _.get(logQueryResult, '[0].Response', {});
+      const response = _.get(logQueryResult, '[0].Response', []);
       const id = _.get(response, 'id', '');
 
       if (_.isEmpty(id)) {
@@ -93,7 +179,8 @@ async function handleUpdatesForP2P(newImage, oldImage) {
         stopsFromResponse,
         changedFields,
         brokerageStatus,
-        newImage
+        newImage,
+        houseBillString
       );
 
       const updatedResponse = _.cloneDeep(orderResponse);
@@ -105,7 +192,63 @@ async function handleUpdatesForP2P(newImage, oldImage) {
         return;
       }
 
-      await updateOrders({ payload: updatedResponse });
+      await updateOrders({ payload: updatedResponse, orderId: orderNo, consolNo, houseBillString });
+      let updatedFieldsMessage = '';
+      if (changedFields) {
+        console.info(
+          '🚀 ~ file: index.js:112 ~ handleUpdatesForP2P ~ changedFields:',
+          changedFields
+        );
+
+        if (_.get(changedFields, 'PickupDateTime') || _.get(changedFields, 'PickupTimeRange')) {
+          updatedFieldsMessage += `Pick up time has been changed. New pickup time: <strong> ${_.get(newImage, 'PickupDateTime')} </strong>\n`;
+        }
+
+        if (_.get(changedFields, 'DeliveryDateTime') || _.get(changedFields, 'DeliveryTimeRange')) {
+          updatedFieldsMessage += `Delivery time has been changed. New delivery time: <strong>${_.get(newImage, 'DeliveryDateTime')} </strong>\n`;
+        }
+
+        if (
+          changedFields.ShipName ||
+          changedFields.ShipAddress1 ||
+          changedFields.ShipAddress2 ||
+          changedFields.ShipCity ||
+          changedFields.FK_ShipState ||
+          changedFields.ShipZip ||
+          changedFields.FK_ShipCountry
+        ) {
+          updatedFieldsMessage += `Pick up location has been changed. Changed Address: <strong> ${newImage.ShipName}, ${newImage.ShipAddress1}, ${newImage.ShipCity}, ${newImage.FK_ShipState} </strong>\n`;
+        }
+
+        if (
+          changedFields.ConName ||
+          changedFields.ConAddress1 ||
+          changedFields.ConAddress2 ||
+          changedFields.ConCity ||
+          changedFields.FK_ConState ||
+          changedFields.ConZip ||
+          changedFields.FK_ConCountry
+        ) {
+          updatedFieldsMessage += `Delivery location has been changed. Changed Address: <strong> ${newImage.ConName}, ${newImage.ConAddress1}, ${newImage.ConCity}, ${newImage.FK_ConState} </strong>\n`;
+        }
+
+        console.info(
+          '🚀 ~ file: index.js:115 ~ handleUpdatesForP2P ~ updatedFieldsMessage:',
+          updatedFieldsMessage
+        );
+      }
+
+      await sendSESEmailForUpdates({
+        message: updatedFieldsMessage,
+        orderId: orderNo,
+        consolNo,
+        id,
+        to: getEmail(stationCode),
+      });
+      console.info('live ops email:', getEmail(stationCode));
+      console.info(
+        '🚀 ~ file: index.js:119 ~ handleUpdatesForP2P ~ Sent Update Notification successfully'
+      );
       await updateRecord({
         orderNo,
         UpdateCount: _.get(logQueryResult, '[0].UpdateCount', 0),
@@ -115,15 +258,145 @@ async function handleUpdatesForP2P(newImage, oldImage) {
     }
   } catch (error) {
     console.error('Error handling order updates:', error);
+    await publishSNSTopic({
+      message: `${error.message}`,
+      stationCode: 'SUPPORT',
+      subject: `An error occured while upadating the Appt times / Address location ~ Consol: ${consolNo} / FK_OrderNo: ${orderNo}`,
+    });
+    await sendSESEmail({
+      functionName,
+      message: `An error occured while upadating the Appt times / Address location. \n${error.message}`,
+      userEmail,
+      subject: {
+        Data: `PB UPDATES ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / ConsolNo: ${consolNo} / FileNo: ${orderNo}`,
+        Charset: 'UTF-8',
+      },
+    });
+    throw error;
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function sendSESEmailForUpdates({ message, orderId = 0, consolNo = 0, id, to }) {
+  try {
+    const formattedMessage = message.replace(/\n/g, '<br>');
+    const subject = `${_.toUpper(STAGE)} - WT to PB Shipment Updated for #PRO: ${id} / FileNo: ${orderId} / Consol: ${consolNo}`;
+    const body = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>204 Updates Notification</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        background-color: #007bff;
+        color: #ffffff;
+        padding: 10px;
+        text-align: center;
+      }
+      .content {
+        padding: 20px;
+        background-color: #fafafa; /* Lighter background color */
+      }
+      .message {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f9f9f9;
+        border-left: 2px solid #007bff; /* Thinner blue line */
+        padding-left: 10px; /* Added padding to align the blue line with the text */
+      }
+    </style>
+    </head>
+    <body>
+    <div class="container">
+      <div class="header">
+        <h1 style="font-weight: normal;"> WT - PB Updates Notification</h1>
+      </div>
+      <div class="content">
+        <div>#PRO:<strong> ${id}</strong></div>
+        <div>FileNo:<strong> ${orderId}</strong></div>
+        <div>Consol:<strong> ${consolNo}</strong></div>
+        <div class="message">${formattedMessage}</div>
+      </div>
+    </div>
+    </body>
+    </html>    
+    `;
+
+    const charset = 'UTF-8';
+    const sender = OMNI_NO_REPLY_EMAIL;
+
+    const sesParams = {
+      Source: sender,
+      Destination: {
+        ToAddresses: [to, OMNI_DEV_EMAIL],
+      },
+      Message: {
+        Subject: {
+          Data: subject,
+          Charset: charset,
+        },
+        Body: {
+          Html: {
+            Data: body,
+            Charset: charset,
+          },
+        },
+      },
+    };
+
+    console.info('🚀 ~ sendSESEmailForUpdates ~ params:', sesParams);
+
+    await ses.sendEmail(sesParams).promise();
+  } catch (error) {
+    console.error('Error sending email with SES:', error);
     throw error;
   }
 }
 
 async function handleUpdatesforMt(newImage, oldImage) {
+  const consolNo = _.get(newImage, 'FK_ConsolNo');
+  let userEmail;
+  let houseBillString;
   try {
-    const consolNo = _.get(newImage, 'FK_ConsolNo');
     const changedFields = findChangedFields(newImage, oldImage);
+    const shipmentAparData = await shipmentAparDataForConsols({ consolNo });
+    userEmail = await getUserEmail({ userId: _.get(shipmentAparData, '[0].UpdatedBy') });
 
+    // Retrieve all FK_OrderNo values from shipmentAparData
+    const orderNos = _.map(shipmentAparData, 'FK_OrderNo');
+
+    // Fetch shipmentHeaderData for each orderNo asynchronously
+    const shipmentHeaderDataPromises = _.map(orderNos, async (orderNo) => {
+      return await fetchShipmentHeaderData({ orderNo });
+    });
+
+    // Wait for all promises to resolve
+    let shipmentHeaderData = await Promise.all(shipmentHeaderDataPromises);
+
+    shipmentHeaderData = _.flatMap(shipmentHeaderData, _.identity);
+
+    houseBillString = _.join(_.map(shipmentHeaderData, 'Housebill'));
+
+    console.info(
+      '🚀 ~ file: index.js:363 ~ handleUpdatesforMt ~ shipmentHeaderData:',
+      shipmentHeaderData
+    );
     console.info('🚀 ~ file: index.js:66 ~ event.Records.map ~ changedFields:', changedFields);
     // Query log table
     const logQueryResult = await queryConsolStatusTable(consolNo);
@@ -166,11 +439,16 @@ async function handleUpdatesforMt(newImage, oldImage) {
         '🚀 ~ file: index.js:81 ~ event.Records.map ~ stopsFromResponse:',
         stopsFromResponse
       );
+      const stationCode =
+        _.get(shipmentAparData, '[0].FK_ConsolStationId', '') ||
+        _.get(shipmentHeaderData, '[0].ControllingStation', '');
+      console.info('🚀 ~ file: payloads.js:44 ~ stationCode:', stationCode);
       const updatedStops = await updateStopsForMt(
         stopsFromResponse,
         changedFields,
         brokerageStatus,
-        newImage
+        newImage,
+        houseBillString
       );
       console.info('🚀 ~ file: index.js:82 ~ event.Records.map ~ updatedStops:', updatedStops);
 
@@ -184,7 +462,55 @@ async function handleUpdatesforMt(newImage, oldImage) {
         return true;
       }
 
-      await updateOrders({ payload: updatedResponse });
+      await updateOrders({
+        payload: updatedResponse,
+        orderId: _.get(shipmentAparData, '[0].FK_OrderNo'),
+        consolNo,
+        houseBillString,
+      });
+      let updatedFieldsMessage = '';
+      if (changedFields) {
+        console.info(
+          '🚀 ~ file: index.js:112 ~ handleUpdatesForP2P ~ changedFields:',
+          changedFields
+        );
+
+        if (_.get(changedFields, 'ConsolStopTimeBegin')) {
+          updatedFieldsMessage += `Pick up time has been changed for the <strong> stop_sequence ${_.get(changedFields, 'orderSequence')} </strong>. New pickup time: <strong> ${_.get(changedFields, 'ConsolStopTimeBegin')} </strong>\n`;
+        }
+
+        if (_.get(changedFields, 'ConsolStopTimeEnd')) {
+          updatedFieldsMessage += `Delivery time has been changed for the <strong> stop_sequence ${_.get(changedFields, 'orderSequence')} </strong>. New delivery time: <strong>${_.get(changedFields, 'ConsolStopTimeEnd')} </strong>\n`;
+        }
+
+        if (
+          changedFields.ConsolStopName ||
+          changedFields.ConsolStopAddress1 ||
+          changedFields.ConsolStopAddress2 ||
+          changedFields.ConsolStopCity ||
+          changedFields.FK_ConsolStopState ||
+          changedFields.ConsolStopZip ||
+          changedFields.FK_ConsolStopCountry
+        ) {
+          updatedFieldsMessage += `Stop location has been changed for the <strong> stop_sequence ${_.get(changedFields, 'orderSequence')} </strong>. Changed Address: <strong> ${newImage.ConsolStopName}, ${newImage.ConsolStopAddress1}, ${newImage.ConsolStopCity}, ${newImage.FK_ConsolStopState} </strong>\n`;
+        }
+
+        console.info(
+          '🚀 ~ file: index.js:115 ~ handleUpdatesForP2P ~ updatedFieldsMessage:',
+          updatedFieldsMessage
+        );
+      }
+
+      await sendSESEmailForUpdates({
+        message: updatedFieldsMessage,
+        consolNo,
+        id,
+        to: getEmail(stationCode),
+      });
+      console.info('live ops email:', getEmail(stationCode));
+      console.info(
+        '🚀 ~ file: index.js:119 ~ handleUpdatesForP2P ~ Sent Update Notification successfully'
+      );
       await updateRecordForMt({
         consolNo,
         UpdateCount: _.get(logQueryResult, '[0].UpdateCount', 0),
@@ -195,6 +521,20 @@ async function handleUpdatesforMt(newImage, oldImage) {
     return true;
   } catch (error) {
     console.error('Error handling consolidation updates:', error);
+    await publishSNSTopic({
+      message: `${error.message}`,
+      stationCode: 'SUPPORT',
+      subject: `PB UPDATES ERROR NOTIFICATION ~ ConsolNo: ${consolNo} `,
+    });
+    await sendSESEmail({
+      functionName,
+      message: `An error occured while upadating the Appt times / Address location. \n${error.message}`,
+      userEmail,
+      subject: {
+        Data: `PB UPDATES ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / ConsolNo: ${consolNo}`,
+        Charset: 'UTF-8',
+      },
+    });
     throw error;
   }
 }
@@ -305,24 +645,30 @@ async function updateRecord({ orderNo, UpdateCount, updatedResponse, oldResponse
   }
 }
 
-async function updateStopsFromChangedFields(stops, changedFields, brokerageStatus, newImage) {
+async function updateStopsFromChangedFields(
+  stops,
+  changedFields,
+  brokerageStatus,
+  newImage,
+  houseBillString
+) {
   for (const stop of stops) {
     // eslint-disable-next-line camelcase
     const { order_sequence } = stop;
 
     // eslint-disable-next-line camelcase
     if (order_sequence === 1) {
-      await updatePickupFields(stop, changedFields, brokerageStatus, newImage);
+      await updatePickupFields(stop, changedFields, brokerageStatus, newImage, houseBillString);
       // eslint-disable-next-line camelcase
     } else if (order_sequence === 2) {
-      await updateDeliveryFields(stop, changedFields, brokerageStatus, newImage);
+      await updateDeliveryFields(stop, changedFields, brokerageStatus, newImage, houseBillString);
     }
   }
 
   return stops;
 }
 
-async function updatePickupFields(stop, changedFields, brokerageStatus, newImage) {
+async function updatePickupFields(stop, changedFields, brokerageStatus, newImage, houseBillString) {
   const isBrokerageStatusOBNC = ['OPEN', 'BOOKED', 'NEWOMNI', 'COVERED'].includes(brokerageStatus);
   const isBrokerageStatusON = ['OPEN', 'NEWOMNI'].includes(brokerageStatus);
 
@@ -340,12 +686,18 @@ async function updatePickupFields(stop, changedFields, brokerageStatus, newImage
       changedFields.ShipZip ||
       changedFields.FK_ShipCountry
     ) {
-      await updateONPickupFields(stop, changedFields, newImage);
+      await updateONPickupFields(stop, changedFields, newImage, houseBillString);
     }
   }
 }
 
-async function updateDeliveryFields(stop, changedFields, brokerageStatus, newImage) {
+async function updateDeliveryFields(
+  stop,
+  changedFields,
+  brokerageStatus,
+  newImage,
+  houseBillString
+) {
   const isBrokerageStatusOBNC = ['OPEN', 'BOOKED', 'NEWOMNI', 'COVERED'].includes(brokerageStatus);
   const isBrokerageStatusON = ['OPEN', 'NEWOMNI'].includes(brokerageStatus);
 
@@ -363,7 +715,7 @@ async function updateDeliveryFields(stop, changedFields, brokerageStatus, newIma
       changedFields.ConZip ||
       changedFields.FK_ConCountry
     ) {
-      await updateONDeliveryFields(stop, newImage);
+      await updateONDeliveryFields(stop, newImage, houseBillString);
     }
   }
 }
@@ -382,7 +734,8 @@ function updateONBCPickupFields(stop, changedFields) {
   });
 }
 
-async function updateONPickupFields(stopData, newImage) {
+async function updateONPickupFields(stopData, newImage, houseBillString) {
+  console.info('🚀 ~ file: index.js:570 ~ updateONPickupFields ~ houseBills:', houseBillString);
   const locationId = await getLocationId(
     newImage.ShipName,
     newImage.ShipAddress1,
@@ -405,6 +758,8 @@ async function updateONPickupFields(stopData, newImage) {
       },
       orderId: newImage.FK_OrderNo,
       country: newImage.FK_ShipCountry,
+      consolNo: newImage.FK_ConsolNo,
+      houseBill: houseBillString,
     });
 
     stopData.location_id = newLocation;
@@ -438,7 +793,8 @@ function updateONBCDeliveryFields(stop, changedFields) {
   });
 }
 
-async function updateONDeliveryFields(stopData, newImage) {
+async function updateONDeliveryFields(stopData, newImage, houseBillString) {
+  console.info('🚀 ~ file: index.js:696 ~ updateONDeliveryFields ~ houseBills:', houseBillString);
   const locationId = await getLocationId(
     newImage.ConName,
     newImage.ConAddress1,
@@ -460,6 +816,8 @@ async function updateONDeliveryFields(stopData, newImage) {
       },
       orderId: newImage.FK_OrderNo,
       country: newImage.FK_ConCountry,
+      consolNo: newImage.FK_ConsolNo,
+      houseBill: houseBillString,
     });
 
     stopData.location_id = newLocation;
@@ -504,14 +862,27 @@ async function updateRecordForMt({ consolNo, UpdateCount, updatedResponse, oldRe
   }
 }
 
-async function updateStopsForMt(stopsFromResponse, changedFields, brokerageStatus, newImage) {
+async function updateStopsForMt(
+  stopsFromResponse,
+  changedFields,
+  brokerageStatus,
+  newImage,
+  houseBillString
+) {
   try {
     const { ConsolStopNumber } = newImage;
     const orderSequence = _.toNumber(ConsolStopNumber) + 1;
 
     for (const stop of stopsFromResponse) {
       if (stop.order_sequence === orderSequence) {
-        await updateChangedFieldsforMt(stop, changedFields, brokerageStatus, newImage);
+        changedFields.orderSequence = orderSequence;
+        await updateChangedFieldsforMt(
+          stop,
+          changedFields,
+          brokerageStatus,
+          newImage,
+          houseBillString
+        );
         break;
       }
     }
@@ -522,7 +893,13 @@ async function updateStopsForMt(stopsFromResponse, changedFields, brokerageStatu
   }
 }
 
-async function updateChangedFieldsforMt(stop, changedFields, brokerageStatus, newImage) {
+async function updateChangedFieldsforMt(
+  stop,
+  changedFields,
+  brokerageStatus,
+  newImage,
+  houseBillString
+) {
   const isBrokerageStatusOBNC = ['OPEN', 'BOOKED', 'NEWOMNI', 'COVERED'].includes(brokerageStatus);
   const isBrokerageStatusON = ['OPEN', 'NEWOMNI'].includes(brokerageStatus);
 
@@ -540,7 +917,7 @@ async function updateChangedFieldsforMt(stop, changedFields, brokerageStatus, ne
       changedFields.ConsolStopZip ||
       changedFields.FK_ConsolStopCountry
     ) {
-      await updateONFields(stop, newImage);
+      await updateONFields(stop, newImage, houseBillString);
     }
   }
 }
@@ -559,7 +936,8 @@ function updateONBCFields(stop, changedFields) {
   });
 }
 
-async function updateONFields(stop, newImage) {
+async function updateONFields(stop, newImage, houseBillString) {
+  console.info('🚀 ~ file: index.js:939 ~ updateONFields ~ houseBillString:', houseBillString);
   const locationId = await getLocationId(
     newImage.ConsolStopName,
     newImage.ConsolStopAddress1,
@@ -582,6 +960,7 @@ async function updateONFields(stop, newImage) {
       },
       consolNo: newImage.FK_ConsolNo,
       country: newImage.FK_ConsolStopCountry,
+      houseBill: houseBillString,
     });
 
     stop.location_id = newLocation;
@@ -610,7 +989,7 @@ async function updatetimeFields(changedFields, newImage) {
     if (changedFields.ConsolStopTimeBegin || _.get(changedFields, 'ConsolStopDate')) {
       const consolStopDate = _.get(newImage, 'ConsolStopDate');
       console.info('🚀 ~ file: index.js:611 ~ updatetimeFields ~ consolStopDate:', consolStopDate);
-      const consolStopTimeBegin = _.get(changedFields, 'ConsolStopTimeBegin');
+      const consolStopTimeBegin = _.get(newImage, 'ConsolStopTimeBegin');
       console.info(
         '🚀 ~ file: index.js:613 ~ updatetimeFields ~ consolStopTimeBegin:',
         consolStopTimeBegin
@@ -631,7 +1010,7 @@ async function updatetimeFields(changedFields, newImage) {
     if (changedFields.ConsolStopTimeEnd || _.get(changedFields, 'ConsolStopDate')) {
       const consolStopDate = _.get(newImage, 'ConsolStopDate');
       console.info('🚀 ~ file: index.js:633 ~ updatetimeFields ~ consolStopDate:', consolStopDate);
-      const consolStopTimeEnd = _.get(changedFields, 'ConsolStopTimeEnd');
+      const consolStopTimeEnd = _.get(newImage, 'ConsolStopTimeEnd');
       console.info(
         '🚀 ~ file: index.js:635 ~ updatetimeFields ~ consolStopTimeEnd:',
         consolStopTimeEnd
@@ -689,5 +1068,108 @@ async function updateConsolStatusTable({ consolNo }) {
   } catch (error) {
     console.error('🚀 ~ file: index.js:481 ~ updateConsolStatusTable ~ error:', error);
     throw error;
+  }
+}
+
+const stationEmailMapping = {
+  ACN: 'brokerageops4@omnilogistics.com',
+  LAX: 'brokerageops9@omnilogistics.com',
+  LGB: 'brokerageops9@omnilogistics.com',
+  IAH: 'brokerageops4@omnilogistics.com',
+  BNA: 'brokerageops4@omnilogistics.com',
+  AUS: 'brokerageops4@omnilogistics.com',
+  COE: 'brokerageops4@omnilogistics.com',
+  PHL: 'brokerageops9@omnilogistics.com',
+  ORD: 'brokerageops5@omnilogistics.com',
+  SAT: 'brokerageops5@omnilogistics.com',
+  BOS: 'brokerageops4@omnilogistics.com',
+  SLC: 'brokerageops5@omnilogistics.com',
+  ATL: 'brokerageops4@omnilogistics.com',
+  BRO: 'brokerageops4@omnilogistics.com',
+  CMH: 'brokerageops4@omnilogistics.com',
+  CVG: 'brokerageops4@omnilogistics.com',
+  DAL: 'brokerageops4@omnilogistics.com',
+  DTW: 'brokerageops4@omnilogistics.com',
+  EXP: 'brokerageops4@omnilogistics.com',
+  GSP: 'brokerageops4@omnilogistics.com',
+  LRD: 'brokerageops4@omnilogistics.com',
+  MKE: 'brokerageops4@omnilogistics.com',
+  MSP: 'brokerageops4@omnilogistics.com',
+  PHX: 'brokerageops4@omnilogistics.com',
+  TAN: 'brokerageops4@omnilogistics.com',
+  YYZ: 'brokerageops4@omnilogistics.com',
+  DFW: 'brokerageops4@omnilogistics.com',
+  IND: 'brokerageops4@omnilogistics.com',
+  ELP: 'brokerageops6@omnilogistics.com',
+  PIT: 'brokerageops5@omnilogistics.com',
+  MFE: 'brokerageops4@omnilogistics.com',
+  OLH: 'brokerageops5@omnilogistics.com',
+  OTR: 'brokerageops7@omnilogistics.com',
+  PDX: 'brokerageops4@omnilogistics.com',
+  SAN: 'brokerageops5@omnilogistics.com',
+  SFO: 'brokerageops5@omnilogistics.com',
+};
+
+function getEmail(stationCode) {
+  return stationEmailMapping[stationCode];
+}
+
+async function fetchShipmentHeaderData({ orderNo }) {
+  try {
+    const params = {
+      TableName: SHIPMENT_HEADER_TABLE,
+      KeyConditionExpression: 'PK_OrderNo = :orderNo',
+      ExpressionAttributeValues: {
+        ':orderNo': orderNo,
+      },
+    };
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
+    const data = await dynamoDb.query(params).promise();
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+    return _.get(data, 'Items', []);
+  } catch (err) {
+    console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
+    throw err;
+  }
+}
+
+async function shipmentAparDataForNC({ orderNo }) {
+  try {
+    const params = {
+      TableName: SHIPMENT_APAR_TABLE,
+      KeyConditionExpression: 'FK_OrderNo = :orderNo',
+      ExpressionAttributeValues: {
+        ':orderNo': orderNo,
+      },
+    };
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
+    const data = await dynamoDb.query(params).promise();
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+    return _.get(data, 'Items', []);
+  } catch (err) {
+    console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
+    throw err;
+  }
+}
+
+async function shipmentAparDataForConsols({ consolNo }) {
+  try {
+    const params = {
+      TableName: SHIPMENT_APAR_TABLE,
+      IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
+      KeyConditionExpression: 'ConsolNo = :ConsolNo',
+      FilterExpression: 'Consolidation = :consolidation',
+      ExpressionAttributeValues: {
+        ':ConsolNo': String(consolNo),
+        ':consolidation': 'N',
+      },
+    };
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
+    const data = await dynamoDb.query(params).promise();
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+    return _.get(data, 'Items', []);
+  } catch (err) {
+    console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
+    throw err;
   }
 }

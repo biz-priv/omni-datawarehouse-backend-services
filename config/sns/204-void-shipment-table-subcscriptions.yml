@@ -1,0 +1,13 @@
+ShipmentAparSNSTopicSubscription:
+  Type: 'AWS::SNS::Subscription'
+  Properties:
+    Protocol: 'sqs'
+    TopicArn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/sns.arn~true}
+    Endpoint: !GetAtt 204VoidShipmentQueue.Arn
+
+ShipmentHeaderSNSTopicSubscription:
+  Type: 'AWS::SNS::Subscription'
+  Properties:
+    Protocol: 'sqs'
+    TopicArn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/sns.arn~true}
+    Endpoint: !GetAtt 204VoidShipmentQueue.Arn
