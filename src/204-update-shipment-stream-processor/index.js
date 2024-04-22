@@ -276,7 +276,6 @@ async function handleUpdatesForP2P(newImage, oldImage) {
   }
 }
 
-// eslint-disable-next-line no-unused-vars
 async function sendSESEmailForUpdates({ message, orderId = 0, consolNo = 0, id, to }) {
   try {
     const formattedMessage = message.replace(/\n/g, '<br>');
@@ -556,22 +555,22 @@ async function updateTimeFieldforConsolAndNonConsole(changedFields) {
     _.get(changedFields, 'DeliveryDateTime') ||
     _.get(changedFields, 'DeliveryTimeRange')
   ) {
-    if (changedFields.PickupDateTime) {
+    if (changedFields.PickupDateTime && changedFields.PickupDateTime !== '1900-01-01 00:00:00.000') {
       changedFields.PickupDateTime = await getCstTime({
         datetime: _.get(changedFields, 'PickupDateTime'),
       });
     }
-    if (changedFields.PickupTimeRange) {
+    if (changedFields.PickupTimeRange && changedFields.PickupTimeRange !== '1900-01-01 00:00:00.000') {
       changedFields.PickupTimeRange = await getCstTime({
         datetime: _.get(changedFields, 'PickupTimeRange'),
       });
     }
-    if (changedFields.DeliveryDateTime) {
+    if (changedFields.DeliveryDateTime && changedFields.DeliveryDateTime !== '1900-01-01 00:00:00.000') {
       changedFields.DeliveryDateTime = await getCstTime({
         datetime: _.get(changedFields, 'DeliveryDateTime'),
       });
     }
-    if (changedFields.DeliveryTimeRange) {
+    if (changedFields.DeliveryTimeRange && changedFields.DeliveryTimeRange !== '1900-01-01 00:00:00.000') {
       changedFields.DeliveryTimeRange = await getCstTime({
         datetime: _.get(changedFields, 'DeliveryTimeRange'),
       });

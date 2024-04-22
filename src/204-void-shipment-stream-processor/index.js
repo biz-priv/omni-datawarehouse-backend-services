@@ -37,10 +37,12 @@ async function processRecord(record) {
       if (dynamoTableName === SHIPMENT_APAR_TABLE) {
         console.info('🚀 ~ file: index.js:38 ~ processRecord ~ dynamoTableName:', dynamoTableName)
         const fkVendorIdUpdated = oldImage.FK_VendorId === VENDOR && newImage.FK_VendorId !== VENDOR;
+        console.info('🚀 ~ file: index.js:40 ~ processRecord ~ fkVendorIdUpdated:', fkVendorIdUpdated)
         const fkVendorIdDeleted = oldImage.FK_VendorId === VENDOR && !newImage.FK_VendorId;
+        console.info('🚀 ~ file: index.js:42 ~ processRecord ~ fkVendorIdDeleted:', fkVendorIdDeleted)
   
         if (fkVendorIdUpdated || fkVendorIdDeleted) {
-          await processShipmentAparData({ orderId: newImage.FK_OrderNo, newImage });
+          await processShipmentAparData({ orderId: _.get(newImage, 'FK_OrderNo'), newImage });
         }
       } else if (dynamoTableName === SHIPMENT_HEADER_TABLE) {
         console.info('🚀 ~ file: index.js:45 ~ processRecord ~ dynamoTableName:', dynamoTableName)
@@ -112,20 +114,25 @@ async function queryConsolStatusTable(consolNo) {
 
 async function processShipmentAparData({ orderId, newImage }) {
   const consolNo = parseInt(_.get(newImage, 'ConsolNo', null), 10);
+  console.info('🚀 ~ file: index.js:117 ~ processShipmentAparData ~ consolNo:', consolNo)
   const serviceLevelId = _.get(newImage, 'FK_ServiceId');
+  console.info('🚀 ~ file: index.js:119 ~ processShipmentAparData ~ serviceLevelId:', serviceLevelId)
   const vendorId = _.get(newImage, 'FK_VendorId', '').toUpperCase();
+  console.info('🚀 ~ file: index.js:121 ~ processShipmentAparData ~ vendorId:', vendorId)
   const controlStation = _.get(newImage, 'FK_ConsolStationId');
+  console.info('🚀 ~ file: index.js:123 ~ processShipmentAparData ~ controlStation:', controlStation)
   const userId = _.get(newImage, 'UpdatedBy');
+  console.info('🚀 ~ file: index.js:125 ~ processShipmentAparData ~ userId:', userId)
 
   let userEmail;
   let stationCode;
   let type;
 
-  if (consolNo === 0 && ['HS', 'TL'].includes(serviceLevelId) && vendorId === VENDOR) {
+  if (consolNo === 0 && ['HS', 'TL'].includes(serviceLevelId)) {
     userEmail = await getUserEmail({ userId });
     stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
     type = TYPES.NON_CONSOLE;
-  } else if (consolNo > 0 && ['HS', 'TL'].includes(serviceLevelId) && vendorId === VENDOR) {
+  } else if (consolNo > 0 && ['HS', 'TL'].includes(serviceLevelId)) {
     userEmail = await getUserEmail({ userId });
     stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
     type = TYPES.CONSOLE;
