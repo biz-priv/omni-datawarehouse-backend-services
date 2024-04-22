@@ -765,7 +765,7 @@ function updateONBCPickupFields(stop, changedFields) {
   });
 }
 
-async function updateONPickupFields(stopData, newImage, houseBillString) {
+async function updateONPickupFields(stopData, changedFields, newImage, houseBillString) {
   console.info('🚀 ~ file: index.js:570 ~ updateONPickupFields ~ houseBills:', houseBillString);
   const locationId = await getLocationId(
     newImage.ShipName,
