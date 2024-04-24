@@ -98,6 +98,18 @@ async function handleUpdatesForP2P(newImage, oldImage) {
   try {
     const changedFields = findChangedFields(newImage, oldImage);
     console.info('🚀 ~ file: index.js:57 ~ handleUpdatesForP2P ~ changedFields:', changedFields);
+    const keysToCheck = [
+      'DeliveryDateTime',
+      'PickupTimeRange',
+      'PickupDateTime',
+      'DeliveryTimeRange',
+    ];
+    for (const key of keysToCheck) {
+      if (changedFields[key] === '1900-01-01 00:00:00.000') {
+        console.info('skipping the process as it has the invalid time');
+        return;
+      }
+    }
     let shipmentAparData;
     let shipmentHeaderData;
     if (consolNo > 0) {
@@ -374,8 +386,16 @@ async function handleUpdatesforMt(newImage, oldImage) {
   let houseBillString;
   try {
     const changedFields = findChangedFields(newImage, oldImage);
+    const keysToCheck = ['ConsolStopDate'];
+    for (const key of keysToCheck) {
+      if (changedFields[key] === '1900-01-01 00:00:00.000') {
+        console.info('skipping the process as it has the invalid time');
+        return 'skipping the process as it has the invalid time';
+      }
+    }
     const shipmentAparData = await shipmentAparDataForConsols({ consolNo });
     userEmail = await getUserEmail({ userId: _.get(shipmentAparData, '[0].UpdatedBy') });
+    console.info('🚀 ~ file: index.js:398 ~ handleUpdatesforMt ~ userEmail:', userEmail)
 
     // Retrieve all FK_OrderNo values from shipmentAparData
     const orderNos = _.map(shipmentAparData, 'FK_OrderNo');
@@ -555,22 +575,34 @@ async function updateTimeFieldforConsolAndNonConsole(changedFields) {
     _.get(changedFields, 'DeliveryDateTime') ||
     _.get(changedFields, 'DeliveryTimeRange')
   ) {
-    if (changedFields.PickupDateTime && changedFields.PickupDateTime !== '1900-01-01 00:00:00.000') {
+    if (
+      changedFields.PickupDateTime &&
+      changedFields.PickupDateTime !== '1900-01-01 00:00:00.000'
+    ) {
       changedFields.PickupDateTime = await getCstTime({
         datetime: _.get(changedFields, 'PickupDateTime'),
       });
     }
-    if (changedFields.PickupTimeRange && changedFields.PickupTimeRange !== '1900-01-01 00:00:00.000') {
+    if (
+      changedFields.PickupTimeRange &&
+      changedFields.PickupTimeRange !== '1900-01-01 00:00:00.000'
+    ) {
       changedFields.PickupTimeRange = await getCstTime({
         datetime: _.get(changedFields, 'PickupTimeRange'),
       });
     }
-    if (changedFields.DeliveryDateTime && changedFields.DeliveryDateTime !== '1900-01-01 00:00:00.000') {
+    if (
+      changedFields.DeliveryDateTime &&
+      changedFields.DeliveryDateTime !== '1900-01-01 00:00:00.000'
+    ) {
       changedFields.DeliveryDateTime = await getCstTime({
         datetime: _.get(changedFields, 'DeliveryDateTime'),
       });
     }
-    if (changedFields.DeliveryTimeRange && changedFields.DeliveryTimeRange !== '1900-01-01 00:00:00.000') {
+    if (
+      changedFields.DeliveryTimeRange &&
+      changedFields.DeliveryTimeRange !== '1900-01-01 00:00:00.000'
+    ) {
       changedFields.DeliveryTimeRange = await getCstTime({
         datetime: _.get(changedFields, 'DeliveryTimeRange'),
       });
@@ -733,7 +765,7 @@ function updateONBCPickupFields(stop, changedFields) {
   });
 }
 
-async function updateONPickupFields(stopData, newImage, houseBillString) {
+async function updateONPickupFields(stopData, changedFields, newImage, houseBillString) {
   console.info('🚀 ~ file: index.js:570 ~ updateONPickupFields ~ houseBills:', houseBillString);
   const locationId = await getLocationId(
     newImage.ShipName,
