@@ -276,7 +276,6 @@ async function handleUpdatesForP2P(newImage, oldImage) {
   }
 }
 
-// eslint-disable-next-line no-unused-vars
 async function sendSESEmailForUpdates({ message, orderId = 0, consolNo = 0, id, to }) {
   try {
     const formattedMessage = message.replace(/\n/g, '<br>');
@@ -378,6 +377,7 @@ async function handleUpdatesforMt(newImage, oldImage) {
     const changedFields = findChangedFields(newImage, oldImage);
     const shipmentAparData = await shipmentAparDataForConsols({ consolNo });
     userEmail = await getUserEmail({ userId: _.get(shipmentAparData, '[0].UpdatedBy') });
+    console.info('🚀 ~ file: index.js:398 ~ handleUpdatesforMt ~ userEmail:', userEmail)
 
     // Retrieve all FK_OrderNo values from shipmentAparData
     const orderNos = _.map(shipmentAparData, 'FK_OrderNo');
