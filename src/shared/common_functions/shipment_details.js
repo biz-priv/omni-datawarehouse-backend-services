@@ -282,7 +282,7 @@ async function MappingDataToInsert(data, timeZoneTable) {
   const milestonePromises = data[process.env.SHIPMENT_MILESTONE_TABLE]
   .filter(async milestone => {
     const description = await getDescription(get(milestone, 'FK_OrderStatusId', ""), get(milestone, 'FK_ServiceLevelId', ""));
-    return description; // Filter out milestones where getDescription returns false
+    return description;
   })
   .filter(milestone => {
     const statusCode = get(milestone, 'statusCode', "");
@@ -290,7 +290,7 @@ async function MappingDataToInsert(data, timeZoneTable) {
   })
   .map(async milestone => {
     const statusCode = get(milestone, 'statusCode', "");
-    const statusDescription = statusCodes[statusCode] || ""; // Get status description from statusCodes constant
+    const statusDescription = statusCodes[statusCode] || "";
     return {
       statusCode: get(milestone, 'FK_OrderStatusId', ""),
       statusDescription: statusDescription,
