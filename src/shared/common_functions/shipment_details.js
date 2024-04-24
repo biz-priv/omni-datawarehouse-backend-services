@@ -182,7 +182,7 @@ async function getDescription(orderStatusId, serviceLevelId) {
       return false;
     }
     else {
-      return true
+      return true;
     }
   } catch (error) {
     console.error("Query Error:", error);
@@ -258,9 +258,20 @@ async function getDynamodbData(value) {
   }
 }
 
+async function checkIfMilestonesPublic(milestones) {
+  const filteredMilestoned = [];
+  await Promise.all(milestones.map(async milestone => {
+    const description = await getDescription(get(milestone, 'FK_OrderStatusId', ""), get(milestone, 'FK_ServiceLevelId', ""));
+    if (description) {
+      filteredMilestoned.push(milestone);
+    }
+  }));
+  return filteredMilestoned;
+}
+
 async function MappingDataToInsert(data, timeZoneTable) {
   const shipmentMilestoneData = data[process.env.SHIPMENT_MILESTONE_TABLE];
-  let highestEventDateTimeObject= {};
+  let highestEventDateTimeObject = {};
   if (shipmentMilestoneData.length > 0) {
     highestEventDateTimeObject = shipmentMilestoneData[0];
 
@@ -273,31 +284,27 @@ async function MappingDataToInsert(data, timeZoneTable) {
       }
     }
   } else {
-    console.log(`No data found in '${process.env.SHIPMENT_MILESTONE_TABLE} array.`);
+    console.info(`No data found in '${process.env.SHIPMENT_MILESTONE_TABLE} array.`);
   }
   const formattedEventDate = get(highestEventDateTimeObject, 'EventDateTime', '') !== '' ? moment(get(highestEventDateTimeObject, 'EventDateTime', '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
   const formattedEventYear = get(highestEventDateTimeObject, 'EventDateTime', '') !== '' ? moment(get(highestEventDateTimeObject, 'EventDateTime', '1900')).format("YYYY") : '1900';
   const formattedOrderDate = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
   const formattedOrderYear = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY") : '1900';
-  const milestonePromises = data[process.env.SHIPMENT_MILESTONE_TABLE]
-  .filter(async milestone => {
-    const description = await getDescription(get(milestone, 'FK_OrderStatusId', ""), get(milestone, 'FK_ServiceLevelId', ""));
-    return description;
-  })
-  .filter(milestone => {
-    const statusCode = get(milestone, 'statusCode', "");
-    return statusCodes.hasOwnProperty(statusCode); // Filter out milestones where statusCode is not in statusCodes constant
-  })
-  .map(async milestone => {
-    const statusCode = get(milestone, 'statusCode', "");
-    const statusDescription = statusCodes[statusCode] || "";
+  let milestonePromises = await checkIfMilestonesPublic(data[process.env.SHIPMENT_MILESTONE_TABLE]);
+  milestonePromises = milestonePromises.filter(milestone => {
+    const statusCode = get(milestone, 'FK_OrderStatusId', "");
+    return Object.keys(statusCodes).includes(statusCode);
+  });
+  milestonePromises = milestonePromises.map(async milestone => {
+    const statusCode = get(milestone, 'FK_OrderStatusId', "");
+    const statusDescription = get(statusCodes, statusCode, "");
     return {
       statusCode: get(milestone, 'FK_OrderStatusId', ""),
       statusDescription: statusDescription,
       statusTime: await getTime(get(milestone, 'EventDateTime', ""), get(milestone, 'EventTimeZone', ""), timeZoneTable)
     };
   });
-const allMilestone = await Promise.all(milestonePromises);
+  const allMilestone = await Promise.all(milestonePromises);
 
   const referencePromises = data[process.env.REFERENCE_TABLE].map(async reference => {
     return {
@@ -356,19 +363,6 @@ const allMilestone = await Promise.all(milestonePromises);
     "billNo": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].BillNo`, ""),
     "InsertedTimeStamp": momentTZ.tz("America/Chicago").format("YYYY:MM:DD HH:mm:ss").toString(),
   };
-  // const ignoreFields = ['masterbill', 'pickupTime', 'estimatedDepartureTime', 'estimatedArrivalTime', 'scheduledDeliveryTime', 'deliveryTime', 'podName'];
-
-  // const values = Object.entries(payload).map(([key, value]) => {
-  //   if (ignoreFields.includes(key)) {
-  //     return true;
-  //   }
-  //   return value;
-  // });
-
-  // const hasNullOrEmptyValue = values.some(value => value === null || value === '');
-
-  // const status = hasNullOrEmptyValue ? 'Pending' : 'Ready';
-  // payload.status = status;
   return payload;
 }
 
