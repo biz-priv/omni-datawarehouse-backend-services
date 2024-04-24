@@ -71,7 +71,7 @@ package:
     individually: true
 functions:
     #  lambda's responsible for inserting values from streams to shipment-header table
-    shipment-header-stream-to-dynamoDB: ${file(config/functions/shipment-header-stream-to-dynamoDB.yml):function}
+    # shipment-header-stream-to-dynamoDB: ${file(config/functions/shipment-header-stream-to-dynamoDB.yml):function}
     consignee-stream-to-dynamoDB: ${file(config/functions/consignee-stream-to-dynamoDB.yml):function}
     references-stream-to-dynamoDB: ${file(config/functions/references-stream-to-dynamoDB.yml):function}
     shipment-desc-stream-to-dynamoDB: ${file(config/functions/shipment-desc-stream-to-dynamoDB.yml):function}
