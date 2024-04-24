@@ -1,9 +1,10 @@
 const AWS = require("aws-sdk");
 const moment = require('moment');
 const { get } = require('lodash');
+const momentTZ = require("moment-timezone");
 const ddb = new AWS.DynamoDB.DocumentClient();
 
-const { tableValues, weightDimensionValue, INDEX_VALUES, customerTypeValue } = require("../constants/shipment_details");
+const { tableValues, weightDimensionValue, INDEX_VALUES, customerTypeValue, statusCodes } = require("../constants/shipment_details");
 
 async function refParty(customerType) {
   try {
@@ -178,10 +179,10 @@ async function getDescription(orderStatusId, serviceLevelId) {
     const milestoneTableResult = await ddb.query(milestoneTableParams).promise();
     if (milestoneTableResult.Items.length === 0) {
       console.info(`No Description for the FK_OrderStatusId ${orderStatusId} and FK_ServiceLevelId ${serviceLevelId}`);
-      return "";
+      return false;
     }
     else {
-      return get(milestoneTableResult.Items, '[0].Description', "");
+      return true
     }
   } catch (error) {
     console.error("Query Error:", error);
@@ -278,14 +279,25 @@ async function MappingDataToInsert(data, timeZoneTable) {
   const formattedEventYear = get(highestEventDateTimeObject, 'EventDateTime', '') !== '' ? moment(get(highestEventDateTimeObject, 'EventDateTime', '1900')).format("YYYY") : '1900';
   const formattedOrderDate = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
   const formattedOrderYear = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY") : '1900';
-  const milestonePromises = data[process.env.SHIPMENT_MILESTONE_TABLE].map(async milestone => {
+  const milestonePromises = data[process.env.SHIPMENT_MILESTONE_TABLE]
+  .filter(async milestone => {
+    const description = await getDescription(get(milestone, 'FK_OrderStatusId', ""), get(milestone, 'FK_ServiceLevelId', ""));
+    return description; // Filter out milestones where getDescription returns false
+  })
+  .filter(milestone => {
+    const statusCode = get(milestone, 'statusCode', "");
+    return statusCodes.hasOwnProperty(statusCode); // Filter out milestones where statusCode is not in statusCodes constant
+  })
+  .map(async milestone => {
+    const statusCode = get(milestone, 'statusCode', "");
+    const statusDescription = statusCodes[statusCode] || ""; // Get status description from statusCodes constant
     return {
       statusCode: get(milestone, 'FK_OrderStatusId', ""),
-      statusDescription: await getDescription(get(milestone, 'FK_OrderStatusId', ""), get(milestone, 'FK_ServiceLevelId', "")),
+      statusDescription: statusDescription,
       statusTime: await getTime(get(milestone, 'EventDateTime', ""), get(milestone, 'EventTimeZone', ""), timeZoneTable)
     };
   });
-  const allMilestone = await Promise.all(milestonePromises);
+const allMilestone = await Promise.all(milestonePromises);
 
   const referencePromises = data[process.env.REFERENCE_TABLE].map(async reference => {
     return {
@@ -341,6 +353,8 @@ async function MappingDataToInsert(data, timeZoneTable) {
     "OrderDateTime": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00 00:00:00.000'),
     "OrderDate": formattedOrderDate,
     "OrderYear": formattedOrderYear,
+    "billNo": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].BillNo`, ""),
+    "InsertedTimeStamp": momentTZ.tz("America/Chicago").format("YYYY:MM:DD HH:mm:ss").toString(),
   };
   // const ignoreFields = ['masterbill', 'pickupTime', 'estimatedDepartureTime', 'estimatedArrivalTime', 'scheduledDeliveryTime', 'deliveryTime', 'podName'];
 
@@ -377,7 +391,7 @@ async function upsertItem(tableName, item) {
         Key: {
           HouseBillNumber: houseBillNumber,
         },
-        UpdateExpression: 'SET #fileNumber = :fileNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear',
+        UpdateExpression: 'SET #fileNumber = :fileNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear, #billNo = :billNo, #InsertedTimeStamp = :InsertedTimeStamp',
         ExpressionAttributeNames: {
           '#fileNumber': 'fileNumber',
           '#masterbill': 'masterbill',
@@ -408,6 +422,8 @@ async function upsertItem(tableName, item) {
           '#OrderDateTime': 'OrderDateTime',
           '#OrderDate': 'OrderDate',
           '#OrderYear': 'OrderYear',
+          '#billNo': 'billNo',
+          '#InsertedTimeStamp': 'InsertedTimeStamp'
         },
         ExpressionAttributeValues: {
           ':fileNumber': item.fileNumber,
@@ -439,6 +455,8 @@ async function upsertItem(tableName, item) {
           ':OrderDateTime': item.OrderDateTime,
           ':OrderDate': item.OrderDate,
           ':OrderYear': item.OrderYear,
+          ':billNo': item.billNo,
+          ':InsertedTimeStamp': item.InsertedTimeStamp
         },
       };
       console.info("Updated");
