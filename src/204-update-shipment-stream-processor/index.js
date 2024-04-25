@@ -105,7 +105,7 @@ async function handleUpdatesForP2P(newImage, oldImage) {
       'DeliveryTimeRange',
     ];
     for (const key of keysToCheck) {
-      if (changedFields[key] === '1900-01-01 00:00:00.000') {
+      if (_.includes(changedFields[key], '1900-01-01')) {
         console.info('skipping the process as it has the invalid time');
         return;
       }
@@ -389,7 +389,7 @@ async function handleUpdatesforMt(newImage, oldImage) {
     const changedFields = findChangedFields(newImage, oldImage);
     const keysToCheck = ['ConsolStopDate'];
     for (const key of keysToCheck) {
-      if (changedFields[key] === '1900-01-01 00:00:00.000') {
+      if (_.includes(changedFields[key], '1900-01-01')) {
         console.info('skipping the process as it has the invalid time');
         return 'skipping the process as it has the invalid time';
       }
