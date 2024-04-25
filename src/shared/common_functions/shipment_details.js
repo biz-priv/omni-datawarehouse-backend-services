@@ -316,7 +316,7 @@ async function MappingDataToInsert(data, timeZoneTable) {
 
   const allReference = await Promise.all(referencePromises);
 
-  const allCustomerIds = data['omni-dw-customer-entitlement-dev'].map(milestone => milestone.CustomerID).join(',');
+  const allCustomerIds = data[process.env.CUSTOMER_ENTITLEMENT_TABLE].map(milestone => milestone.CustomerID).join(',');
 
   const payload = {
     "fileNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, ""),
