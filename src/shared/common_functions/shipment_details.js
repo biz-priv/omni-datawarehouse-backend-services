@@ -315,6 +315,9 @@ async function MappingDataToInsert(data, timeZoneTable) {
   });
 
   const allReference = await Promise.all(referencePromises);
+
+  const allCustomerIds = data['omni-dw-customer-entitlement-dev'].map(milestone => milestone.CustomerID).join(',');
+
   const payload = {
     "fileNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, ""),
     "HouseBillNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, ""),
@@ -362,6 +365,7 @@ async function MappingDataToInsert(data, timeZoneTable) {
     "OrderYear": formattedOrderYear,
     "billNo": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].BillNo`, ""),
     "InsertedTimeStamp": momentTZ.tz("America/Chicago").format("YYYY:MM:DD HH:mm:ss").toString(),
+    "customerIds": allCustomerIds,
   };
   return payload;
 }
@@ -385,7 +389,7 @@ async function upsertItem(tableName, item) {
         Key: {
           HouseBillNumber: houseBillNumber,
         },
-        UpdateExpression: 'SET #fileNumber = :fileNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear, #billNo = :billNo, #InsertedTimeStamp = :InsertedTimeStamp',
+        UpdateExpression: 'SET #fileNumber = :fileNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear, #billNo = :billNo, #InsertedTimeStamp = :InsertedTimeStamp, #customerIds = :customerIds',
         ExpressionAttributeNames: {
           '#fileNumber': 'fileNumber',
           '#masterbill': 'masterbill',
@@ -417,7 +421,8 @@ async function upsertItem(tableName, item) {
           '#OrderDate': 'OrderDate',
           '#OrderYear': 'OrderYear',
           '#billNo': 'billNo',
-          '#InsertedTimeStamp': 'InsertedTimeStamp'
+          '#InsertedTimeStamp': 'InsertedTimeStamp',
+          '#customerIds': 'customerIds'
         },
         ExpressionAttributeValues: {
           ':fileNumber': item.fileNumber,
@@ -450,7 +455,8 @@ async function upsertItem(tableName, item) {
           ':OrderDate': item.OrderDate,
           ':OrderYear': item.OrderYear,
           ':billNo': item.billNo,
-          ':InsertedTimeStamp': item.InsertedTimeStamp
+          ':InsertedTimeStamp': item.InsertedTimeStamp,
+          ':customerIds': item.customerIds
         },
       };
       console.info("Updated");
