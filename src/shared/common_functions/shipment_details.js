@@ -160,6 +160,9 @@ async function getShipmentDate(dateTime) {
 }
 
 async function getDescription(orderStatusId, serviceLevelId) {
+  if (!orderStatusId || !serviceLevelId) {
+    return false;
+  }
   const milestoneTableParams = {
     TableName: process.env.MILESTONE_TABLE,
     IndexName: "FK_OrderStatusId-FK_ServiceLevelId",
@@ -290,21 +293,26 @@ async function MappingDataToInsert(data, timeZoneTable) {
   const formattedEventYear = get(highestEventDateTimeObject, 'EventDateTime', '') !== '' ? moment(get(highestEventDateTimeObject, 'EventDateTime', '1900')).format("YYYY") : '1900';
   const formattedOrderDate = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
   const formattedOrderYear = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY") : '1900';
-  let milestonePromises = await checkIfMilestonesPublic(data[process.env.SHIPMENT_MILESTONE_TABLE]);
-  milestonePromises = milestonePromises.filter(milestone => {
-    const statusCode = get(milestone, 'FK_OrderStatusId', "");
-    return Object.keys(statusCodes).includes(statusCode);
-  });
-  milestonePromises = milestonePromises.map(async milestone => {
-    const statusCode = get(milestone, 'FK_OrderStatusId', "");
-    const statusDescription = get(statusCodes, statusCode, "");
-    return {
-      statusCode: get(milestone, 'FK_OrderStatusId', ""),
-      statusDescription: statusDescription,
-      statusTime: await getTime(get(milestone, 'EventDateTime', ""), get(milestone, 'EventTimeZone', ""), timeZoneTable)
-    };
-  });
-  const allMilestone = await Promise.all(milestonePromises);
+  if (data[process.env.SHIPMENT_MILESTONE_TABLE]) {
+    let milestonePromises = await checkIfMilestonesPublic(data[process.env.SHIPMENT_MILESTONE_TABLE]);
+    milestonePromises = milestonePromises.filter(milestone => {
+      const statusCode = get(milestone, 'FK_OrderStatusId', "");
+      return Object.keys(statusCodes).includes(statusCode);
+    });
+    milestonePromises = milestonePromises.map(async milestone => {
+      const statusCode = get(milestone, 'FK_OrderStatusId', "");
+      const statusDescription = get(statusCodes, statusCode, "");
+      return {
+        statusCode: get(milestone, 'FK_OrderStatusId', ""),
+        statusDescription: statusDescription,
+        statusTime: await getTime(get(milestone, 'EventDateTime', ""), get(milestone, 'EventTimeZone', ""), timeZoneTable)
+      };
+    });
+    const allMilestone = await Promise.all(milestonePromises);
+  }
+  else{
+    console.info(`No milestones found in '${process.env.SHIPMENT_MILESTONE_TABLE} array.`);
+  }
 
   const referencePromises = data[process.env.REFERENCE_TABLE].map(async reference => {
     return {
