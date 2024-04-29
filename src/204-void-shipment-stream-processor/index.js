@@ -23,60 +23,71 @@ module.exports.handler = async (event) => {
 };
 
 async function processRecord(record) {
-    try {
-      const body = JSON.parse(_.get(record, 'body', ''));
-      const message = JSON.parse(_.get(body, 'Message', ''));
-      const newImage = AWS.DynamoDB.Converter.unmarshall(_.get(message, 'NewImage', {}));
-      const oldImage = AWS.DynamoDB.Converter.unmarshall(_.get(message, 'OldImage', {}));
-      const dynamoTableName = _.get(message, 'dynamoTableName', '');
-  
-      console.info('🚀 ~ New Image:', newImage);
-      console.info('🚀 ~ Old Image:', oldImage);
-      console.info('🚀 ~ Dynamo Table Name:', dynamoTableName);
-  
-      if (dynamoTableName === SHIPMENT_APAR_TABLE) {
-        console.info('🚀 ~ file: index.js:38 ~ processRecord ~ dynamoTableName:', dynamoTableName)
-        const fkVendorIdUpdated = oldImage.FK_VendorId === VENDOR && newImage.FK_VendorId !== VENDOR;
-        console.info('🚀 ~ file: index.js:40 ~ processRecord ~ fkVendorIdUpdated:', fkVendorIdUpdated)
-        const fkVendorIdDeleted = oldImage.FK_VendorId === VENDOR && !newImage.FK_VendorId;
-        console.info('🚀 ~ file: index.js:42 ~ processRecord ~ fkVendorIdDeleted:', fkVendorIdDeleted)
-  
-        if (fkVendorIdUpdated || fkVendorIdDeleted) {
-          await processShipmentAparData({ orderId: _.get(newImage, 'FK_OrderNo'), newImage });
-        }
-      } else if (dynamoTableName === SHIPMENT_HEADER_TABLE) {
-        console.info('🚀 ~ file: index.js:45 ~ processRecord ~ dynamoTableName:', dynamoTableName)
-        const orderNo = newImage.PK_OrderNo;
-        console.info('🚀 ~ file: index.js:46 ~ processRecord ~ orderId:', orderNo)
-        const shipmentAparDataArray = await fetchOrderNos(orderNo);
-        console.info('🚀 ~ file: index.js:48 ~ processRecord ~ shipmentAparDataArray:', shipmentAparDataArray)
-  
-        if (shipmentAparDataArray.length > 0) {
-            // Grouping shipmentAparDataArray by FK_OrderNo
-            const orderGroups = _.groupBy(shipmentAparDataArray, 'FK_OrderNo');
-            console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderGroups:', orderGroups)
-          
-            // Processing each group
+  try {
+    const body = JSON.parse(_.get(record, 'body', ''));
+    const message = JSON.parse(_.get(body, 'Message', ''));
+    const newImage = AWS.DynamoDB.Converter.unmarshall(_.get(message, 'NewImage', {}));
+    const oldImage = AWS.DynamoDB.Converter.unmarshall(_.get(message, 'OldImage', {}));
+    const dynamoTableName = _.get(message, 'dynamoTableName', '');
+
+    console.info('🚀 ~ New Image:', newImage);
+    console.info('🚀 ~ Old Image:', oldImage);
+    console.info('🚀 ~ Dynamo Table Name:', dynamoTableName);
+
+    if (dynamoTableName === SHIPMENT_APAR_TABLE) {
+      console.info('🚀 ~ file: index.js:38 ~ processRecord ~ dynamoTableName:', dynamoTableName);
+      const fkVendorIdUpdated = oldImage.FK_VendorId === VENDOR && newImage.FK_VendorId !== VENDOR;
+      console.info(
+        '🚀 ~ file: index.js:40 ~ processRecord ~ fkVendorIdUpdated:',
+        fkVendorIdUpdated
+      );
+      const fkVendorIdDeleted = oldImage.FK_VendorId === VENDOR && !newImage.FK_VendorId;
+      console.info(
+        '🚀 ~ file: index.js:42 ~ processRecord ~ fkVendorIdDeleted:',
+        fkVendorIdDeleted
+      );
+
+      if (fkVendorIdUpdated || fkVendorIdDeleted) {
+        const orderNo = _.get(message, 'Keys.FK_OrderNo.S');
+        console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderNo:', orderNo);
+        const Body = Object.keys(newImage).length ? newImage : oldImage;
+        await processShipmentAparData({ orderId: orderNo, newImage: Body });
+      }
+    } else if (dynamoTableName === SHIPMENT_HEADER_TABLE) {
+      console.info('🚀 ~ file: index.js:45 ~ processRecord ~ dynamoTableName:', dynamoTableName);
+      const orderNo = newImage.PK_OrderNo;
+      console.info('🚀 ~ file: index.js:46 ~ processRecord ~ orderId:', orderNo);
+      const shipmentAparDataArray = await fetchOrderNos(orderNo);
+      console.info(
+        '🚀 ~ file: index.js:48 ~ processRecord ~ shipmentAparDataArray:',
+        shipmentAparDataArray
+      );
+
+      if (shipmentAparDataArray.length > 0) {
+        // Grouping shipmentAparDataArray by FK_OrderNo
+        const orderGroups = _.groupBy(shipmentAparDataArray, 'FK_OrderNo');
+        console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderGroups:', orderGroups);
+
+        // Processing each group
+        await Promise.all(
+          _.map(orderGroups, async (aparDataArray, orderId) => {
+            // Process data for each orderId
             await Promise.all(
-              _.map(orderGroups, async (aparDataArray, orderId) => {
-                // Process data for each orderId
-                await Promise.all(
-                  aparDataArray.map(async (aparData) => {
-                    await processShipmentAparData({ orderId, newImage: aparData });
-                  })
-                );
+              aparDataArray.map(async (aparData) => {
+                await processShipmentAparData({ orderId, newImage: aparData });
               })
             );
-          } else {
-            console.info('No shipment apar data found for order IDs.');
-          }
+          })
+        );
+      } else {
+        console.info('No shipment apar data found for order IDs.');
       }
-    } catch (error) {
-      console.error('Error processing record:', error);
-      throw error;
     }
+  } catch (error) {
+    console.error('Error processing record:', error);
+    throw error;
   }
-  
+}
 
 const queryOrderStatusTable = async (orderNo) => {
   const orderParam = {
@@ -114,15 +125,21 @@ async function queryConsolStatusTable(consolNo) {
 
 async function processShipmentAparData({ orderId, newImage }) {
   const consolNo = parseInt(_.get(newImage, 'ConsolNo', null), 10);
-  console.info('🚀 ~ file: index.js:117 ~ processShipmentAparData ~ consolNo:', consolNo)
+  console.info('🚀 ~ file: index.js:117 ~ processShipmentAparData ~ consolNo:', consolNo);
   const serviceLevelId = _.get(newImage, 'FK_ServiceId');
-  console.info('🚀 ~ file: index.js:119 ~ processShipmentAparData ~ serviceLevelId:', serviceLevelId)
+  console.info(
+    '🚀 ~ file: index.js:119 ~ processShipmentAparData ~ serviceLevelId:',
+    serviceLevelId
+  );
   const vendorId = _.get(newImage, 'FK_VendorId', '').toUpperCase();
-  console.info('🚀 ~ file: index.js:121 ~ processShipmentAparData ~ vendorId:', vendorId)
+  console.info('🚀 ~ file: index.js:121 ~ processShipmentAparData ~ vendorId:', vendorId);
   const controlStation = _.get(newImage, 'FK_ConsolStationId');
-  console.info('🚀 ~ file: index.js:123 ~ processShipmentAparData ~ controlStation:', controlStation)
+  console.info(
+    '🚀 ~ file: index.js:123 ~ processShipmentAparData ~ controlStation:',
+    controlStation
+  );
   const userId = _.get(newImage, 'UpdatedBy');
-  console.info('🚀 ~ file: index.js:125 ~ processShipmentAparData ~ userId:', userId)
+  console.info('🚀 ~ file: index.js:125 ~ processShipmentAparData ~ userId:', userId);
 
   let userEmail;
   let stationCode;
