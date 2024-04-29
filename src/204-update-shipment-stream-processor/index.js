@@ -98,6 +98,21 @@ async function handleUpdatesForP2P(newImage, oldImage) {
   try {
     const changedFields = findChangedFields(newImage, oldImage);
     console.info('🚀 ~ file: index.js:57 ~ handleUpdatesForP2P ~ changedFields:', changedFields);
+<<<<<<< HEAD
+=======
+    const keysToCheck = [
+      'DeliveryDateTime',
+      'PickupTimeRange',
+      'PickupDateTime',
+      'DeliveryTimeRange',
+    ];
+    for (const key of keysToCheck) {
+      if (_.includes(changedFields[key], '1900-01-01')) {
+        console.info('skipping the process as it has the invalid time');
+        return;
+      }
+    }
+>>>>>>> 0173f1d87e231436599f927a4a0fb40aaa395b60
     let shipmentAparData;
     let shipmentHeaderData;
     if (consolNo > 0) {
@@ -375,6 +390,16 @@ async function handleUpdatesforMt(newImage, oldImage) {
   let houseBillString;
   try {
     const changedFields = findChangedFields(newImage, oldImage);
+<<<<<<< HEAD
+=======
+    const keysToCheck = ['ConsolStopDate'];
+    for (const key of keysToCheck) {
+      if (_.includes(changedFields[key], '1900-01-01')) {
+        console.info('skipping the process as it has the invalid time');
+        return 'skipping the process as it has the invalid time';
+      }
+    }
+>>>>>>> 0173f1d87e231436599f927a4a0fb40aaa395b60
     const shipmentAparData = await shipmentAparDataForConsols({ consolNo });
     userEmail = await getUserEmail({ userId: _.get(shipmentAparData, '[0].UpdatedBy') });
     console.info('🚀 ~ file: index.js:398 ~ handleUpdatesforMt ~ userEmail:', userEmail)
