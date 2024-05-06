@@ -53,7 +53,10 @@ async function processRecord(record) {
         const Body = Object.keys(newImage).length ? newImage : oldImage;
         await processShipmentAparData({ orderId: orderNo, newImage: Body });
       }
-    } else if (dynamoTableName === SHIPMENT_HEADER_TABLE) {
+    } else if (
+      dynamoTableName === SHIPMENT_HEADER_TABLE &&
+      _.get(newImage, 'FK_OrderStatusId') === 'CAN'
+    ) {
       console.info('🚀 ~ file: index.js:45 ~ processRecord ~ dynamoTableName:', dynamoTableName);
       const orderNo = newImage.PK_OrderNo;
       console.info('🚀 ~ file: index.js:46 ~ processRecord ~ orderId:', orderNo);
@@ -63,7 +66,7 @@ async function processRecord(record) {
         shipmentAparDataArray
       );
 
-      if ((shipmentAparDataArray.length > 0) && shipmentAparDataArray[0].ConsolNo === 0) {
+      if (shipmentAparDataArray.length > 0 && shipmentAparDataArray[0].ConsolNo === 0) {
         // Grouping shipmentAparDataArray by FK_OrderNo
         const orderGroups = _.groupBy(shipmentAparDataArray, 'FK_OrderNo');
         console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderGroups:', orderGroups);
@@ -81,6 +84,7 @@ async function processRecord(record) {
         );
       } else {
         console.info('No shipment apar data found for order IDs.');
+        return;
       }
     }
   } catch (error) {
