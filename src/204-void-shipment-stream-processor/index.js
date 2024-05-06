@@ -83,7 +83,7 @@ async function processRecord(record) {
           })
         );
       } else {
-        console.info('No shipment apar data found for order IDs.');
+        console.info('No shipment apar data found for order IDs or the shipments are Consolidations.');
         return;
       }
     }
@@ -119,6 +119,7 @@ async function queryConsolStatusTable(consolNo) {
         ':consolNo': String(consolNo),
       },
     };
+    console.info('🚀 ~ file: index.js:122 ~ queryConsolStatusTable ~ queryParams:', queryParams)
     const result = await dynamoDb.query(queryParams).promise();
     return _.get(result, 'Items', []);
   } catch (error) {
@@ -180,9 +181,10 @@ async function processShipmentAparData({ orderId, newImage }) {
     }
   } else {
     const consolStatusResult = await queryConsolStatusTable(consolNo);
+    console.info('🚀 ~ file: index.js:183 ~ processShipmentAparData ~ consolStatusResult:', consolStatusResult)
     if (
       consolStatusResult.length > 0 &&
-      consolStatusResult[0].ConsolNo === consolNo &&
+      consolStatusResult[0].ConsolNo === String(consolNo) &&
       consolStatusResult[0].Status === STATUSES.SENT
     ) {
       const { id, stops } = _.get(consolStatusResult, '[0].Response', {});
