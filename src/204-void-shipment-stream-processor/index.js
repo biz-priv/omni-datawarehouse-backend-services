@@ -63,7 +63,7 @@ async function processRecord(record) {
         shipmentAparDataArray
       );
 
-      if (shipmentAparDataArray.length > 0) {
+      if ((shipmentAparDataArray.length > 0) && shipmentAparDataArray[0].ConsolNo === 0) {
         // Grouping shipmentAparDataArray by FK_OrderNo
         const orderGroups = _.groupBy(shipmentAparDataArray, 'FK_OrderNo');
         console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderGroups:', orderGroups);
