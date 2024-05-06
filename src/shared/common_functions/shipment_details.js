@@ -311,7 +311,7 @@ async function MappingDataToInsert(data, timeZoneTable) {
     });
     allMilestone = await Promise.all(milestonePromises);
   }
-  else{
+  else {
     console.info(`No milestones found in '${process.env.SHIPMENT_MILESTONE_TABLE} array.`);
   }
 
@@ -329,7 +329,7 @@ async function MappingDataToInsert(data, timeZoneTable) {
 
   const payload = {
     "fileNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].PK_OrderNo`, ""),
-    "HouseBillNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, ""),
+    "houseBillNumber": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].Housebill`, ""),
     "masterbill": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].MasterAirWaybill`, ""),
     "shipmentDate": await getShipmentDate(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].ShipmentDateTime`, "")),
     "handlingStation": get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].HandlingStation`, ""),
@@ -379,105 +379,217 @@ async function MappingDataToInsert(data, timeZoneTable) {
   return payload;
 }
 
+// async function upsertItem(tableName, item) {
+//   const fileNumber = item.fileNumber;
+//   const customerIds = item.customerIds.split(',');
+
+//   try {
+//     const existingItem = await ddb.get({
+//       TableName: tableName,
+//       Key: {
+//         fileNumber: fileNumber,
+//         customerIds: customerIds
+//       },
+//     }).promise();
+
+
+//     if (existingItem.Item) {
+//       params = {
+//         TableName: tableName,
+//         Key: {
+//           fileNumber: fileNumber,
+//         },
+//         UpdateExpression: 'SET #houseBillNumber = :houseBillNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear, #billNo = :billNo, #InsertedTimeStamp = :InsertedTimeStamp',
+//         ExpressionAttributeNames: {
+//           '#houseBillNumber': 'houseBillNumber',
+//           '#masterbill': 'masterbill',
+//           '#shipmentDate': 'shipmentDate',
+//           '#handlingStation': 'handlingStation',
+//           '#originPort': 'originPort',
+//           '#destinationPort': 'destinationPort',
+//           '#shipper': 'shipper',
+//           '#consignee': 'consignee',
+//           '#pieces': 'pieces',
+//           '#actualWeight': 'actualWeight',
+//           '#chargeableWeight': 'chargeableWeight',
+//           '#weightUOM': 'weightUOM',
+//           '#pickupTime': 'pickupTime',
+//           '#estimatedDepartureTime': 'estimatedDepartureTime',
+//           '#estimatedArrivalTime': 'estimatedArrivalTime',
+//           '#scheduledDeliveryTime': 'scheduledDeliveryTime',
+//           '#deliveryTime': 'deliveryTime',
+//           '#podName': 'podName',
+//           '#serviceLevelCode': 'serviceLevelCode',
+//           '#serviceLevelDescription': 'serviceLevelDescription',
+//           '#customerReference': 'customerReference',
+//           '#milestones': 'milestones',
+//           '#locations': 'locations',
+//           '#EventDateTime': 'EventDateTime',
+//           '#EventDate': 'EventDate',
+//           '#EventYear': 'EventYear',
+//           '#OrderDateTime': 'OrderDateTime',
+//           '#OrderDate': 'OrderDate',
+//           '#OrderYear': 'OrderYear',
+//           '#billNo': 'billNo',
+//           '#InsertedTimeStamp': 'InsertedTimeStamp',
+//         },
+//         ExpressionAttributeValues: {
+//           ':houseBillNumber': item.houseBillNumber,
+//           ':masterbill': item.masterbill,
+//           ':shipmentDate': item.shipmentDate,
+//           ':handlingStation': item.handlingStation,
+//           ':originPort': item.originPort,
+//           ':destinationPort': item.destinationPort,
+//           ':shipper': item.shipper,
+//           ':consignee': item.consignee,
+//           ':pieces': item.pieces,
+//           ':actualWeight': item.actualWeight,
+//           ':chargeableWeight': item.chargeableWeight,
+//           ':weightUOM': item.weightUOM,
+//           ':pickupTime': item.pickupTime,
+//           ':estimatedDepartureTime': item.estimatedDepartureTime,
+//           ':estimatedArrivalTime': item.estimatedArrivalTime,
+//           ':scheduledDeliveryTime': item.scheduledDeliveryTime,
+//           ':deliveryTime': item.deliveryTime,
+//           ':podName': item.podName,
+//           ':serviceLevelCode': item.serviceLevelCode,
+//           ':serviceLevelDescription': item.serviceLevelDescription,
+//           ':customerReference': item.customerReference,
+//           ':milestones': item.milestones,
+//           ':locations': item.locations,
+//           ':EventDateTime': item.EventDateTime,
+//           ':EventDate': item.EventDate,
+//           ':EventYear': item.EventYear,
+//           ':OrderDateTime': item.OrderDateTime,
+//           ':OrderDate': item.OrderDate,
+//           ':OrderYear': item.OrderYear,
+//           ':billNo': item.billNo,
+//           ':InsertedTimeStamp': item.InsertedTimeStamp,
+//         },
+//       };
+//       console.info("Updated");
+//       return await ddb.update(params).promise();
+//     } else {
+//       params = {
+//         TableName: tableName,
+//         Item: item,
+//       };
+//       console.info("inserted");
+//       return await ddb.put(params).promise();
+//     }
+//   } catch (e) {
+//     console.error("Put Item Error: ", e, "\nPut params: ", params);
+//     throw "PutItemError";
+//   }
+// }
+
 async function upsertItem(tableName, item) {
-  const houseBillNumber = item.HouseBillNumber;
-  let params;
-
+  const fileNumber = item.fileNumber;
+  const customerIds = item.customerIds.split(',');
   try {
-    const existingItem = await ddb.get({
-      TableName: tableName,
-      Key: {
-        HouseBillNumber: houseBillNumber,
-      },
-    }).promise();
-
-
-    if (existingItem.Item) {
-      params = {
+    const promises = customerIds.map(async (customerId) => {
+      const existingItem = await ddb.get({
         TableName: tableName,
         Key: {
-          HouseBillNumber: houseBillNumber,
+          fileNumber: fileNumber,
+          customerIds: customerId
         },
-        UpdateExpression: 'SET #fileNumber = :fileNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear, #billNo = :billNo, #InsertedTimeStamp = :InsertedTimeStamp, #customerIds = :customerIds',
-        ExpressionAttributeNames: {
-          '#fileNumber': 'fileNumber',
-          '#masterbill': 'masterbill',
-          '#shipmentDate': 'shipmentDate',
-          '#handlingStation': 'handlingStation',
-          '#originPort': 'originPort',
-          '#destinationPort': 'destinationPort',
-          '#shipper': 'shipper',
-          '#consignee': 'consignee',
-          '#pieces': 'pieces',
-          '#actualWeight': 'actualWeight',
-          '#chargeableWeight': 'chargeableWeight',
-          '#weightUOM': 'weightUOM',
-          '#pickupTime': 'pickupTime',
-          '#estimatedDepartureTime': 'estimatedDepartureTime',
-          '#estimatedArrivalTime': 'estimatedArrivalTime',
-          '#scheduledDeliveryTime': 'scheduledDeliveryTime',
-          '#deliveryTime': 'deliveryTime',
-          '#podName': 'podName',
-          '#serviceLevelCode': 'serviceLevelCode',
-          '#serviceLevelDescription': 'serviceLevelDescription',
-          '#customerReference': 'customerReference',
-          '#milestones': 'milestones',
-          '#locations': 'locations',
-          '#EventDateTime': 'EventDateTime',
-          '#EventDate': 'EventDate',
-          '#EventYear': 'EventYear',
-          '#OrderDateTime': 'OrderDateTime',
-          '#OrderDate': 'OrderDate',
-          '#OrderYear': 'OrderYear',
-          '#billNo': 'billNo',
-          '#InsertedTimeStamp': 'InsertedTimeStamp',
-          '#customerIds': 'customerIds'
-        },
-        ExpressionAttributeValues: {
-          ':fileNumber': item.fileNumber,
-          ':masterbill': item.masterbill,
-          ':shipmentDate': item.shipmentDate,
-          ':handlingStation': item.handlingStation,
-          ':originPort': item.originPort,
-          ':destinationPort': item.destinationPort,
-          ':shipper': item.shipper,
-          ':consignee': item.consignee,
-          ':pieces': item.pieces,
-          ':actualWeight': item.actualWeight,
-          ':chargeableWeight': item.chargeableWeight,
-          ':weightUOM': item.weightUOM,
-          ':pickupTime': item.pickupTime,
-          ':estimatedDepartureTime': item.estimatedDepartureTime,
-          ':estimatedArrivalTime': item.estimatedArrivalTime,
-          ':scheduledDeliveryTime': item.scheduledDeliveryTime,
-          ':deliveryTime': item.deliveryTime,
-          ':podName': item.podName,
-          ':serviceLevelCode': item.serviceLevelCode,
-          ':serviceLevelDescription': item.serviceLevelDescription,
-          ':customerReference': item.customerReference,
-          ':milestones': item.milestones,
-          ':locations': item.locations,
-          ':EventDateTime': item.EventDateTime,
-          ':EventDate': item.EventDate,
-          ':EventYear': item.EventYear,
-          ':OrderDateTime': item.OrderDateTime,
-          ':OrderDate': item.OrderDate,
-          ':OrderYear': item.OrderYear,
-          ':billNo': item.billNo,
-          ':InsertedTimeStamp': item.InsertedTimeStamp,
-          ':customerIds': item.customerIds
-        },
-      };
-      console.info("Updated");
-      return await ddb.update(params).promise();
-    } else {
-      params = {
-        TableName: tableName,
-        Item: item,
-      };
-      console.info("inserted");
-      return await ddb.put(params).promise();
-    }
+      }).promise();
+
+      let params;
+
+      if (existingItem.Item) {
+        params = {
+          TableName: tableName,
+          Key: {
+            fileNumber: fileNumber,
+            customerIds: customerId
+          },
+          UpdateExpression: 'SET #houseBillNumber = :houseBillNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear, #billNo = :billNo, #InsertedTimeStamp = :InsertedTimeStamp',
+          ExpressionAttributeNames: {
+            '#houseBillNumber': 'houseBillNumber',
+            '#masterbill': 'masterbill',
+            '#shipmentDate': 'shipmentDate',
+            '#handlingStation': 'handlingStation',
+            '#originPort': 'originPort',
+            '#destinationPort': 'destinationPort',
+            '#shipper': 'shipper',
+            '#consignee': 'consignee',
+            '#pieces': 'pieces',
+            '#actualWeight': 'actualWeight',
+            '#chargeableWeight': 'chargeableWeight',
+            '#weightUOM': 'weightUOM',
+            '#pickupTime': 'pickupTime',
+            '#estimatedDepartureTime': 'estimatedDepartureTime',
+            '#estimatedArrivalTime': 'estimatedArrivalTime',
+            '#scheduledDeliveryTime': 'scheduledDeliveryTime',
+            '#deliveryTime': 'deliveryTime',
+            '#podName': 'podName',
+            '#serviceLevelCode': 'serviceLevelCode',
+            '#serviceLevelDescription': 'serviceLevelDescription',
+            '#customerReference': 'customerReference',
+            '#milestones': 'milestones',
+            '#locations': 'locations',
+            '#EventDateTime': 'EventDateTime',
+            '#EventDate': 'EventDate',
+            '#EventYear': 'EventYear',
+            '#OrderDateTime': 'OrderDateTime',
+            '#OrderDate': 'OrderDate',
+            '#OrderYear': 'OrderYear',
+            '#billNo': 'billNo',
+            '#InsertedTimeStamp': 'InsertedTimeStamp',
+          },
+          ExpressionAttributeValues: {
+            ':houseBillNumber': item.houseBillNumber,
+            ':masterbill': item.masterbill,
+            ':shipmentDate': item.shipmentDate,
+            ':handlingStation': item.handlingStation,
+            ':originPort': item.originPort,
+            ':destinationPort': item.destinationPort,
+            ':shipper': item.shipper,
+            ':consignee': item.consignee,
+            ':pieces': item.pieces,
+            ':actualWeight': item.actualWeight,
+            ':chargeableWeight': item.chargeableWeight,
+            ':weightUOM': item.weightUOM,
+            ':pickupTime': item.pickupTime,
+            ':estimatedDepartureTime': item.estimatedDepartureTime,
+            ':estimatedArrivalTime': item.estimatedArrivalTime,
+            ':scheduledDeliveryTime': item.scheduledDeliveryTime,
+            ':deliveryTime': item.deliveryTime,
+            ':podName': item.podName,
+            ':serviceLevelCode': item.serviceLevelCode,
+            ':serviceLevelDescription': item.serviceLevelDescription,
+            ':customerReference': item.customerReference,
+            ':milestones': item.milestones,
+            ':locations': item.locations,
+            ':EventDateTime': item.EventDateTime,
+            ':EventDate': item.EventDate,
+            ':EventYear': item.EventYear,
+            ':OrderDateTime': item.OrderDateTime,
+            ':OrderDate': item.OrderDate,
+            ':OrderYear': item.OrderYear,
+            ':billNo': item.billNo,
+            ':InsertedTimeStamp': item.InsertedTimeStamp,
+          },
+        };
+        console.info("Updated");
+        return ddb.update(params).promise();
+      } else {
+        // Modify params to include customerIds
+        item.customerIds = customerId;
+        params = {
+          TableName: tableName,
+          Item: item,
+        };
+        console.info("Inserted");
+        return ddb.put(params).promise();
+      }
+    });
+
+    await Promise.all(promises);
+
+    return "Successfully upserted all items";
   } catch (e) {
     console.error("Put Item Error: ", e, "\nPut params: ", params);
     throw "PutItemError";
