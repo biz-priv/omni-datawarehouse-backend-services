@@ -53,7 +53,10 @@ async function processRecord(record) {
         const Body = Object.keys(newImage).length ? newImage : oldImage;
         await processShipmentAparData({ orderId: orderNo, newImage: Body });
       }
-    } else if (dynamoTableName === SHIPMENT_HEADER_TABLE) {
+    } else if (
+      dynamoTableName === SHIPMENT_HEADER_TABLE &&
+      _.get(newImage, 'FK_OrderStatusId') === 'CAN'
+    ) {
       console.info('🚀 ~ file: index.js:45 ~ processRecord ~ dynamoTableName:', dynamoTableName);
       const orderNo = newImage.PK_OrderNo;
       console.info('🚀 ~ file: index.js:46 ~ processRecord ~ orderId:', orderNo);
@@ -62,8 +65,8 @@ async function processRecord(record) {
         '🚀 ~ file: index.js:48 ~ processRecord ~ shipmentAparDataArray:',
         shipmentAparDataArray
       );
-
-      if (shipmentAparDataArray.length > 0) {
+      const consolNo = Number(_.get(shipmentAparDataArray, '[0].ConsolNo'));
+      if (shipmentAparDataArray.length > 0 && consolNo === 0) {
         // Grouping shipmentAparDataArray by FK_OrderNo
         const orderGroups = _.groupBy(shipmentAparDataArray, 'FK_OrderNo');
         console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderGroups:', orderGroups);
@@ -80,7 +83,10 @@ async function processRecord(record) {
           })
         );
       } else {
-        console.info('No shipment apar data found for order IDs.');
+        console.info(
+          'No shipment apar data found for order IDs or the shipments are Consolidations.'
+        );
+        return;
       }
     }
   } catch (error) {
@@ -115,6 +121,7 @@ async function queryConsolStatusTable(consolNo) {
         ':consolNo': String(consolNo),
       },
     };
+    console.info('🚀 ~ file: index.js:122 ~ queryConsolStatusTable ~ queryParams:', queryParams);
     const result = await dynamoDb.query(queryParams).promise();
     return _.get(result, 'Items', []);
   } catch (error) {
@@ -176,9 +183,13 @@ async function processShipmentAparData({ orderId, newImage }) {
     }
   } else {
     const consolStatusResult = await queryConsolStatusTable(consolNo);
+    console.info(
+      '🚀 ~ file: index.js:183 ~ processShipmentAparData ~ consolStatusResult:',
+      consolStatusResult
+    );
     if (
       consolStatusResult.length > 0 &&
-      consolStatusResult[0].ConsolNo === consolNo &&
+      consolStatusResult[0].ConsolNo === String(consolNo) &&
       consolStatusResult[0].Status === STATUSES.SENT
     ) {
       const { id, stops } = _.get(consolStatusResult, '[0].Response', {});

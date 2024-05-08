@@ -11,6 +11,7 @@ const {
   SHIPMENT_MILESTONE_TABLE,
   SHIPPER_TABLE,
   TRACKING_NOTES_TABLE,
+  CUSTOMER_ENTITLEMENT_TABLE
 } = process.env;
 
 module.exports.handler = async (event) => {
@@ -33,6 +34,8 @@ module.exports.handler = async (event) => {
       orderNo = get(unmarshalledData, 'PK_OrderNo', '');
     } else if (tableName === SHIPPER_TABLE) {
       orderNo = get(unmarshalledData, 'FK_ShipOrderNo', '');
+    }else if(tableName === CUSTOMER_ENTITLEMENT_TABLE){
+      orderNo = get(unmarshalledData, 'FileNumber', '');
     }
     console.info("orderNo", orderNo);
     if (orderNo) {

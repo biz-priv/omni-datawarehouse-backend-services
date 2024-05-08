@@ -293,7 +293,7 @@ async function MappingDataToInsert(data, timeZoneTable) {
   const formattedEventYear = get(highestEventDateTimeObject, 'EventDateTime', '') !== '' ? moment(get(highestEventDateTimeObject, 'EventDateTime', '1900')).format("YYYY") : '1900';
   const formattedOrderDate = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900-00-00')).format("YYYY-MM-DD") : '1900-00-00';
   const formattedOrderYear = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY") : '1900';
-  let allMilestone
+  let allMilestone;
   if (data[process.env.SHIPMENT_MILESTONE_TABLE]) {
     let milestonePromises = await checkIfMilestonesPublic(data[process.env.SHIPMENT_MILESTONE_TABLE]);
     milestonePromises = milestonePromises.filter(milestone => {
@@ -379,115 +379,15 @@ async function MappingDataToInsert(data, timeZoneTable) {
   return payload;
 }
 
-// async function upsertItem(tableName, item) {
-//   const fileNumber = item.fileNumber;
-//   const customerIds = item.customerIds.split(',');
-
-//   try {
-//     const existingItem = await ddb.get({
-//       TableName: tableName,
-//       Key: {
-//         fileNumber: fileNumber,
-//         customerIds: customerIds
-//       },
-//     }).promise();
-
-
-//     if (existingItem.Item) {
-//       params = {
-//         TableName: tableName,
-//         Key: {
-//           fileNumber: fileNumber,
-//         },
-//         UpdateExpression: 'SET #houseBillNumber = :houseBillNumber, #masterbill = :masterbill, #shipmentDate = :shipmentDate, #handlingStation = :handlingStation, #originPort = :originPort, #destinationPort = :destinationPort, #shipper = :shipper, #consignee = :consignee, #pieces = :pieces, #actualWeight = :actualWeight, #chargeableWeight = :chargeableWeight, #weightUOM = :weightUOM, #pickupTime = :pickupTime, #estimatedDepartureTime = :estimatedDepartureTime, #estimatedArrivalTime = :estimatedArrivalTime, #scheduledDeliveryTime = :scheduledDeliveryTime, #deliveryTime = :deliveryTime, #podName = :podName, #serviceLevelCode = :serviceLevelCode, #serviceLevelDescription = :serviceLevelDescription, #customerReference = :customerReference, #milestones = :milestones, #locations = :locations, #EventDateTime = :EventDateTime, #EventDate = :EventDate, #EventYear = :EventYear, #OrderDateTime = :OrderDateTime, #OrderDate = :OrderDate, #OrderYear = :OrderYear, #billNo = :billNo, #InsertedTimeStamp = :InsertedTimeStamp',
-//         ExpressionAttributeNames: {
-//           '#houseBillNumber': 'houseBillNumber',
-//           '#masterbill': 'masterbill',
-//           '#shipmentDate': 'shipmentDate',
-//           '#handlingStation': 'handlingStation',
-//           '#originPort': 'originPort',
-//           '#destinationPort': 'destinationPort',
-//           '#shipper': 'shipper',
-//           '#consignee': 'consignee',
-//           '#pieces': 'pieces',
-//           '#actualWeight': 'actualWeight',
-//           '#chargeableWeight': 'chargeableWeight',
-//           '#weightUOM': 'weightUOM',
-//           '#pickupTime': 'pickupTime',
-//           '#estimatedDepartureTime': 'estimatedDepartureTime',
-//           '#estimatedArrivalTime': 'estimatedArrivalTime',
-//           '#scheduledDeliveryTime': 'scheduledDeliveryTime',
-//           '#deliveryTime': 'deliveryTime',
-//           '#podName': 'podName',
-//           '#serviceLevelCode': 'serviceLevelCode',
-//           '#serviceLevelDescription': 'serviceLevelDescription',
-//           '#customerReference': 'customerReference',
-//           '#milestones': 'milestones',
-//           '#locations': 'locations',
-//           '#EventDateTime': 'EventDateTime',
-//           '#EventDate': 'EventDate',
-//           '#EventYear': 'EventYear',
-//           '#OrderDateTime': 'OrderDateTime',
-//           '#OrderDate': 'OrderDate',
-//           '#OrderYear': 'OrderYear',
-//           '#billNo': 'billNo',
-//           '#InsertedTimeStamp': 'InsertedTimeStamp',
-//         },
-//         ExpressionAttributeValues: {
-//           ':houseBillNumber': item.houseBillNumber,
-//           ':masterbill': item.masterbill,
-//           ':shipmentDate': item.shipmentDate,
-//           ':handlingStation': item.handlingStation,
-//           ':originPort': item.originPort,
-//           ':destinationPort': item.destinationPort,
-//           ':shipper': item.shipper,
-//           ':consignee': item.consignee,
-//           ':pieces': item.pieces,
-//           ':actualWeight': item.actualWeight,
-//           ':chargeableWeight': item.chargeableWeight,
-//           ':weightUOM': item.weightUOM,
-//           ':pickupTime': item.pickupTime,
-//           ':estimatedDepartureTime': item.estimatedDepartureTime,
-//           ':estimatedArrivalTime': item.estimatedArrivalTime,
-//           ':scheduledDeliveryTime': item.scheduledDeliveryTime,
-//           ':deliveryTime': item.deliveryTime,
-//           ':podName': item.podName,
-//           ':serviceLevelCode': item.serviceLevelCode,
-//           ':serviceLevelDescription': item.serviceLevelDescription,
-//           ':customerReference': item.customerReference,
-//           ':milestones': item.milestones,
-//           ':locations': item.locations,
-//           ':EventDateTime': item.EventDateTime,
-//           ':EventDate': item.EventDate,
-//           ':EventYear': item.EventYear,
-//           ':OrderDateTime': item.OrderDateTime,
-//           ':OrderDate': item.OrderDate,
-//           ':OrderYear': item.OrderYear,
-//           ':billNo': item.billNo,
-//           ':InsertedTimeStamp': item.InsertedTimeStamp,
-//         },
-//       };
-//       console.info("Updated");
-//       return await ddb.update(params).promise();
-//     } else {
-//       params = {
-//         TableName: tableName,
-//         Item: item,
-//       };
-//       console.info("inserted");
-//       return await ddb.put(params).promise();
-//     }
-//   } catch (e) {
-//     console.error("Put Item Error: ", e, "\nPut params: ", params);
-//     throw "PutItemError";
-//   }
-// }
-
 async function upsertItem(tableName, item) {
   const fileNumber = item.fileNumber;
   const customerIds = item.customerIds.split(',');
   try {
     const promises = customerIds.map(async (customerId) => {
+      if (!customerId.trim()) {
+        console.info("Empty customerId. Skipping upsert for this item.");
+        return;
+      }
       const existingItem = await ddb.get({
         TableName: tableName,
         Key: {
@@ -591,7 +491,7 @@ async function upsertItem(tableName, item) {
 
     return "Successfully upserted all items";
   } catch (e) {
-    console.error("Put Item Error: ", e, "\nPut params: ", params);
+    console.error("Put Item Error: ", e);
     throw "PutItemError";
   }
 }

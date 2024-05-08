@@ -1499,6 +1499,21 @@ function stationCodeInfo(stationCode) {
     PDX: { PbBillTo: 'PORTPOOR' },
     SAN: { PbBillTo: 'SANDSACA' },
     SFO: { PbBillTo: 'SFOOCOTX' },
+    T01: { PbBillTo: '1CONCOTX' },
+    T02: { PbBillTo: '2CONCOTX' },
+    T03: { PbBillTo: '3CONCOTX' },
+    T04: { PbBillTo: '4CONCOTX' },
+    T05: { PbBillTo: '5CONCOTX' },
+    T06: { PbBillTo: '6CONCOTX' },
+    T07: { PbBillTo: '7CONCOTX' },
+    T08: { PbBillTo: '8CONCOTX' },
+    T09: { PbBillTo: '9CONCOTX' },
+    T10: { PbBillTo: '10COCOTX' },
+    T11: { PbBillTo: '11COCOTX' },
+    T12: { PbBillTo: '12COCOTX' },
+    T13: { PbBillTo: '13COCOTX' },
+    T90: { PbBillTo: '90COCOTX' },
+    T96: { PbBillTo: '96COCOTX' },
   };
 
   const stationInfo = billingInfo[stationCode];
