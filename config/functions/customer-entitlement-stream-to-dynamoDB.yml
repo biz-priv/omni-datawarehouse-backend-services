@@ -16,7 +16,7 @@ function:
 
   events:
     - stream: 
-        arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customer-entitlement/ddb.streamArn}
+        arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customer-entitlement/ddb.streamArn~true}
         batchSize: 5
         maximumRetryAttempts: 3
   environment:
