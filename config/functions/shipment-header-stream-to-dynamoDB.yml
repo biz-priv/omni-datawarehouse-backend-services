@@ -39,3 +39,4 @@ function:
     P44_LOCATION_UPDATE_TABLE: ${ssm:/omni-p44/location-updates/${self:provider.stage}/source/ddb.table_name}
     SHIPMENT_DETAILS_Collector_TABLE: ${ssm:/omni-dw/${self:provider.stage}/shipmentDetailsCollector/ddb.tableName}
     CUSTOMER_ENTITLEMENT_TABLE: ${ssm:/omni-dw/${self:provider.stage}/customerEntitlement/table}
+    REFERENCE_TABLE_INDEX: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.orderNoIndex}

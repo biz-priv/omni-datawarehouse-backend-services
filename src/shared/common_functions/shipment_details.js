@@ -21,7 +21,7 @@ async function pieces(tableValue) {
   try {
     let pieces = 0;
     await Promise.all(tableValue.map(async (val) => {
-      pieces += val.Pieces;
+      pieces += Number(val.Pieces);
     }));
     return Number(pieces);
   } catch (error) {
@@ -229,6 +229,19 @@ async function getDynamodbData(value) {
 
     const PK_ServiceLevelId = get(dynamodbData, `${process.env.SHIPMENT_HEADER_TABLE}[0].FK_ServiceLevelId`, "");
 
+    const referenceTableParams = {
+      TableName: process.env.REFERENCE_TABLE,
+      IndexName: process.env.REFERENCE_TABLE_INDEX,
+      KeyConditionExpression: `#pKey = :pKey`,
+      ExpressionAttributeNames: {
+        "#pKey": "FK_OrderNo",
+      },
+      ExpressionAttributeValues: {
+        ":pKey": value,
+      },
+    }
+    const referenceTableResult = await ddb.query(referenceTableParams).promise()
+    dynamodbData[process.env.REFERENCE_TABLE] = referenceTableResult.Items;
     if (PK_ServiceLevelId != "") {
       /*
        *Dynamodb data from service level table
