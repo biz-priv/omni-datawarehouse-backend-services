@@ -45,12 +45,12 @@ async function ChargableWeight(tableValue) {
     let dimSum = 0;
 
     await Promise.all(tableValue.map(async (val) => {
-      const weight = Number(val.weight);
-      const pieces = Number(val.pieces);
-      const length = Number(val.length);
-      const width = Number(val.width);
-      const height = Number(val.height);
-      const dimfactor = Number(val.dimfactor);
+      const weight = Number(val.Weight);
+      const pieces = Number(val.Pieces);
+      const length = Number(val.Length);
+      const width = Number(val.Width);
+      const height = Number(val.Height);
+      const dimfactor = Number(val.DimFactor);
 
       weightSum += weight;
 
