@@ -86,6 +86,7 @@ functions:
     ltl-rating-log-insertion: ${file(config/functions/ltl-rating-log-insertion.yml):function}
 
     cw-to-wt-create-shipment: ${file(config/functions/cw-to-wt-create-shipment.yml):function}
+    cw-to-wt-retrigger-process: ${file(config/functions/cw-to-wt-retrigger-process.yml):function}
 
     # 204 create shipment lambda functions
     204-create-shipment-stream-processor: ${file(config/functions/204-create-shipment-stream-processor.yml):function}
