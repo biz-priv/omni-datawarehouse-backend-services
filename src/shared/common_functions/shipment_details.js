@@ -41,11 +41,24 @@ async function actualWeight(tableValue) {
 }
 async function ChargableWeight(tableValue) {
   try {
-    let ChargableWeight = 0;
+    let weightSum = 0;
+    let dimSum = 0;
+
     await Promise.all(tableValue.map(async (val) => {
-      ChargableWeight += Number(val.ChargableWeight);
+      const weight = Number(val.weight);
+      const pieces = Number(val.pieces);
+      const length = Number(val.length);
+      const width = Number(val.width);
+      const height = Number(val.height);
+      const dimfactor = Number(val.dimfactor);
+
+      weightSum += weight;
+
+      const dimWeight = Math.ceil((pieces * length * width * height) / dimfactor);
+      dimSum += dimWeight;
     }));
-    return Number(ChargableWeight);
+
+    return Math.max(weightSum, dimSum);
   } catch (error) {
     throw error;
   }
