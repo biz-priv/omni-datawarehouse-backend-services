@@ -240,7 +240,18 @@ async function getDynamodbData(value) {
       })
     );
 
-    const PK_ServiceLevelId = get(dynamodbData, `${process.env.SHIPMENT_HEADER_TABLE}[0].FK_ServiceLevelId`, "");
+    const shipmentDescTableParams = {
+      TableName: process.env.SHIPMENT_DESC_TABLE,
+      KeyConditionExpression: `#pKey = :pKey`,
+      ExpressionAttributeNames: {
+        "#pKey": "FK_OrderNo",
+      },
+      ExpressionAttributeValues: {
+        ":pKey": value,
+      },
+    };
+    const shipmentDescTableResult = await ddb.query(shipmentDescTableParams).promise();
+    dynamodbData[process.env.SHIPMENT_DESC_TABLE] = shipmentDescTableResult.Items;
 
     const referenceTableParams = {
       TableName: process.env.REFERENCE_TABLE,
@@ -252,9 +263,11 @@ async function getDynamodbData(value) {
       ExpressionAttributeValues: {
         ":pKey": value,
       },
-    }
-    const referenceTableResult = await ddb.query(referenceTableParams).promise()
+    };
+    const referenceTableResult = await ddb.query(referenceTableParams).promise();
     dynamodbData[process.env.REFERENCE_TABLE] = referenceTableResult.Items;
+
+    const PK_ServiceLevelId = get(dynamodbData, `${process.env.SHIPMENT_HEADER_TABLE}[0].FK_ServiceLevelId`, "");
     if (PK_ServiceLevelId != "") {
       /*
        *Dynamodb data from service level table
