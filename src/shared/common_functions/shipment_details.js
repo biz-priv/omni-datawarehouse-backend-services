@@ -54,15 +54,24 @@ async function ChargableWeight(tableValue) {
 
       weightSum += weight;
 
+      if (dimfactor === 0) {
+        return; 
+      }
+
       const dimWeight = Math.ceil((pieces * length * width * height) / dimfactor);
       dimSum += dimWeight;
     }));
+
+    if (dimSum === 0) {
+      return weightSum;
+    }
 
     return Math.max(weightSum, dimSum);
   } catch (error) {
     throw error;
   }
 }
+
 async function weightUOM(weightDimension) {
   try {
     let weightUOM = get(weightDimensionValue, `${weightDimension}`, null);
