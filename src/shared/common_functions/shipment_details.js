@@ -4,7 +4,7 @@ const { get } = require('lodash');
 const momentTZ = require("moment-timezone");
 const ddb = new AWS.DynamoDB.DocumentClient();
 
-const { tableValues, weightDimensionValue, INDEX_VALUES, customerTypeValue, statusCodes } = require("../constants/shipment_details");
+const { tableValues, weightDimensionValue, INDEX_VALUES, customerTypeValue, statusCodes, refTypes } = require("../constants/shipment_details");
 
 async function refParty(customerType) {
   try {
@@ -172,39 +172,39 @@ async function getShipmentDate(dateTime) {
   }
 }
 
-async function getDescription(orderStatusId, serviceLevelId) {
-  if (!orderStatusId || !serviceLevelId) {
-    return false;
-  }
-  const milestoneTableParams = {
-    TableName: process.env.MILESTONE_TABLE,
-    IndexName: "FK_OrderStatusId-FK_ServiceLevelId",
-    KeyConditionExpression: `#pKey = :pKey and #sKey = :sKey`,
-    FilterExpression: "IsPublic = :IsPublic",
-    ExpressionAttributeNames: {
-      "#pKey": "FK_OrderStatusId",
-      "#sKey": "FK_ServiceLevelId",
-    },
-    ExpressionAttributeValues: {
-      ":pKey": orderStatusId,
-      ":sKey": serviceLevelId,
-      ":IsPublic": "Y",
-    },
-  };
-  try {
-    const milestoneTableResult = await ddb.query(milestoneTableParams).promise();
-    if (milestoneTableResult.Items.length === 0) {
-      console.info(`No Description for the FK_OrderStatusId ${orderStatusId} and FK_ServiceLevelId ${serviceLevelId}`);
-      return false;
-    }
-    else {
-      return true;
-    }
-  } catch (error) {
-    console.error("Query Error:", error);
-    throw error;
-  }
-}
+// async function getDescription(orderStatusId, serviceLevelId) {
+//   if (!orderStatusId || !serviceLevelId) {
+//     return false;
+//   }
+//   const milestoneTableParams = {
+//     TableName: process.env.MILESTONE_TABLE,
+//     IndexName: "FK_OrderStatusId-FK_ServiceLevelId",
+//     KeyConditionExpression: `#pKey = :pKey and #sKey = :sKey`,
+//     FilterExpression: "IsPublic = :IsPublic",
+//     ExpressionAttributeNames: {
+//       "#pKey": "FK_OrderStatusId",
+//       "#sKey": "FK_ServiceLevelId",
+//     },
+//     ExpressionAttributeValues: {
+//       ":pKey": orderStatusId,
+//       ":sKey": serviceLevelId,
+//       ":IsPublic": "Y",
+//     },
+//   };
+//   try {
+//     const milestoneTableResult = await ddb.query(milestoneTableParams).promise();
+//     if (milestoneTableResult.Items.length === 0) {
+//       console.info(`No Description for the FK_OrderStatusId ${orderStatusId} and FK_ServiceLevelId ${serviceLevelId}`);
+//       return false;
+//     }
+//     else {
+//       return true;
+//     }
+//   } catch (error) {
+//     console.error("Query Error:", error);
+//     throw error;
+//   }
+// }
 
 async function getDynamodbData(value) {
   let timeZoneTable = {};
@@ -300,16 +300,16 @@ async function getDynamodbData(value) {
   }
 }
 
-async function checkIfMilestonesPublic(milestones) {
-  const filteredMilestoned = [];
-  await Promise.all(milestones.map(async milestone => {
-    const description = await getDescription(get(milestone, 'FK_OrderStatusId', ""), get(milestone, 'FK_ServiceLevelId', ""));
-    if (description) {
-      filteredMilestoned.push(milestone);
-    }
-  }));
-  return filteredMilestoned;
-}
+// async function checkIfMilestonesPublic(milestones) {
+//   const filteredMilestoned = [];
+//   await Promise.all(milestones.map(async milestone => {
+//     const description = await getDescription(get(milestone, 'FK_OrderStatusId', ""), get(milestone, 'FK_ServiceLevelId', ""));
+//     if (description) {
+//       filteredMilestoned.push(milestone);
+//     }
+//   }));
+//   return filteredMilestoned;
+// }
 
 async function MappingDataToInsert(data, timeZoneTable) {
   const shipmentMilestoneData = data[process.env.SHIPMENT_MILESTONE_TABLE];
@@ -334,8 +334,8 @@ async function MappingDataToInsert(data, timeZoneTable) {
   const formattedOrderYear = get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '') !== '' ? moment(get(data, `${process.env.SHIPMENT_HEADER_TABLE}[0].OrderDate`, '1900')).format("YYYY") : '1900';
   let allMilestone;
   if (data[process.env.SHIPMENT_MILESTONE_TABLE]) {
-    let milestonePromises = await checkIfMilestonesPublic(data[process.env.SHIPMENT_MILESTONE_TABLE]);
-    milestonePromises = milestonePromises.filter(milestone => {
+    // let milestonePromises = await checkIfMilestonesPublic(data[process.env.SHIPMENT_MILESTONE_TABLE]);
+    let milestonePromises = data[process.env.SHIPMENT_MILESTONE_TABLE].filter(milestone => {
       const statusCode = get(milestone, 'FK_OrderStatusId', "");
       return Object.keys(statusCodes).includes(statusCode);
     });
@@ -354,7 +354,12 @@ async function MappingDataToInsert(data, timeZoneTable) {
     console.info(`No milestones found in '${process.env.SHIPMENT_MILESTONE_TABLE} array.`);
   }
 
-  const referencePromises = data[process.env.REFERENCE_TABLE].map(async reference => {
+  let referencePromises = data[process.env.REFERENCE_TABLE].filter(reference =>{
+    const refType = get(reference, 'FK_RefTypeId', "");
+    return Object.keys(refTypes).includes(refType);
+  })
+
+  referencePromises = referencePromises.map(async reference => {
     return {
       refParty: await refParty(get(reference, 'CustomerType', "")),
       refType: get(reference, 'FK_RefTypeId', ""),

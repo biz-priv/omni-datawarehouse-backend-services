@@ -54,10 +54,24 @@ const statusCodes = {
     GIN: "Gate in",
     RLD: "Ready for local delivery",
 }
+
+const refTypes = {
+    AUT: "Authorization number",
+    BOL: "Bill of lading number",
+    JOB: "Job number",
+    ORD: "Order number",
+    PO: "Purchase order number",
+    REF: "Customer reference number",
+    SID: "Shipment ID",
+    SO: "Sales order number",
+    ST: "Store number"
+};
+
 module.exports = {
     customerTypeValue,
     weightDimensionValue,
     tableValues,
     INDEX_VALUES,
-    statusCodes
+    statusCodes,
+    refTypes
 };
