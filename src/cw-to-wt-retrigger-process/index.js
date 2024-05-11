@@ -14,7 +14,7 @@ module.exports.handler = async (event, context) => {
         functionName = get(context, 'functionName');
         console.info('functionName:', functionName);
         const failedStatusResult = await queryTableStatusPending();
-        if (failedStatusResult && failedStatusResult.length > 0) {
+        if (!failedStatusResult || failedStatusResult.length === 0) {
             console.info('No records failed, Skipping');
             return 'No records failed, Skipping';
         }
@@ -32,7 +32,11 @@ async function queryTableStatusPending() {
     const params = {
         TableName: LOGS_TABLE,
         IndexName: 'Status-RetryCount-Index',
-        KeyConditionExpression: 'Status = :status AND RetryCount = :retrycount',
+        KeyConditionExpression: '#status = :status AND #retrycount = :retrycount',
+        ExpressionAttributeNames: {
+            '#status': 'Status',
+            '#retrycount': 'RetryCount'
+          },
         ExpressionAttributeValues: {
             ':status': 'FAILED',
             ':retrycount': '0'
@@ -54,7 +58,7 @@ async function updateRecord(record) {
     try {
         const params = {
             TableName: LOGS_TABLE,
-            Key: record.Id,
+            Key: { Id: record.Id },
             UpdateExpression: 'SET #statusAttr = :newStatus',
             ExpressionAttributeNames: {
                 '#statusAttr': 'Status'

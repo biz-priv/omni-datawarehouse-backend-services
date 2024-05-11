@@ -19,7 +19,7 @@ const {
 let dynamoData = {};
 let s3Bucket = '';
 let s3Key = '';
-let eventType = ''
+let eventType = '';
 
 // Set the time zone to CST
 const cstDate = moment().tz('America/Chicago');
@@ -28,13 +28,13 @@ module.exports.handler = async (event, context) => {
   console.info(JSON.stringify(event));
   try {
     if (get(event, 'Records[0].eventSource', '') === 'aws:dynamodb') {
-      dynamoData = Converter.unmarshall(event.Records.dynamodb.NewImage);
-      s3Bucket = get(dynamoData, 'S3Bucket', '')
-      s3Key = get(dynamoData, 'S3Key', '')
-      eventType = 'dynamo'
+      dynamoData = Converter.unmarshall(get(event, 'Records[0].dynamodb.NewImage'), '');
+      s3Bucket = get(dynamoData, 'S3Bucket', '');
+      s3Key = get(dynamoData, 'S3Key', '');
+      eventType = 'dynamo';
       console.info('Id :', get(dynamoData, 'Id', ''));
     } else {
-      eventType = 's3'
+      eventType = 's3';
       s3Bucket = get(event, 'Records[0].s3.bucket.name', '');
       s3Key = get(event, 'Records[0].s3.object.key', '');
       dynamoData = { S3Bucket: s3Bucket, S3Key: s3Key, Id: uuid.v4().replace(/[^a-zA-Z0-9]/g, '') };
@@ -146,12 +146,12 @@ module.exports.handler = async (event, context) => {
     } catch (err) {
       console.error('Error while sending sns notification: ', err);
     }
-    dynamoData.ErrorMsg = `${error}`;
+    dynamoData.ErrorMsg = `${error}`
     dynamoData.Status = 'FAILED';
     if(eventType === 'dynamo'){
-      dynamoData.RetryCount = String(Number(dynamoData.RetryCount) + 1)
+      dynamoData.RetryCount = String(Number(dynamoData.RetryCount) + 1);
     } else{
-      dynamoData.RetryCount = '0'
+      dynamoData.RetryCount = '0';
     }
     await putItem(dynamoData);
     return 'Failed';
