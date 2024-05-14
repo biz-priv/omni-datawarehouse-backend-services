@@ -46,8 +46,6 @@ module.exports.handler = async (event, context) => {
       dynamoData.XmlFromCW = s3Data;
     }
 
-
-
     // Convert the XML data from s3 to json.
     const xmlObjFromCW = await xmlToJson(get(dynamoData, 'XmlFromCW', ''));
 
@@ -148,9 +146,9 @@ module.exports.handler = async (event, context) => {
     }
     dynamoData.ErrorMsg = `${error}`;
     dynamoData.Status = 'FAILED';
-    if(eventType === 'dynamo'){
+    if (eventType === 'dynamo') {
       dynamoData.RetryCount = String(Number(dynamoData.RetryCount) + 1);
-    } else{
+    } else {
       dynamoData.RetryCount = '0';
     }
     await putItem(dynamoData);

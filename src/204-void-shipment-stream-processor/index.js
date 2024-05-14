@@ -105,7 +105,7 @@ const queryOrderStatusTable = async (orderNo) => {
     TableName: STATUS_TABLE,
     KeyConditionExpression: 'FK_OrderNo = :orderNo',
     ExpressionAttributeValues: {
-      ':orderNo': orderNo,
+      ':orderNo': String(orderNo),
     },
   };
   try {
@@ -183,12 +183,12 @@ async function processShipmentAparData({ orderId, newImage }) {
       const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
       const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
       await updateOrders({ payload: orderData, orderId, consolNo });
-      await updateStatusTables({ consolNo, tableName: STATUS_TABLE, orderId });
+      await updateStatusTables({ orderId, type });
       console.info('Voided the WT orderId:', orderId, '#PRO:', id);
     }
   }
   if (type === TYPES.CONSOLE) {
-    const orderStatusResult = await queryOrderStatusTable(orderId);
+    const orderStatusResult = await queryOrderStatusTable(consolNo);
     const fetchedOrderData = await fetchOrderData({ consolNo });
 
     if (
@@ -196,14 +196,14 @@ async function processShipmentAparData({ orderId, newImage }) {
         orderStatusResult[0].FK_OrderNo === orderId &&
         orderStatusResult[0].Status === STATUSES.SENT) ||
       (orderStatusResult.length > 0 &&
-        orderStatusResult[0].FK_OrderNo === orderId &&
+        orderStatusResult[0].FK_OrderNo === String(consolNo) &&
         orderStatusResult[0].Status === STATUSES.SENT &&
         fetchedOrderData.length === 0)
     ) {
       const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
       const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
       await updateOrders({ payload: orderData, orderId, consolNo });
-      await updateStatusTables({ consolNo, tableName: STATUS_TABLE, orderId });
+      await updateStatusTables({ orderId: consolNo, type });
       console.info('Voided the WT orderId:', orderId, '#PRO:', id);
     }
   }
@@ -227,7 +227,7 @@ async function processShipmentAparData({ orderId, newImage }) {
       const { id, stops } = _.get(consolStatusResult, '[0].Response', {});
       const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
       await updateOrders({ payload: orderData, orderId, consolNo });
-      await updateStatusTables({ consolNo, tableName: CONSOLE_STATUS_TABLE });
+      await updateStatusTables({ consolNo, type });
       console.info('Voided the WT consolNo:', consolNo, '#PRO:', id);
     }
   }
@@ -277,10 +277,10 @@ async function fetchOrderData({ consolNo }) {
   }
 }
 
-async function updateStatusTables({ consolNo, tableName, orderId }) {
+async function updateStatusTables({ consolNo, type, orderId }) {
   try {
     let updateParams;
-    if (tableName === CONSOLE_STATUS_TABLE) {
+    if (type === TYPES.MULTI_STOP) {
       updateParams = {
         TableName: CONSOLE_STATUS_TABLE,
         Key: { ConsolNo: String(consolNo) },
@@ -291,7 +291,7 @@ async function updateStatusTables({ consolNo, tableName, orderId }) {
           ':resetCount': 0,
         },
       };
-    } else if (tableName === STATUS_TABLE) {
+    } else if (type === TYPES.CONSOLE || type === TYPES.NON_CONSOLE) {
       updateParams = {
         TableName: STATUS_TABLE,
         Key: { FK_OrderNo: String(orderId) },
