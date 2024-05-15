@@ -7,6 +7,7 @@ const uuid = require('uuid');
 const xml2js = require('xml2js');
 const moment = require('moment-timezone');
 
+const { Converter } = AWS.DynamoDB;
 const sns = new AWS.SNS();
 const {
   prepareHeaderLevelAndReferenceListData,
@@ -18,26 +19,35 @@ const {
 let dynamoData = {};
 let s3Bucket = '';
 let s3Key = '';
+let eventType = '';
+
+// Set the time zone to CST
+const cstDate = moment().tz('America/Chicago');
 
 module.exports.handler = async (event, context) => {
   console.info(JSON.stringify(event));
   try {
-    s3Bucket = get(event, 'Records[0].s3.bucket.name', '');
-    s3Key = get(event, 'Records[0].s3.object.key', '');
-    dynamoData = { S3Bucket: s3Bucket, S3Key: s3Key, Id: uuid.v4().replace(/[^a-zA-Z0-9]/g, '') };
-    console.info('Id :', get(dynamoData, 'Id', ''));
-
-    // Set the time zone to CST
-    const cstDate = moment().tz('America/Chicago');
-    dynamoData.CSTDate = cstDate.format('YYYY-MM-DD');
-    dynamoData.CSTDateTime = cstDate.format('YYYY-MM-DD HH:mm:ss');
-
-    // Extract data from s3.
-    const s3Data = await getS3Data(s3Bucket, s3Key);
-    dynamoData.XmlFromCW = s3Data;
+    if (get(event, 'Records[0].eventSource', '') === 'aws:dynamodb') {
+      dynamoData = Converter.unmarshall(get(event, 'Records[0].dynamodb.NewImage'), '');
+      s3Bucket = get(dynamoData, 'S3Bucket', '');
+      s3Key = get(dynamoData, 'S3Key', '');
+      eventType = 'dynamo';
+      console.info('Id :', get(dynamoData, 'Id', ''));
+    } else {
+      eventType = 's3';
+      s3Bucket = get(event, 'Records[0].s3.bucket.name', '');
+      s3Key = get(event, 'Records[0].s3.object.key', '');
+      dynamoData = { S3Bucket: s3Bucket, S3Key: s3Key, Id: uuid.v4().replace(/[^a-zA-Z0-9]/g, '') };
+      console.info('Id :', get(dynamoData, 'Id', ''));
+      dynamoData.CSTDate = cstDate.format('YYYY-MM-DD');
+      dynamoData.CSTDateTime = cstDate.format('YYYY-MM-DD HH:mm:ss');
+      // Extract data from s3.
+      const s3Data = await getS3Data(s3Bucket, s3Key);
+      dynamoData.XmlFromCW = s3Data;
+    }
 
     // Convert the XML data from s3 to json.
-    const xmlObjFromCW = await xmlToJson(s3Data);
+    const xmlObjFromCW = await xmlToJson(get(dynamoData, 'XmlFromCW', ''));
 
     const xmlObj = get(xmlObjFromCW, 'UniversalInterchange.Body', {});
 
@@ -136,6 +146,11 @@ module.exports.handler = async (event, context) => {
     }
     dynamoData.ErrorMsg = `${error}`;
     dynamoData.Status = 'FAILED';
+    if (eventType === 'dynamo') {
+      dynamoData.RetryCount = String(Number(dynamoData.RetryCount) + 1);
+    } else {
+      dynamoData.RetryCount = '0';
+    }
     await putItem(dynamoData);
     return 'Failed';
   }

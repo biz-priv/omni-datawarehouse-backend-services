@@ -8,8 +8,13 @@ const { TYPES, VENDOR, STATUSES } = require('../shared/constants/204_create_ship
 const { getUserEmail } = require('../shared/204-payload-generator/helper');
 const { updateOrders } = require('../shared/204-payload-generator/apis');
 
-const { STATUS_TABLE, CONSOLE_STATUS_TABLE, SHIPMENT_APAR_TABLE, SHIPMENT_HEADER_TABLE } =
-  process.env;
+const {
+  STATUS_TABLE,
+  CONSOLE_STATUS_TABLE,
+  SHIPMENT_APAR_TABLE,
+  SHIPMENT_HEADER_TABLE,
+  SHIPMENT_APAR_INDEX_KEY_NAME,
+} = process.env;
 
 module.exports.handler = async (event) => {
   try {
@@ -100,7 +105,7 @@ const queryOrderStatusTable = async (orderNo) => {
     TableName: STATUS_TABLE,
     KeyConditionExpression: 'FK_OrderNo = :orderNo',
     ExpressionAttributeValues: {
-      ':orderNo': orderNo,
+      ':orderNo': String(orderNo),
     },
   };
   try {
@@ -168,7 +173,7 @@ async function processShipmentAparData({ orderId, newImage }) {
     type = TYPES.MULTI_STOP;
   }
 
-  if (type === TYPES.CONSOLE || type === TYPES.NON_CONSOLE) {
+  if (type === TYPES.NON_CONSOLE) {
     const orderStatusResult = await queryOrderStatusTable(orderId);
     if (
       orderStatusResult.length > 0 &&
@@ -178,24 +183,51 @@ async function processShipmentAparData({ orderId, newImage }) {
       const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
       const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
       await updateOrders({ payload: orderData, orderId, consolNo });
-      await updateStatusTables({ consolNo, tableName: STATUS_TABLE, orderId });
+      await updateStatusTables({ orderId, type });
       console.info('Voided the WT orderId:', orderId, '#PRO:', id);
     }
-  } else {
+  }
+  if (type === TYPES.CONSOLE) {
+    const orderStatusResult = await queryOrderStatusTable(consolNo);
+    const fetchedOrderData = await fetchOrderData({ consolNo });
+
+    if (
+      (orderStatusResult.length > 0 &&
+        orderStatusResult[0].FK_OrderNo === orderId &&
+        orderStatusResult[0].Status === STATUSES.SENT) ||
+      (orderStatusResult.length > 0 &&
+        orderStatusResult[0].FK_OrderNo === String(consolNo) &&
+        orderStatusResult[0].Status === STATUSES.SENT &&
+        fetchedOrderData.length === 0)
+    ) {
+      const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
+      const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
+      await updateOrders({ payload: orderData, orderId, consolNo });
+      await updateStatusTables({ orderId: consolNo, type });
+      console.info('Voided the WT orderId:', orderId, '#PRO:', id);
+    }
+  }
+  if (type === TYPES.MULTI_STOP) {
     const consolStatusResult = await queryConsolStatusTable(consolNo);
     console.info(
       '🚀 ~ file: index.js:183 ~ processShipmentAparData ~ consolStatusResult:',
       consolStatusResult
     );
+    const fetchedOrderData = await fetchOrderData({ consolNo });
+
     if (
-      consolStatusResult.length > 0 &&
-      consolStatusResult[0].ConsolNo === String(consolNo) &&
-      consolStatusResult[0].Status === STATUSES.SENT
+      (consolStatusResult.length > 0 &&
+        consolStatusResult[0].ConsolNo === String(consolNo) &&
+        consolStatusResult[0].Status === STATUSES.SENT) ||
+      (consolStatusResult.length > 0 &&
+        consolStatusResult[0].ConsolNo === String(consolNo) &&
+        consolStatusResult[0].Status === STATUSES.SENT &&
+        fetchedOrderData.length === 0)
     ) {
       const { id, stops } = _.get(consolStatusResult, '[0].Response', {});
       const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
       await updateOrders({ payload: orderData, orderId, consolNo });
-      await updateStatusTables({ consolNo, tableName: CONSOLE_STATUS_TABLE });
+      await updateStatusTables({ consolNo, type });
       console.info('Voided the WT consolNo:', consolNo, '#PRO:', id);
     }
   }
@@ -218,10 +250,37 @@ async function fetchOrderNos(orderId) {
   }
 }
 
-async function updateStatusTables({ consolNo, tableName, orderId }) {
+async function fetchOrderData({ consolNo }) {
+  try {
+    const params = {
+      TableName: SHIPMENT_APAR_TABLE,
+      IndexName: SHIPMENT_APAR_INDEX_KEY_NAME,
+      KeyConditionExpression: 'ConsolNo = :ConsolNo',
+      ProjectionExpression: 'FK_OrderNo',
+      FilterExpression:
+        'FK_VendorId = :FK_VendorId and Consolidation = :Consolidation and SeqNo <> :SeqNo and FK_OrderNo <> :FK_OrderNo',
+      ExpressionAttributeValues: {
+        ':ConsolNo': String(consolNo),
+        ':FK_VendorId': VENDOR,
+        ':Consolidation': 'N',
+        ':SeqNo': '9999',
+        ':FK_OrderNo': String(consolNo),
+      },
+    };
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
+    const data = await dynamoDb.query(params).promise();
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+    return _.get(data, 'Items', []);
+  } catch (err) {
+    console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
+    throw err;
+  }
+}
+
+async function updateStatusTables({ consolNo, type, orderId }) {
   try {
     let updateParams;
-    if (tableName === CONSOLE_STATUS_TABLE) {
+    if (type === TYPES.MULTI_STOP) {
       updateParams = {
         TableName: CONSOLE_STATUS_TABLE,
         Key: { ConsolNo: String(consolNo) },
@@ -232,7 +291,7 @@ async function updateStatusTables({ consolNo, tableName, orderId }) {
           ':resetCount': 0,
         },
       };
-    } else if (tableName === STATUS_TABLE) {
+    } else if (type === TYPES.CONSOLE || type === TYPES.NON_CONSOLE) {
       updateParams = {
         TableName: STATUS_TABLE,
         Key: { FK_OrderNo: String(orderId) },

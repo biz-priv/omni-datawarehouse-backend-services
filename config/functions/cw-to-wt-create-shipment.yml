@@ -90,6 +90,13 @@ function:
         rules:
           - prefix: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/s3-prefix/Ducati}
           - suffix: ${ssm:/wms-shipengine/${self:provider.stage}/file/suffix}
+    - stream:
+        arn: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/ddb.streamArn~true}
+        batchSize: 1
+        maximumRetryAttempts: 1
+        bisectBatchOnFunctionError: true
+        filterPatterns:
+          - { dynamodb: { NewImage: { Status: { S: ['READY'] } } } }
   environment:
     WT_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipment/wt/url}
     CW_URL: ${ssm:/omni-dw/${self:provider.stage}/createShipmentResponse/cw/url}
