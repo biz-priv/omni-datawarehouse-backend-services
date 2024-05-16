@@ -306,6 +306,7 @@ async function getDynamodbData(value) {
     });
   } catch (error) {
     console.error("getDynamodbData: ", error);
+    throw error;
   }
 }
 
