@@ -50,6 +50,7 @@ provider:
     environment:
         REGION: ${self:custom.region}
         STAGE: ${opt:stage, 'dev'}
+        ERROR_SNS_TOPIC_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
 
     deploymentBucket:
         name: ${ssm:/omni-dw/${self:provider.stage}/sls/deployment/bucket}

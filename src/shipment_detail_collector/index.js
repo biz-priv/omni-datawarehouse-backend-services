@@ -1,6 +1,7 @@
 const AWS = require("aws-sdk");
 const { Converter } = AWS.DynamoDB;
 const { get } = require("lodash");
+const sns = new AWS.SNS();
 const {getDynamodbData,} = require("../shared/common_functions/shipment_details");
 const {
   CONSIGNEE_TABLE,
@@ -14,7 +15,7 @@ const {
   CUSTOMER_ENTITLEMENT_TABLE
 } = process.env;
 
-module.exports.handler = async (event) => {
+module.exports.handler = async (event, context) => {
   console.info("event: ", JSON.stringify(event));
   for (let record of event.Records) {
     const tableArn = record["eventSourceARN"];
@@ -39,7 +40,23 @@ module.exports.handler = async (event) => {
     }
     console.info("orderNo", orderNo);
     if (orderNo) {
-      await getDynamodbData(orderNo);
+      try{
+        await getDynamodbData(orderNo);
+      }
+      catch(error){
+        console.error("error in getDynamodbData function: ", error)
+        try {
+          const params = {
+            Message: `An error occurred in function ${context.functionName}.\n\nERROR DETAILS: ${error}.\n\norderNo: ${orderNo}`,
+            Subject: `An error occured in function ${context.functionName}`,
+            TopicArn: process.env.ERROR_SNS_TOPIC_ARN,
+          };
+          await sns.publish(params).promise();
+          console.info('SNS notification has sent');
+        } catch (err) {
+          console.error('Error while sending sns notification: ', err);
+        }
+      }
     }
   }
   return "Success";
