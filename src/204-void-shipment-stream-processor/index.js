@@ -152,6 +152,8 @@ async function processShipmentAparData({ orderId, newImage }) {
   );
   const userId = _.get(newImage, 'UpdatedBy');
   console.info('🚀 ~ file: index.js:125 ~ processShipmentAparData ~ userId:', userId);
+  const consolidation = _.get(newImage, 'Consolidation');
+  const seqNo = _.get(newImage, 'SeqNo');
 
   let userEmail;
   let stationCode;
@@ -175,11 +177,7 @@ async function processShipmentAparData({ orderId, newImage }) {
 
   if (type === TYPES.NON_CONSOLE) {
     const orderStatusResult = await queryOrderStatusTable(orderId);
-    if (
-      orderStatusResult.length > 0 &&
-      orderStatusResult[0].FK_OrderNo === orderId &&
-      orderStatusResult[0].Status === STATUSES.SENT
-    ) {
+    if (orderStatusResult.length > 0 && orderStatusResult[0].Status === STATUSES.SENT) {
       const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
       const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
       await updateOrders({ payload: orderData, orderId, consolNo });
@@ -192,11 +190,8 @@ async function processShipmentAparData({ orderId, newImage }) {
     const fetchedOrderData = await fetchOrderData({ consolNo });
 
     if (
+      (orderStatusResult.length > 0 && orderStatusResult[0].Status === STATUSES.SENT) ||
       (orderStatusResult.length > 0 &&
-        orderStatusResult[0].FK_OrderNo === orderId &&
-        orderStatusResult[0].Status === STATUSES.SENT) ||
-      (orderStatusResult.length > 0 &&
-        orderStatusResult[0].FK_OrderNo === String(consolNo) &&
         orderStatusResult[0].Status === STATUSES.SENT &&
         fetchedOrderData.length === 0)
     ) {
@@ -217,10 +212,10 @@ async function processShipmentAparData({ orderId, newImage }) {
 
     if (
       (consolStatusResult.length > 0 &&
-        consolStatusResult[0].ConsolNo === String(consolNo) &&
-        consolStatusResult[0].Status === STATUSES.SENT) ||
+        consolStatusResult[0].Status === STATUSES.SENT &&
+        seqNo === '9999' &&
+        consolidation === 'Y') ||
       (consolStatusResult.length > 0 &&
-        consolStatusResult[0].ConsolNo === String(consolNo) &&
         consolStatusResult[0].Status === STATUSES.SENT &&
         fetchedOrderData.length === 0)
     ) {
