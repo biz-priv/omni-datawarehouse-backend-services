@@ -135,8 +135,8 @@ module.exports.handler = async (event, context) => {
     if(eventType === 'dynamo'){
       try {
         const params = {
-          Message: `In the retrigger process, the shipment was successfully sent.\n\nShipmentId: ${get(dynamoData, 'ShipmentId', '')}.\n\nId: ${get(dynamoData, 'Id', '')}.\n\nS3BUCKET: ${s3Bucket}.\n\nS3KEY: ${s3Key}`,
-          Subject: `CW to WT Create Shipment Reprocess Success ${context.functionName}`,
+          Message: `Shipment is created successfully after retry.\n\nShipmentId: ${get(dynamoData, 'ShipmentId', '')}.\n\nId: ${get(dynamoData, 'Id', '')}.\n\nS3BUCKET: ${s3Bucket}.\n\nS3KEY: ${s3Key}`,
+          Subject: `CW to WT Create Shipment Reprocess Success for ShipmentId: ${get(dynamoData, 'ShipmentId', '')}`,
           TopicArn: process.env.NOTIFICATION_ARN,
         };
         await sns.publish(params).promise();
