@@ -13,6 +13,6 @@ function:
     exclude:
       - '**/*'
   events:
-    - schedule: cron(*/30 * * * ? *) #cron for every 30 min
+    - schedule: cron(*/1 * * * ? *) #cron for every 1 min
   environment:
     LOGS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/ddb.tableName}
