@@ -1,0 +1,79 @@
+{
+  "Records": [
+    {
+      "eventID": "6b39ac8e277427c18db76e9bb3aaa031",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386051,
+        "Keys": {
+          "FK_ConOrderNo": {
+            "S": "5344028"
+          }
+        },
+        "NewImage": {
+          "FK_ConRefTypeId": {
+            "S": ""
+          },
+          "ConAlpha": {
+            "S": "BNYM"
+          },
+          "ConPhone": {
+            "S": ""
+          },
+          "ConNo": {
+            "S": "0"
+          },
+          "ConZone": {
+            "S": "0"
+          },
+          "ConContact": {
+            "S": "MICHAEL SUAREZ"
+          },
+          "ConEmail": {
+            "S": ""
+          },
+          "FK_ConOrderNo": {
+            "S": "5344028"
+          },
+          "ConAddress1": {
+            "S": "636 PIERCE ST"
+          },
+          "ConAddress2": {
+            "S": ""
+          },
+          "ConName": {
+            "S": "BNYM"
+          },
+          "ConCity": {
+            "S": "SOMERSET"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:50"
+          },
+          "ConFax": {
+            "S": ""
+          },
+          "ConRefNo": {
+            "S": ""
+          },
+          "FK_ConState": {
+            "S": "NJ"
+          },
+          "ConZip": {
+            "S": "08873-1263"
+          },
+          "FK_ConCountry": {
+            "S": "US"
+          }
+        },
+        "SequenceNumber": "2089847100000000026310674463",
+        "SizeBytes": 276,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-consignee-dev/stream/2023-02-27T07:58:10.950"
+    }
+  ]
+}
