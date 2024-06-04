@@ -19,6 +19,7 @@ const {
 let dynamoData = {};
 let s3Bucket = '';
 let s3Key = '';
+let shipmentId = '';
 let eventType = '';
 
 // Set the time zone to CST
@@ -31,13 +32,15 @@ module.exports.handler = async (event, context) => {
       dynamoData = Converter.unmarshall(get(event, 'Records[0].dynamodb.NewImage'), '');
       s3Bucket = get(dynamoData, 'S3Bucket', '');
       s3Key = get(dynamoData, 'S3Key', '');
+      shipmentId = get(dynamoData, 'ShipmentId', '');
       eventType = 'dynamo';
       console.info('Id :', get(dynamoData, 'Id', ''));
     } else {
       eventType = 's3';
       s3Bucket = get(event, 'Records[0].s3.bucket.name', '');
       s3Key = get(event, 'Records[0].s3.object.key', '');
-      dynamoData = { S3Bucket: s3Bucket, S3Key: s3Key, Id: uuid.v4().replace(/[^a-zA-Z0-9]/g, '') };
+      shipmentId = get(get(s3Key.split('/'),'[2]', '').split('_'), '[3]', '');
+      dynamoData = { S3Bucket: s3Bucket, S3Key: s3Key, Id: uuid.v4().replace(/[^a-zA-Z0-9]/g, ''), ShipmentId: shipmentId };
       console.info('Id :', get(dynamoData, 'Id', ''));
       dynamoData.CSTDate = cstDate.format('YYYY-MM-DD');
       dynamoData.CSTDateTime = cstDate.format('YYYY-MM-DD HH:mm:ss');
@@ -126,6 +129,20 @@ module.exports.handler = async (event, context) => {
     }
 
     dynamoData.Status = 'SUCCESS';
+
+    if(eventType === 'dynamo'){
+      try {
+        const params = {
+          Message: `Shipment is created successfully after retry.\n\nShipmentId: ${get(dynamoData, 'ShipmentId', '')}.\n\nId: ${get(dynamoData, 'Id', '')}.\n\nS3BUCKET: ${s3Bucket}.\n\nS3KEY: ${s3Key}`,
+          Subject: `CW to WT Create Shipment Reprocess Success for ShipmentId: ${get(dynamoData, 'ShipmentId', '')}`,
+          TopicArn: process.env.NOTIFICATION_ARN,
+        };
+        await sns.publish(params).promise();
+        console.info('SNS notification has sent');
+      } catch (err) {
+        console.error('Error while sending sns notification: ', err);
+      }
+    }
 
     // Storing the complete logs information into a dynamodb table
     await putItem(dynamoData);
