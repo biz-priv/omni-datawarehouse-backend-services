@@ -93,25 +93,62 @@ async function getPickupTime(dateTime, dateTimeZone, timeZoneTable) {
   }
 }
 
+// async function getTime(dateTime, dateTimeZone, timeZoneTable) {
+//   try {
+//     if (dateTime == 0 || dateTime == null || dateTime == "" || dateTime.substring(0, 4) == "1900") {
+//       return "";
+//     }
+//     const inputDate = moment(dateTime);
+//     if (dateTimeZone == "" || dateTimeZone == null) {
+//       dateTimeZone = "CST";
+//     }
+//     const weekNumber = inputDate.isoWeek();
+//     inputDate.subtract(Number(timeZoneTable[dateTimeZone].HoursAway), 'hours');
+//     let convertedDate = inputDate.format('YYYY-MM-DDTHH:mm:ss');
+//     if (weekNumber < 0 && weekNumber > 52) {
+//       console.info("wrong week number");
+//     } else if (weekNumber > 11 && weekNumber < 44) {
+//       convertedDate = convertedDate + "-05:00";
+//     } else {
+//       convertedDate = convertedDate + "-06:00";
+//     }
+//     if (convertedDate == 0 || convertedDate == null || convertedDate == "" || convertedDate.substring(0, 4) == "1900") {
+//       return "";
+//     }
+//     return convertedDate;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 async function getTime(dateTime, dateTimeZone, timeZoneTable) {
   try {
     if (dateTime == 0 || dateTime == null || dateTime == "" || dateTime.substring(0, 4) == "1900") {
       return "";
     }
-    const inputDate = moment(dateTime);
+    const date = moment(dateTime);
+    const week = date.week();
     if (dateTimeZone == "" || dateTimeZone == null) {
       dateTimeZone = "CST";
     }
-    const weekNumber = inputDate.isoWeek();
-    inputDate.subtract(Number(timeZoneTable[dateTimeZone].HoursAway), 'hours');
-    let convertedDate = inputDate.format('YYYY-MM-DDTHH:mm:ss');
-    if (weekNumber < 0 && weekNumber > 52) {
-      console.info("wrong week number");
-    } else if (weekNumber > 11 && weekNumber < 44) {
-      convertedDate = convertedDate + "-05:00";
-    } else {
-      convertedDate = convertedDate + "-06:00";
-    }
+    let offset = week >= 11 && week <= 44 ? 5 : 6;
+    // const timezoneparams = {
+    //   TableName: process.env.TIMEZONE_MASTER_TABLE,
+    //   KeyConditionExpression: `PK_TimeZoneCode = :code`,
+    //   ExpressionAttributeValues: {
+    //     ":code": dateTimeZone
+    //   }
+    // };
+    // console.info("timezoneparams:", timezoneparams);
+    // const timezoneResult = await ddb.query(timezoneparams).promise();
+    // if (timezoneResult.Items.length === 0) {
+    //   console.info(`timezoneResult have no values`);
+    //   offset = week >= 11 && week <= 44 ? "-0500" : "-0600";
+    //   return date.format("YYYY-MM-DDTHH:mm:ss") + offset;
+    // }
+    const hoursaway = timeZoneTable[dateTimeZone].HoursAway;
+
+    const convertedDate = date.format("YYYY-MM-DDTHH:mm:ss") + "-0" + (offset - hoursaway) + "00";
     if (convertedDate == 0 || convertedDate == null || convertedDate == "" || convertedDate.substring(0, 4) == "1900") {
       return "";
     }
