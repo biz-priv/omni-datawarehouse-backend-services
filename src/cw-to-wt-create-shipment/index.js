@@ -40,7 +40,7 @@ module.exports.handler = async (event, context) => {
       eventType = 's3';
       s3Bucket = get(event, 'Records[0].s3.bucket.name', '');
       s3Key = get(event, 'Records[0].s3.object.key', '');
-      shipmentId = get(get(s3Key.split('/'),'[2]', '').split('_'), '[3]', '');
+      shipmentId = get(get(s3Key.split('/'), '[2]', '').split('_'), '[3]', '');
       dynamoData = { S3Bucket: s3Bucket, S3Key: s3Key, Id: uuid.v4().replace(/[^a-zA-Z0-9]/g, ''), ShipmentId: shipmentId };
       console.info('Id :', get(dynamoData, 'Id', ''));
       dynamoData.CSTDate = cstDate.format('YYYY-MM-DD');
@@ -61,7 +61,7 @@ module.exports.handler = async (event, context) => {
     dynamoData.StatusCode = statusCode;
 
     referenceNo = get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', '');
-    dynamoData.ReferenceNo = referenceNo
+    dynamoData.ReferenceNo = referenceNo;
 
     // Preparing payload to send the data to world trak.
     const xmlWTPayload = await prepareWTpayload(xmlObj, statusCode);
@@ -71,9 +71,21 @@ module.exports.handler = async (event, context) => {
       const refNo = get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', '');
       const checkHousebill = await checkHousebillExists(refNo);
       if (checkHousebill !== '') {
-        throw new Error(
-          `Housebill already created : The housebill number for '${refNo}' already created in WT and the Housebill No. is '${checkHousebill}'`
-        );
+        console.info(`Housebill already created : The housebill number for '${refNo}' already created in WT and the Housebill No. is '${checkHousebill}'`);
+        await cwProcess(xmlObj, checkHousebill);
+        try {
+          const params = {
+            Message: `Shipment is created successfully after retry.\n\nShipmentId: ${get(dynamoData, 'ShipmentId', '')}.\n\nId: ${get(dynamoData, 'Id', '')}.\n\nS3BUCKET: ${s3Bucket}.\n\nS3KEY: ${s3Key}`,
+            Subject: `CW to WT Create Shipment Reprocess Success for ShipmentId: ${get(dynamoData, 'ShipmentId', '')}`,
+            TopicArn: process.env.NOTIFICATION_ARN,
+          };
+          await sns.publish(params).promise();
+          console.info('SNS notification has sent');
+        } catch (err) {
+          console.error('Error while sending sns notification: ', err);
+        }
+        await putItem(dynamoData);
+        return `Housebill already created : The housebill number for '${refNo}' already created in WT and the Housebill No. is '${checkHousebill}'`
       }
     }
 
@@ -157,7 +169,7 @@ module.exports.handler = async (event, context) => {
 
     // dynamoData.Status = 'SUCCESS';
 
-    if(eventType === 'dynamo'){
+    if (eventType === 'dynamo') {
       try {
         const params = {
           Message: `Shipment is created successfully after retry.\n\nShipmentId: ${get(dynamoData, 'ShipmentId', '')}.\n\nId: ${get(dynamoData, 'Id', '')}.\n\nS3BUCKET: ${s3Bucket}.\n\nS3KEY: ${s3Key}`,
@@ -190,9 +202,9 @@ module.exports.handler = async (event, context) => {
     }
     dynamoData.ErrorMsg = `${error}`;
     dynamoData.Status = 'FAILED';
-    if(eventType === 'dynamo'){
+    if (eventType === 'dynamo') {
       dynamoData.RetryCount = String(Number(dynamoData.RetryCount) + 1);
-    } else{
+    } else {
       dynamoData.RetryCount = '0';
     }
     await putItem(dynamoData);
@@ -475,6 +487,6 @@ async function cwProcess(xmlObj, housebill) {
 
   } catch (error) {
     console.error('Error in cwProcess:', error);
-    throw error
+    throw error;
   }
 }
