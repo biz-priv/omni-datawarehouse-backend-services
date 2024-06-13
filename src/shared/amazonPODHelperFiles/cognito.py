@@ -1,3 +1,10 @@
+# """
+# * File: src\pod_doc_upload\index.py
+# * Project: Omni-datawarehouse-backend-services
+# * Author: Bizcloud Experts
+# * Date: 2023-11-16
+# * Confidential and Proprietary
+# """
 ###
 ### Origin: https://code.amazon.com/packages/EdgeML1PBeerPlatformCdk/blobs/mainline/--/scripts/cognito-signin.py
 ### But I added class AWSIDP.

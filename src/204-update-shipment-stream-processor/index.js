@@ -1,3 +1,10 @@
+/*
+* File: src\204-update-shipment-stream-processor\index.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2024-05-03
+* Confidential and Proprietary
+*/
 'use strict';
 
 const AWS = require('aws-sdk');

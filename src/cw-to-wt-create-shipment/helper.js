@@ -1,3 +1,10 @@
+/*
+* File: src\cw-to-wt-create-shipment\helper.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2024-03-18
+* Confidential and Proprietary
+*/
 'use strict';
 
 const AWS = require('aws-sdk');

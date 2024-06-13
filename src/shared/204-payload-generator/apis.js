@@ -1,3 +1,10 @@
+/*
+* File: src\shared\204-payload-generator\apis.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2024-04-06
+* Confidential and Proprietary
+*/
 'use strict';
 const axios = require('axios');
 const _ = require('lodash');

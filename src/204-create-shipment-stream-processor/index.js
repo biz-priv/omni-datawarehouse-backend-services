@@ -1,3 +1,10 @@
+/*
+* File: src\204-create-shipment-stream-processor\index.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2024-04-02
+* Confidential and Proprietary
+*/
 'use strict';
 const { get, includes } = require('lodash');
 const AWS = require('aws-sdk');

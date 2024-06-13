@@ -1,3 +1,10 @@
+/*
+* File: src\shipment_header_table_stream_processor\index.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2023-11-22
+* Confidential and Proprietary
+*/
 const AWS = require("aws-sdk");
 const { get } = require("lodash");
 const moment = require("moment-timezone");

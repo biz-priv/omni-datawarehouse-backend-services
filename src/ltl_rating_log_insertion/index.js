@@ -1,3 +1,10 @@
+/*
+* File: src\ltl_rating_log_insertion\index.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2023-12-18
+* Confidential and Proprietary
+*/
 const { get } = require("lodash");
 const { v4 } = require("uuid");
 const { LTL_LOG_TABLE } = process.env;

@@ -1,3 +1,10 @@
+/*
+* File: src\shared\s3.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2023-12-16
+* Confidential and Proprietary
+*/
 const AWS = require("aws-sdk");
 const { get } = require("lodash");
 const s3 = new AWS.S3({ region: process.env.REGION });

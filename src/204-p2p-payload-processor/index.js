@@ -1,3 +1,10 @@
+/*
+* File: src\204-p2p-payload-processor\index.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2024-04-05
+* Confidential and Proprietary
+*/
 'use strict';
 const AWS = require('aws-sdk');
 const _ = require('lodash');

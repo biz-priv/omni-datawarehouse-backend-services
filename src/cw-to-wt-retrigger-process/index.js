@@ -1,3 +1,10 @@
+/*
+* File: src\cw-to-wt-retrigger-process\index.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2023-11-17
+* Confidential and Proprietary
+*/
 'use strict';
 
 const { get } = require('lodash');

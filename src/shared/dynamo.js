@@ -1,3 +1,10 @@
+/*
+* File: src\shared\dynamo.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2023-11-17
+* Confidential and Proprietary
+*/
 const AWS = require("aws-sdk");
 const db = new AWS.DynamoDB.DocumentClient();
 const { get } = require("lodash");
