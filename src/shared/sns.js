@@ -1,3 +1,10 @@
+/*
+* File: src\shared\sns.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2023-11-07
+* Confidential and Proprietary
+*/
 const AWS = require("aws-sdk");
 
 async function snsPublishMessage(TopicArn, subject, message) {

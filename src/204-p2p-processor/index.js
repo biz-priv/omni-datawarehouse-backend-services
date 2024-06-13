@@ -1,3 +1,10 @@
+/*
+* File: src\204-p2p-processor\index.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2024-04-03
+* Confidential and Proprietary
+*/
 'use strict';
 
 const { get, pickBy, every, isEmpty } = require('lodash');

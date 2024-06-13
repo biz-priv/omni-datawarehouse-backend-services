@@ -1,3 +1,10 @@
+/*
+* File: src\shared\204-payload-generator\helper.js
+* Project: Omni-datawarehouse-backend-services
+* Author: Bizcloud Experts
+* Date: 2024-05-04
+* Confidential and Proprietary
+*/
 'use strict';
 const _ = require('lodash');
 const AWS = require('aws-sdk');
