@@ -27,6 +27,7 @@ const cstDate = moment().tz('America/Chicago');
 
 module.exports.handler = async (event, context) => {
   console.info(JSON.stringify(event));
+  let referenceNo;
   try {
     if (get(event, 'Records[0].eventSource', '') === 'aws:dynamodb') {
       dynamoData = Converter.unmarshall(get(event, 'Records[0].dynamodb.NewImage'), '');
@@ -59,9 +60,22 @@ module.exports.handler = async (event, context) => {
     const statusCode = get(xmlObj, 'UniversalShipment.Shipment.Order.Status.Code', '');
     dynamoData.StatusCode = statusCode;
 
+    referenceNo = get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', '');
+    dynamoData.ReferenceNo = referenceNo
+
     // Preparing payload to send the data to world trak.
     const xmlWTPayload = await prepareWTpayload(xmlObj, statusCode);
     dynamoData.XmlWTPayload = xmlWTPayload;
+
+    if (eventType === 'dynamo') {
+      const refNo = get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', '');
+      const checkHousebill = await checkHousebillExists(refNo);
+      if (checkHousebill !== '') {
+        throw new Error(
+          `Housebill already created : The housebill number for '${refNo}' already created in WT and the Housebill No. is '${checkHousebill}'`
+        );
+      }
+    }
 
     // Sending the payload to world trak endpoint.
     const xmlWTResponse = await sendToWT(xmlWTPayload);
@@ -93,44 +107,55 @@ module.exports.handler = async (event, context) => {
       );
     }
 
-    // Preparing payload to send the data to cargowise
-    const xmlCWPayload = await prepareCWpayload(xmlObj, xmlWTObjResponse);
-    dynamoData.XmlCWPayload = xmlCWPayload;
-
-    // Sending the payload to cargowise endpoint
-    const xmlCWResponse = await sendToCW(xmlCWPayload);
-    dynamoData.XmlCWResponse = xmlCWResponse;
-
-    // Convert the response which we receive from cargowise to json
-    const xmlCWObjResponse = await xmlToJson(xmlCWResponse);
-
-    console.info(xmlCWObjResponse);
-    console.info(xmlCWObjResponse.UniversalResponse.Data.UniversalEvent.Event.EventType);
-
-    const EventType = get(
-      xmlCWObjResponse,
-      'UniversalResponse.Data.UniversalEvent.Event.EventType',
+    dynamoData.Housebill = get(
+      xmlWTObjResponse,
+      'soap:Envelope.soap:Body.AddNewShipmentV3Response.AddNewShipmentV3Result.Housebill',
       ''
     );
-    const contentType = get(
-      get(
-        xmlCWObjResponse,
-        'UniversalResponse.Data.UniversalEvent.Event.ContextCollection.Context',
-        []
-      ).filter((obj) => obj.Type === 'ProcessingStatusCode'),
-      '[0].Value',
+    dynamoData.FileNumber = get(
+      xmlWTObjResponse,
+      'soap:Envelope.soap:Body.AddNewShipmentV3Response.AddNewShipmentV3Result.ShipQuoteNo',
       ''
     );
+    await cwProcess(xmlObj, dynamoData.Housebill);
+    // // Preparing payload to send the data to cargowise
+    // const xmlCWPayload = await prepareCWpayload(xmlObj, xmlWTObjResponse);
+    // dynamoData.XmlCWPayload = xmlCWPayload;
 
-    console.info('EventType: ', EventType, 'contentType', contentType);
+    // // Sending the payload to cargowise endpoint
+    // const xmlCWResponse = await sendToCW(xmlCWPayload);
+    // dynamoData.XmlCWResponse = xmlCWResponse;
 
-    if (EventType !== 'DIM' && contentType !== 'PRS') {
-      throw new Error(
-        `CARGOWISE API call failed: ${get(xmlCWObjResponse, 'UniversalResponse.ProcessingLog', '')}`
-      );
-    }
+    // // Convert the response which we receive from cargowise to json
+    // const xmlCWObjResponse = await xmlToJson(xmlCWResponse);
 
-    dynamoData.Status = 'SUCCESS';
+    // console.info(xmlCWObjResponse);
+    // console.info(xmlCWObjResponse.UniversalResponse.Data.UniversalEvent.Event.EventType);
+
+    // const EventType = get(
+    //   xmlCWObjResponse,
+    //   'UniversalResponse.Data.UniversalEvent.Event.EventType',
+    //   ''
+    // );
+    // const contentType = get(
+    //   get(
+    //     xmlCWObjResponse,
+    //     'UniversalResponse.Data.UniversalEvent.Event.ContextCollection.Context',
+    //     []
+    //   ).filter((obj) => obj.Type === 'ProcessingStatusCode'),
+    //   '[0].Value',
+    //   ''
+    // );
+
+    // console.info('EventType: ', EventType, 'contentType', contentType);
+
+    // if (EventType !== 'DIM' && contentType !== 'PRS') {
+    //   throw new Error(
+    //     `CARGOWISE API call failed: ${get(xmlCWObjResponse, 'UniversalResponse.ProcessingLog', '')}`
+    //   );
+    // }
+
+    // dynamoData.Status = 'SUCCESS';
 
     if(eventType === 'dynamo'){
       try {
@@ -292,17 +317,8 @@ async function xmlToJson(xmlData) {
   }
 }
 
-async function prepareCWpayload(xmlObj, xmlWTObjResponse) {
-  dynamoData.Housebill = get(
-    xmlWTObjResponse,
-    'soap:Envelope.soap:Body.AddNewShipmentV3Response.AddNewShipmentV3Result.Housebill',
-    ''
-  );
-  dynamoData.FileNumber = get(
-    xmlWTObjResponse,
-    'soap:Envelope.soap:Body.AddNewShipmentV3Response.AddNewShipmentV3Result.ShipQuoteNo',
-    ''
-  );
+async function prepareCWpayload(xmlObj, housebill) {
+
   try {
     const builder = new xml2js.Builder({
       headless: true,
@@ -331,11 +347,7 @@ async function prepareCWpayload(xmlObj, xmlWTObjResponse) {
           },
           Order: {
             OrderNumber: get(xmlObj, 'UniversalShipment.Shipment.Order.OrderNumber', ''),
-            TransportReference: get(
-              xmlWTObjResponse,
-              'soap:Envelope.soap:Body.AddNewShipmentV3Response.AddNewShipmentV3Result.Housebill',
-              ''
-            ),
+            TransportReference: housebill,
           },
         },
       },
@@ -345,5 +357,124 @@ async function prepareCWpayload(xmlObj, xmlWTObjResponse) {
   } catch (error) {
     console.error('Error in prepareCWpayload: ', error);
     throw error;
+  }
+}
+
+
+async function checkHousebillExists(referenceNo) {
+  try {
+    const builder = new xml2js.Builder({
+      headless: true,
+    });
+
+    const payload = builder.buildObject({
+      'soap:Envelope': {
+        '$': {
+          'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+          'xmlns:xsd': 'http://www.w3.org/2001/XMLSchema',
+          'xmlns:soap': 'http://schemas.xmlsoap.org/soap/envelope/'
+        },
+        'soap:Header': {
+          'AuthHeader': {
+            '$': {
+              'xmlns': 'http://tempuri.org/'
+            },
+            'UserName': 'apiuser',
+            'Password': 'Api081020!'
+          }
+        },
+        'soap:Body': {
+          'GetShipmentsByReferenceNo': {
+            '$': {
+              'xmlns': 'http://tempuri.org/'
+            },
+            'RefNo': referenceNo,
+            'RefType': 'S'
+          }
+        }
+      }
+    });
+
+    const xmlResponse = await sendToCheckHousebillExists(payload);
+    const jsonResponse = await xmlToJson(xmlResponse);
+
+    const trackingNo = get(jsonResponse, 'soap:Envelope.soap:Body.GetShipmentsByReferenceNoResponse.GetShipmentsByReferenceNoResult.ShipmentDetail.TrackingNo', '');
+    const housebill = trackingNo.length > 4 ? trackingNo.substring(4) : '';
+
+    return housebill;
+  } catch (error) {
+    console.error('Error in prepareCWpayload: ', error);
+    throw error;
+  }
+}
+
+async function sendToCheckHousebillExists(postData) {
+  try {
+    const config = {
+      url: 'https://wttest.omnilogistics.com/WTKServices/AirtrakShipment.asmx',
+      method: 'post',
+      headers: {
+        'Content-Type': 'text/xml',
+      },
+      data: postData,
+    };
+
+    console.info('config: ', config);
+    const res = await axios.request(config);
+    if (get(res, 'status', '') === 200) {
+      return get(res, 'data', '');
+    }
+    throw new Error(`Check for Housebill API Request Failed: ${res}`);
+  } catch (error) {
+    console.error('Check for Housebill API Request Failed: ', error);
+    throw error;
+  }
+}
+
+
+async function cwProcess(xmlObj, housebill) {
+  try {
+    // Preparing payload to send the data to cargowise
+    const xmlCWPayload = await prepareCWpayload(xmlObj, housebill);
+    dynamoData.XmlCWPayload = xmlCWPayload;
+
+    // Sending the payload to cargowise endpoint
+    const xmlCWResponse = await sendToCW(xmlCWPayload);
+    dynamoData.XmlCWResponse = xmlCWResponse;
+
+    // Convert the response which we receive from cargowise to json
+    const xmlCWObjResponse = await xmlToJson(xmlCWResponse);
+
+    console.info(xmlCWObjResponse);
+    console.info(xmlCWObjResponse.UniversalResponse.Data.UniversalEvent.Event.EventType);
+
+    const EventType = get(
+      xmlCWObjResponse,
+      'UniversalResponse.Data.UniversalEvent.Event.EventType',
+      ''
+    );
+    const contentType = get(
+      get(
+        xmlCWObjResponse,
+        'UniversalResponse.Data.UniversalEvent.Event.ContextCollection.Context',
+        []
+      ).filter((obj) => obj.Type === 'ProcessingStatusCode'),
+      '[0].Value',
+      ''
+    );
+
+    console.info('EventType: ', EventType, 'contentType', contentType);
+
+    if (EventType !== 'DIM' && contentType !== 'PRS') {
+      throw new Error(
+        `CARGOWISE API call failed: ${get(xmlCWObjResponse, 'UniversalResponse.ProcessingLog', '')}`
+      );
+    }
+
+    dynamoData.Status = 'SUCCESS';
+
+  } catch (error) {
+    console.error('Error in cwProcess:', error);
+    throw error
   }
 }
