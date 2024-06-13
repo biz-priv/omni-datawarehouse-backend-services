@@ -160,6 +160,9 @@ async function getTime(dateTime, dateTimeZone, timeZoneTable) {
 
 async function locationFunc(pKeyValue, houseBill) {
   try {
+    if (!pKeyValue || !houseBill) {
+      return "";
+    }
     let mainArray = [];
     let params = {
       TableName: process.env.TRACKING_NOTES_TABLE,
