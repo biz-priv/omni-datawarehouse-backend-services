@@ -50,8 +50,6 @@ module.exports.handler = async (event, context) => {
       dynamoData.XmlFromCW = s3Data;
     }
 
-
-
     // Convert the XML data from s3 to json.
     const xmlObjFromCW = await xmlToJson(get(dynamoData, 'XmlFromCW', ''));
 
@@ -85,7 +83,7 @@ module.exports.handler = async (event, context) => {
           console.error('Error while sending sns notification: ', err);
         }
         await putItem(dynamoData);
-        return `Housebill already created : The housebill number for '${refNo}' already created in WT and the Housebill No. is '${checkHousebill}'`
+        return `Housebill already created : The housebill number for '${refNo}' already created in WT and the Housebill No. is '${checkHousebill}'`;
       }
     }
 
@@ -130,44 +128,6 @@ module.exports.handler = async (event, context) => {
       ''
     );
     await cwProcess(xmlObj, dynamoData.Housebill);
-    // // Preparing payload to send the data to cargowise
-    // const xmlCWPayload = await prepareCWpayload(xmlObj, xmlWTObjResponse);
-    // dynamoData.XmlCWPayload = xmlCWPayload;
-
-    // // Sending the payload to cargowise endpoint
-    // const xmlCWResponse = await sendToCW(xmlCWPayload);
-    // dynamoData.XmlCWResponse = xmlCWResponse;
-
-    // // Convert the response which we receive from cargowise to json
-    // const xmlCWObjResponse = await xmlToJson(xmlCWResponse);
-
-    // console.info(xmlCWObjResponse);
-    // console.info(xmlCWObjResponse.UniversalResponse.Data.UniversalEvent.Event.EventType);
-
-    // const EventType = get(
-    //   xmlCWObjResponse,
-    //   'UniversalResponse.Data.UniversalEvent.Event.EventType',
-    //   ''
-    // );
-    // const contentType = get(
-    //   get(
-    //     xmlCWObjResponse,
-    //     'UniversalResponse.Data.UniversalEvent.Event.ContextCollection.Context',
-    //     []
-    //   ).filter((obj) => obj.Type === 'ProcessingStatusCode'),
-    //   '[0].Value',
-    //   ''
-    // );
-
-    // console.info('EventType: ', EventType, 'contentType', contentType);
-
-    // if (EventType !== 'DIM' && contentType !== 'PRS') {
-    //   throw new Error(
-    //     `CARGOWISE API call failed: ${get(xmlCWObjResponse, 'UniversalResponse.ProcessingLog', '')}`
-    //   );
-    // }
-
-    // dynamoData.Status = 'SUCCESS';
 
     if (eventType === 'dynamo') {
       try {
@@ -410,7 +370,7 @@ async function checkHousebillExists(referenceNo) {
     const xmlResponse = await sendToCheckHousebillExists(payload);
     const jsonResponse = await xmlToJson(xmlResponse);
 
-    const shipmentDetails = get(jsonResponse, 'soap:Envelope.soap:Body.GetShipmentsByReferenceNoResponse.GetShipmentsByReferenceNoResult.ShipmentDetail', {})
+    const shipmentDetails = get(jsonResponse, 'soap:Envelope.soap:Body.GetShipmentsByReferenceNoResponse.GetShipmentsByReferenceNoResult.ShipmentDetail', {});
     let housebill = '';
     if (Array.isArray(shipmentDetails)) {
       const housebills = shipmentDetails.map(detail => {
