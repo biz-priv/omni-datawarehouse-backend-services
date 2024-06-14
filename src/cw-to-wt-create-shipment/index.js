@@ -391,8 +391,8 @@ async function checkHousebillExists(referenceNo) {
             '$': {
               'xmlns': 'http://tempuri.org/'
             },
-            'UserName': 'apiuser',
-            'Password': 'Api081020!'
+            'UserName': process.env.CHECK_HOUSEBILL_EXISTS_API_USERNAME,
+            'Password': process.env.CHECK_HOUSEBILL_EXISTS_API_PASSWORD
           }
         },
         'soap:Body': {
@@ -410,8 +410,25 @@ async function checkHousebillExists(referenceNo) {
     const xmlResponse = await sendToCheckHousebillExists(payload);
     const jsonResponse = await xmlToJson(xmlResponse);
 
-    const trackingNo = get(jsonResponse, 'soap:Envelope.soap:Body.GetShipmentsByReferenceNoResponse.GetShipmentsByReferenceNoResult.ShipmentDetail.TrackingNo', '');
-    const housebill = trackingNo.length > 4 ? trackingNo.substring(4) : '';
+    const shipmentDetails = get(jsonResponse, 'soap:Envelope.soap:Body.GetShipmentsByReferenceNoResponse.GetShipmentsByReferenceNoResult.ShipmentDetail', {})
+    let housebill = '';
+    if (Array.isArray(shipmentDetails)) {
+      const housebills = shipmentDetails.map(detail => {
+        const trackingNo = get(detail, 'TrackingNo', '');
+        return trackingNo.length > 4 ? trackingNo.substring(4) : '';
+      });
+
+      const numericHousebills = housebills.map(housebillNo => parseInt(housebillNo, 10)).filter(Number.isFinite);
+
+      housebill = numericHousebills.reduce((max, current) => {
+        return current > max ? current : max;
+      }, 0).toString();
+    } else if (Object.keys(shipmentDetails).length > 0) {
+      const trackingNo = get(shipmentDetails, 'TrackingNo', '');
+      housebill = trackingNo.length > 4 ? trackingNo.substring(4) : '';
+    } else {
+      housebill = '';
+    }
 
     return housebill;
   } catch (error) {
@@ -423,7 +440,7 @@ async function checkHousebillExists(referenceNo) {
 async function sendToCheckHousebillExists(postData) {
   try {
     const config = {
-      url: 'https://wttest.omnilogistics.com/WTKServices/AirtrakShipment.asmx',
+      url: process.env.CHECK_HOUSEBILL_EXISTS_API_URL,
       method: 'post',
       headers: {
         'Content-Type': 'text/xml',
