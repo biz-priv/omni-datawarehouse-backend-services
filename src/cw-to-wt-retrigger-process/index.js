@@ -4,7 +4,7 @@ const { get } = require('lodash');
 const AWS = require('aws-sdk');
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
-// const sns = new AWS.SNS();
+const sns = new AWS.SNS();
 
 const { LOGS_TABLE } = process.env;
 
@@ -24,6 +24,18 @@ module.exports.handler = async (event, context) => {
         return 'success';
     } catch (e) {
         console.error('Error while updating status as READY for FAILED records', e);
+
+        try {
+            const params = {
+              Message: `An error occurred in function ${context.functionName}.\n\nERROR DETAILS: ${e}.\n\n`,
+              Subject: `CW to WT Create Shipment retry process ERROR ${context.functionName}`,
+              TopicArn: process.env.NOTIFICATION_ARN,
+            };
+            await sns.publish(params).promise();
+            console.info('SNS notification has sent');
+          } catch (err) {
+            console.error('Error while sending sns notification: ', err);
+          }
         return 'failed';
     }
 };
