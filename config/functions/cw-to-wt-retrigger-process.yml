@@ -16,3 +16,5 @@ function:
     - schedule: cron(*/1 * * * ? *) #cron for every 1 min
   environment:
     LOGS_TABLE: ${ssm:/omni-dw/${self:provider.stage}/cw-to-wt/create-shipment/ddb.tableName}
+    STAGE: ${self:provider.stage}
+    NOTIFICATION_ARN: ${ssm:/omni-cw-to-wt/${self:provider.stage}/error-notification/sns/arn}
