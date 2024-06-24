@@ -41,49 +41,48 @@ module.exports.handler = async (event, context) => {
 };
 
 async function queryTableStatusPending() {
-    const params = {
-        TableName: LOGS_TABLE,
-        IndexName: 'Status-RetryCount-Index',
-        KeyConditionExpression: '#status = :status AND #retrycount = :retrycount',
-        ExpressionAttributeNames: {
-            '#status': 'Status',
-            '#retrycount': 'RetryCount'
-          },
-        ExpressionAttributeValues: {
-            ':status': 'FAILED',
-            ':retrycount': '0'
-        }
-    };
-    console.info('params:', params);
-    try {
-        const data = await dynamoDb.query(params).promise();
-        console.info('Query succeeded:', data);
-        return get(data, 'Items', []);
-    } catch (err) {
-        console.info('Query error:', err);
-        throw err;
-    }
+  const params = {
+    TableName: LOGS_TABLE,
+    IndexName: 'Status-RetryCount-Index',
+    KeyConditionExpression: '#status = :status AND #retrycount = :retrycount',
+    ExpressionAttributeNames: {
+      '#status': 'Status',
+      '#retrycount': 'RetryCount',
+    },
+    ExpressionAttributeValues: {
+      ':status': 'FAILED',
+      ':retrycount': '0',
+    },
+  };
+  console.info('params:', params);
+  try {
+    const data = await dynamoDb.query(params).promise();
+    console.info('Query succeeded:', data);
+    return get(data, 'Items', []);
+  } catch (err) {
+    console.info('Query error:', err);
+    throw err;
+  }
 }
 
-
 async function updateRecord(record) {
-    try {
-        const params = {
-            TableName: LOGS_TABLE,
-            Key: { Id: record.Id },
-            UpdateExpression: 'SET #statusAttr = :newStatus',
-            ExpressionAttributeNames: {
-                '#statusAttr': 'Status'
-            },
-            ExpressionAttributeValues: {
-                ':newStatus': 'READY',
-            }
-        };
+  try {
+    const params = {
+      TableName: LOGS_TABLE,
+      Key: { Id: record.Id },
+      UpdateExpression: 'SET #statusAttr = :newStatus',
+      ExpressionAttributeNames: {
+        '#statusAttr': 'Status',
+      },
+      ExpressionAttributeValues: {
+        ':newStatus': 'READY',
+      },
+    };
 
-        await dynamoDb.update(params).promise();
-        console.info('Record updated successfully:', record);
-    } catch (err) {
-        console.error('Error updating record:', err);
-        throw err;
-    }
+    await dynamoDb.update(params).promise();
+    console.info('Record updated successfully:', record);
+  } catch (err) {
+    console.error('Error updating record:', err);
+    throw err;
+  }
 }
