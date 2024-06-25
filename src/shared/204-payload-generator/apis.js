@@ -295,7 +295,6 @@ async function getCustomerData({ customerId, orderId, consolNo = 0, houseBillStr
 
   try {
     if (!customerId) throw new Error('Customer ID not found.');
-
     const response = await axios.get(`${apiUrl}/${customerId}`, {
       headers,
     });
@@ -313,8 +312,7 @@ async function getCustomerData({ customerId, orderId, consolNo = 0, houseBillStr
     \n ConsolNo: ${consolNo}
     \n Housebill: ${houseBillString}
     \n Error Details: ${errorMessage}
-    \n Payload: 
-    \n ${JSON.stringify(data)}`);
+    \n CustomerId: ${customerId}`);
   }
 }
 
