@@ -14,6 +14,7 @@ const {
   getAparDataByConsole,
   getUserEmail,
   sendSESEmail,
+  getCustomerDetails,
 } = require('../shared/204-payload-generator/helper');
 const {
   sendPayload,
@@ -214,6 +215,19 @@ module.exports.handler = async (event, context) => {
         });
         console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
         const shipmentId = _.get(createPayloadResponse, 'id', 0);
+        const customerId = _.get(createPayloadResponse, 'customer_id');
+        const { operations_rep, operations_rep2, salesperson_id } = await getCustomerDetails({
+          customerId,
+        });
+        _.set(createPayloadResponse, 'operations_rep', operations_rep);
+        _.set(createPayloadResponse, 'operations_rep2', operations_rep2);
+        _.set(createPayloadResponse, 'salesperson_id', salesperson_id);
+        console.info(
+          '🙂 -> file: index.js:220 -> promises -> operations_rep, operations_rep2, salesperson_id:',
+          operations_rep,
+          operations_rep2,
+          salesperson_id
+        );
         if (type === 'NON_CONSOLE') {
           await liveSendUpdate(houseBill, shipmentId);
         } else if (type === 'CONSOLE') {

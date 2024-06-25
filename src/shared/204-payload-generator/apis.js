@@ -13,6 +13,7 @@ const {
   API_PASS,
   API_USER_ID,
   GET_ORDERS_API_ENDPOINT,
+  GET_CUSTOMER_URL,
 } = process.env;
 
 async function getLocationId(name, address1, address2, state) {
@@ -284,6 +285,39 @@ async function liveSendUpdate(houseBill, shipmentId) {
   }
 }
 
+async function getCustomerData({ customerId, orderId, consolNo = 0, houseBillString }) {
+  const apiUrl = GET_CUSTOMER_URL;
+
+  const headers = {
+    Accept: 'application/json',
+    Authorization: AUTH,
+  };
+
+  try {
+    if (!customerId) throw new Error('Customer ID not found.');
+
+    const response = await axios.get(`${apiUrl}/${customerId}`, {
+      headers,
+    });
+
+    // Handle the response using lodash or other methods as needed
+    const responseData = _.get(response, 'data', {});
+    console.info('🙂 -> file: apis.js:74 -> responseData:', responseData);
+    // Return the created location data or perform additional processing as needed
+    return responseData;
+  } catch (error) {
+    console.info('🙂 -> file: apis.js:78 -> error:', error);
+    const errorMessage = _.get(error, 'response.data', error.message);
+    throw new Error(`\nError in Create Orders API.
+    \n FK_OrderNo: ${orderId}
+    \n ConsolNo: ${consolNo}
+    \n Housebill: ${houseBillString}
+    \n Error Details: ${errorMessage}
+    \n Payload: 
+    \n ${JSON.stringify(data)}`);
+  }
+}
+
 module.exports = {
   getLocationId,
   createLocation,
@@ -291,4 +325,5 @@ module.exports = {
   updateOrders,
   liveSendUpdate,
   getOrders,
+  getCustomerData,
 };

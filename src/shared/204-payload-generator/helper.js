@@ -2,7 +2,7 @@
 const _ = require('lodash');
 const AWS = require('aws-sdk');
 const moment = require('moment-timezone');
-const { getLocationId, createLocation } = require('./apis');
+const { getLocationId, createLocation, getCustomerData } = require('./apis');
 
 const ses = new AWS.SES();
 const {
@@ -1623,6 +1623,14 @@ async function getEquipmentCodeForMT(consolNo) {
   }
 }
 
+async function getCustomerDetails({ customerId }) {
+  const getCustRes = await getCustomerData({ customerId });
+  const salesperson_id = get(getCustRes, 'salesperson_id', 'NA');
+  const operations_rep = get(getCustRes, 'operations_rep', 'NA');
+  const operations_rep2 = get(getCustRes, 'operations_rep2', 'NA');
+  return { salesperson_id, operations_rep, operations_rep2 };
+}
+
 module.exports = {
   getPowerBrokerCode,
   getCstTime,
@@ -1653,4 +1661,5 @@ module.exports = {
   getUserEmail,
   sendSESEmail,
   getEquipmentCodeForMT,
+  getCustomerDetails,
 };

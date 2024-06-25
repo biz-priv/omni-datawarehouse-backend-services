@@ -10,34 +10,34 @@ const { LOGS_TABLE } = process.env;
 
 let functionName;
 module.exports.handler = async (event, context) => {
-    try {
-        functionName = get(context, 'functionName');
-        console.info('functionName:', functionName);
-        const failedStatusResult = await queryTableStatusPending();
-        if (!failedStatusResult || failedStatusResult.length === 0) {
-            console.info('No records failed, Skipping');
-            return 'No records failed, Skipping';
-        }
-        console.info('failedStatusResult:', failedStatusResult);
-        const updatePromises = failedStatusResult.map(record => updateRecord(record));
-        await Promise.all(updatePromises);
-        return 'success';
-    } catch (e) {
-        console.error('Error while updating status as READY for FAILED records', e);
-
-        try {
-            const params = {
-              Message: `An error occurred in function ${context.functionName}.\n\nERROR DETAILS: ${e}.\n\n`,
-              Subject: `CW to WT Create Shipment retry process ERROR ${context.functionName}`,
-              TopicArn: process.env.NOTIFICATION_ARN,
-            };
-            await sns.publish(params).promise();
-            console.info('SNS notification has sent');
-          } catch (err) {
-            console.error('Error while sending sns notification: ', err);
-          }
-        return 'failed';
+  try {
+    functionName = get(context, 'functionName');
+    console.info('functionName:', functionName);
+    const failedStatusResult = await queryTableStatusPending();
+    if (!failedStatusResult || failedStatusResult.length === 0) {
+      console.info('No records failed, Skipping');
+      return 'No records failed, Skipping';
     }
+    console.info('failedStatusResult:', failedStatusResult);
+    const updatePromises = failedStatusResult.map((record) => updateRecord(record));
+    await Promise.all(updatePromises);
+    return 'success';
+  } catch (e) {
+    console.error('Error while updating status as READY for FAILED records', e);
+
+    try {
+      const params = {
+        Message: `An error occurred in function ${context.functionName}.\n\nERROR DETAILS: ${e}.\n\n`,
+        Subject: `CW to WT Create Shipment retry process ERROR ${context.functionName}`,
+        TopicArn: process.env.NOTIFICATION_ARN,
+      };
+      await sns.publish(params).promise();
+      console.info('SNS notification has sent');
+    } catch (err) {
+      console.error('Error while sending sns notification: ', err);
+    }
+    return 'failed';
+  }
 };
 
 async function queryTableStatusPending() {
