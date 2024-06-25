@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 'use strict';
 const _ = require('lodash');
 const AWS = require('aws-sdk');
@@ -1625,9 +1626,9 @@ async function getEquipmentCodeForMT(consolNo) {
 
 async function getCustomerDetails({ customerId }) {
   const getCustRes = await getCustomerData({ customerId });
-  const salesperson_id = get(getCustRes, 'salesperson_id', 'NA');
-  const operations_rep = get(getCustRes, 'operations_rep', 'NA');
-  const operations_rep2 = get(getCustRes, 'operations_rep2', 'NA');
+  const salesperson_id = _.get(getCustRes, 'salesperson_id', 'NA');
+  const operations_rep = _.get(getCustRes, 'operations_rep', 'NA');
+  const operations_rep2 = _.get(getCustRes, 'operations_rep2', 'NA');
   return { salesperson_id, operations_rep, operations_rep2 };
 }
 
