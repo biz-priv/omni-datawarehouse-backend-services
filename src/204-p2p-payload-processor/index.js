@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 'use strict';
 const AWS = require('aws-sdk');
 const _ = require('lodash');
@@ -219,9 +220,10 @@ module.exports.handler = async (event, context) => {
         const { operations_rep, operations_rep2, salesperson_id } = await getCustomerDetails({
           customerId,
         });
-        _.set(createPayloadResponse, 'operations_rep', operations_rep);
-        _.set(createPayloadResponse, 'operations_rep2', operations_rep2);
-        _.set(createPayloadResponse, 'salesperson_id', salesperson_id);
+        if (operations_rep) _.set(createPayloadResponse, 'operations_rep', operations_rep);
+        if (operations_rep2) _.set(createPayloadResponse, 'operations_rep2', operations_rep2);
+        if (salesperson_id) _.set(createPayloadResponse, 'salesperson_id', salesperson_id);
+
         console.info(
           '🙂 -> file: index.js:220 -> promises -> operations_rep, operations_rep2, salesperson_id:',
           operations_rep,
@@ -264,7 +266,10 @@ module.exports.handler = async (event, context) => {
 
         // Update the stops array in the payload with the updated contact names
         _.set(createPayloadResponse, 'stops', updatedStops);
-
+        console.info(
+          '🙂 -> file: index.js:310 -> promises -> createPayloadResponse:',
+          JSON.stringify(createPayloadResponse)
+        );
         const updatedOrderResponse = await updateOrders({
           payload: createPayloadResponse,
           orderId,
