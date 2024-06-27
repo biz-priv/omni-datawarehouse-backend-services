@@ -18,6 +18,7 @@ const STATUSES = {
   SENT: 'SENT',
   FAILED: 'FAILED',
   SKIPPED: 'SKIPPED',
+  CANCELED: 'CANCELED',
 };
 
 const TYPES = {
