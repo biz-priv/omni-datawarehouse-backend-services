@@ -378,7 +378,7 @@ async function updateStatusTable({
   response,
   payload,
   Housebill,
-  ShipmentId = 0,
+  ShipmentId = '0',
 }) {
   try {
     const updateParam = {
@@ -412,7 +412,7 @@ async function insertInOutputTable({
   response,
   payload,
   Housebill,
-  ShipmentId = 0,
+  ShipmentId = '0',
 }) {
   try {
     const params = {
