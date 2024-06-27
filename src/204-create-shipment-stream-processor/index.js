@@ -82,16 +82,6 @@ module.exports.handler = async (event, context) => {
           }
         }
 
-        const HeaderResult = await fetchBillNos({ orderNo: orderId });
-
-        // Extract bill numbers from the result
-        const billNumbers = HeaderResult.map((item) => item.BillNo);
-        console.info('🚀 ~ file: index.js:65 ~ get ~ billNumbers:', billNumbers);
-
-        if (billNumbers.includes('54412')) {
-          return true;
-        }
-
         if (consolNo === 0 && includes(['HS', 'TL'], serviceLevelId) && vendorId === VENDOR) {
           userEmail = await getUserEmail({ userId });
           console.info('🚀 ~ file: index.js:83 ~ get ~ userEmail:', userEmail);
