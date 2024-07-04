@@ -263,27 +263,27 @@ async function processShipmentAparData({ orderId, newImage, note }) {
         await updateStatusTables({ consolNo, type });
         console.info('Voided the WT consolNo:', consolNo, '#PRO:', id);
       }
-      await sendSESEmail({
-        functionName,
-        message: `The shipment associated with the following details has been cancelled:\n
-                  Order ID: ${orderId}\n
-                  Consolidation Number: ${consolNo}\n
-                  Note: ${note}`,
-        userEmail,
-        subject: {
-          Data: `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`,
-          Charset: 'UTF-8',
-        },
-      });
-      await publishSNSTopic({
-        message: `The shipment associated with the following details has been cancelled:\n
-                  Order ID: ${orderId}\n
-                  Consolidation Number: ${consolNo}\n
-                  Note: ${note}`,
-        stationCode,
-        subject: `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`,
-      });
     }
+    await sendSESEmail({
+      functionName,
+      message: `The shipment associated with the following details has been cancelled:\n
+                Order ID: ${orderId}\n
+                Consolidation Number: ${consolNo}\n
+                Note: ${note}`,
+      userEmail,
+      subject: {
+        Data: `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`,
+        Charset: 'UTF-8',
+      },
+    });
+    await publishSNSTopic({
+      message: `The shipment associated with the following details has been cancelled:\n
+                Order ID: ${orderId}\n
+                Consolidation Number: ${consolNo}\n
+                Note: ${note}`,
+      stationCode,
+      subject: `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`,
+    });
   } catch (error) {
     console.error('Error in processShipmentAparData:', error);
     throw error;
