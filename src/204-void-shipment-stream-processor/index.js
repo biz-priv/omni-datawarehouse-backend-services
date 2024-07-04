@@ -66,7 +66,7 @@ async function processRecord(record) {
         console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderNo:', orderNo);
         const aparFailureDataArray = await fetchAparFailureData(orderNo);
         const highestObject = aparFailureDataArray.reduce((max, current) => {
-          return (current.FK_SeqNo > max.FK_SeqNo) ? current : max;
+          return current.FK_SeqNo > max.FK_SeqNo ? current : max;
         }, aparFailureDataArray[0]);
         const Note = _.get(highestObject, 'Note');
         console.info('note: ', Note);
@@ -102,7 +102,11 @@ async function processRecord(record) {
             // Process data for each orderId
             await Promise.all(
               aparDataArray.map(async (aparData) => {
-                await processShipmentAparData({ orderId, newImage: aparData, note: 'Shipment got Cancelled' });
+                await processShipmentAparData({
+                  orderId,
+                  newImage: aparData,
+                  note: 'Shipment got Cancelled',
+                });
               })
             );
           })
@@ -280,8 +284,7 @@ async function processShipmentAparData({ orderId, newImage, note }) {
         subject: `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`,
       });
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error in processShipmentAparData:', error);
     throw error;
   }
@@ -326,11 +329,10 @@ async function fetchShipmentAparData(orderId) {
     const params = {
       TableName: SHIPMENT_APAR_TABLE,
       KeyConditionExpression: 'FK_OrderNo = :orderNo',
-      FilterExpression:
-        'FK_ServiceId = :FK_ServiceId',
+      FilterExpression: 'FK_ServiceId = :FK_ServiceId',
       ExpressionAttributeValues: {
         ':orderNo': orderId,
-        ':FK_ServiceId': 'SE'
+        ':FK_ServiceId': 'SE',
       },
     };
     const data = await dynamoDb.query(params).promise();

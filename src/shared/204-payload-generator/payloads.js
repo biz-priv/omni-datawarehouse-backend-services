@@ -136,6 +136,13 @@ async function nonConsolPayload({
     operational_status: 'CLIN',
     lock_miles: false,
     def_move_type: 'A',
+    freight_charge: _.get(shipmentAparData, 'Total', 0),
+    freight_charge_c: 'USD',
+    freight_charge_n: _.get(shipmentAparData, 'Total', 0),
+    freight_charge_r: 1.0,
+    rate: _.get(shipmentAparData, 'Total', 0),
+    rate_type: 'F',
+    rate_units: 1.0,
     stops: [],
   };
   // Conditionally set commodity_id if hazmat is true
@@ -282,6 +289,13 @@ async function consolPayload({
     operational_status: 'CLIN',
     lock_miles: false,
     def_move_type: 'A',
+    freight_charge: sumNumericValues(shipmentAparConsoleData, 'Total'),
+    freight_charge_c: 'USD',
+    freight_charge_n: sumNumericValues(shipmentAparConsoleData, 'Total'),
+    freight_charge_r: 1.0,
+    rate: sumNumericValues(shipmentAparConsoleData, 'Total'),
+    rate_type: 'F',
+    rate_units: 1.0,
     stops: [],
   };
   // Conditionally set commodity_id if hazmat is true
@@ -397,6 +411,13 @@ async function mtPayload(
     operational_status: 'CLIN',
     lock_miles: false,
     def_move_type: 'A',
+    freight_charge: sumNumericValues(shipmentApar, 'Total'),
+    freight_charge_c: 'USD',
+    freight_charge_n: sumNumericValues(shipmentApar, 'Total'),
+    freight_charge_r: 1.0,
+    rate: sumNumericValues(shipmentApar, 'Total'),
+    rate_type: 'F',
+    rate_units: 1.0,
     stops,
   };
   // Conditionally set commodity_id if hazmat is true
