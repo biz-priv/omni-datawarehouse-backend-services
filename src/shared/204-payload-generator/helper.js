@@ -1570,12 +1570,14 @@ async function fetchUserEmail({ userId }) {
 
 async function sendSESEmail({ message, userEmail, subject, functionName }) {
   try {
-    let mes
+    subject = String(subject);
+    let mes;
     if (subject.startsWith('PB VOID NOTIFICATION')) {
-      mes = message
+      mes = message;
     } else {
-      mes = `An error occurred in ${functionName}: ${message}`
+      mes = `An error occurred in ${functionName}: ${message}`;
     }
+
     const params = {
       Destination: {
         ToAddresses: [userEmail, OMNI_DEV_EMAIL],
@@ -1587,7 +1589,10 @@ async function sendSESEmail({ message, userEmail, subject, functionName }) {
             Charset: 'UTF-8',
           },
         },
-        Subject: subject,
+        Subject: {
+          Data: subject,
+          Charset: 'UTF-8',
+        },
       },
       Source: OMNI_NO_REPLY_EMAIL,
     };
