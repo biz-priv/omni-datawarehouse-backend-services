@@ -60,6 +60,7 @@ async function processRecord(record) {
         '🚀 ~ file: index.js:42 ~ processRecord ~ fkVendorIdDeleted:',
         fkVendorIdDeleted
       );
+      await setDelay(45);
 
       if (fkVendorIdUpdated || fkVendorIdDeleted) {
         orderNo = _.get(message, 'Keys.FK_OrderNo.S');
@@ -70,6 +71,9 @@ async function processRecord(record) {
         }, aparFailureDataArray[0]);
         const Note = _.get(highestObject, 'Note');
         console.info('note: ', Note);
+        if (!Note) {
+          throw new Error('No note found. Failed to cancel the shipment.');
+        }
         const shipmentAparData = await fetchShipmentAparData(orderNo);
         const FkServiceId = _.get(shipmentAparData, '[0].FK_ServiceId');
         console.info('FkServiceId: ', FkServiceId);
@@ -450,4 +454,18 @@ async function publishSNSTopic({ message, stationCode, subject }) {
     console.error('Error publishing to SNS topic:', error);
     throw error;
   }
+}
+
+function setDelay(sec) {
+  console.info('delay started');
+  return new Promise((resolve, reject) => {
+    if (typeof sec !== 'number' || sec < 0) {
+      reject(new Error('Invalid time specified'));
+    } else {
+      setTimeout(() => {
+        console.info('delay end');
+        resolve(true);
+      }, sec * 1000);
+    }
+  });
 }
