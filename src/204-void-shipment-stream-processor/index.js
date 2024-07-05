@@ -36,7 +36,7 @@ module.exports.handler = async (event, context) => {
 };
 
 async function processRecord(record) {
-  let orderNo;
+  let orderNo; 
   try {
     const body = JSON.parse(_.get(record, 'body', ''));
     const message = JSON.parse(_.get(body, 'Message', ''));
