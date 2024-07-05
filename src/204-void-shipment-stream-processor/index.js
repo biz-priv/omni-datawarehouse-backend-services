@@ -122,7 +122,7 @@ async function processRecord(record) {
     console.error('Error processing record:', error);
     await publishSNSTopic({
       message: `${error.message}\n
-                function name: `,
+                function name: ${functionName}`,
       stationCode: 'SUPPORT',
       subject: `An error occured while voiding the process ~ FK_OrderNo: ${orderNo}`,
     });
@@ -427,10 +427,16 @@ async function updateStatusTables({ consolNo, type, orderId }) {
 
 async function publishSNSTopic({ message, stationCode, subject }) {
   try {
+    let mes
+    if (message.startsWith('The shipment associated')) {
+      mes = message
+    } else {
+      mes = `An error occurred in ${functionName}: ${message}`
+    }
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
       Subject: subject,
-      Message: `An error occurred in ${functionName}: \n${message}`,
+      Message: mes,
       MessageAttributes: {
         stationCode: {
           DataType: 'String',

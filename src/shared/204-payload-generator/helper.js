@@ -279,9 +279,9 @@ async function generateStopforConsole(
     referenceNumbers:
       type === 'shipper'
         ? [
-            ...populateHousebillNumbers(housebillData, descData),
-            ...generateReferenceNumbers({ references }),
-          ]
+          ...populateHousebillNumbers(housebillData, descData),
+          ...generateReferenceNumbers({ references }),
+        ]
         : [],
   };
   stopData.stopNotes.push({
@@ -1570,6 +1570,12 @@ async function fetchUserEmail({ userId }) {
 
 async function sendSESEmail({ message, userEmail, subject, functionName }) {
   try {
+    let mes
+    if (subject.startsWith('PB VOID NOTIFICATION')) {
+      mes = message
+    } else {
+      mes = `An error occurred in ${functionName}: ${message}`
+    }
     const params = {
       Destination: {
         ToAddresses: [userEmail, OMNI_DEV_EMAIL],
@@ -1577,7 +1583,7 @@ async function sendSESEmail({ message, userEmail, subject, functionName }) {
       Message: {
         Body: {
           Text: {
-            Data: `An error occurred in ${functionName}: ${message}`,
+            Data: mes,
             Charset: 'UTF-8',
           },
         },
