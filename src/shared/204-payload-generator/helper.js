@@ -279,9 +279,9 @@ async function generateStopforConsole(
     referenceNumbers:
       type === 'shipper'
         ? [
-            ...populateHousebillNumbers(housebillData, descData),
-            ...generateReferenceNumbers({ references }),
-          ]
+          ...populateHousebillNumbers(housebillData, descData),
+          ...generateReferenceNumbers({ references }),
+        ]
         : [],
   };
   stopData.stopNotes.push({
@@ -1626,7 +1626,7 @@ async function getEquipmentCodeForMT(consolNo) {
 }
 
 function getOrderValue(insurance, loadValues) {
-  if (parseInt(insurance, 10) <= 0) return loadValues;
+  if (parseInt(insurance, 10) <= 0 || isNaN(parseInt(insurance, 10))) return loadValues;
   return insurance;
 }
 
