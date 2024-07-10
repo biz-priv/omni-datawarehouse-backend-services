@@ -279,9 +279,9 @@ async function generateStopforConsole(
     referenceNumbers:
       type === 'shipper'
         ? [
-          ...populateHousebillNumbers(housebillData, descData),
-          ...generateReferenceNumbers({ references }),
-        ]
+            ...populateHousebillNumbers(housebillData, descData),
+            ...generateReferenceNumbers({ references }),
+          ]
         : [],
   };
   stopData.stopNotes.push({
@@ -841,7 +841,11 @@ async function getHazmat({ shipmentAparConsoleData: aparData }) {
   return filteredDescData;
 }
 
-async function getHighValue({ shipmentAparConsoleData: aparData, type = 'high_value', field = "Insurance" }) {
+async function getHighValue({
+  shipmentAparConsoleData: aparData,
+  type = 'high_value',
+  field = 'Insurance',
+}) {
   const descData = await Promise.all(
     aparData.map(async (data) => {
       const shipmentHeaderParams = {
@@ -859,9 +863,7 @@ async function getHighValue({ shipmentAparConsoleData: aparData, type = 'high_va
   console.info('🙂 -> file: test.js:36 -> descData:', descData);
   const descDataFlatten = _.flatten(descData);
   console.info('🙂 -> file: test.js:38 -> descDataFlatten:', descDataFlatten);
-  const sumByInsurance = _.sumBy(descDataFlatten, (data) =>
-    parseFloat(_.get(data, field, 0))
-  );
+  const sumByInsurance = _.sumBy(descDataFlatten, (data) => parseFloat(_.get(data, field, 0)));
   if (type === 'high_value') return sumByInsurance > 100000;
   return sumByInsurance;
 }
@@ -1624,8 +1626,8 @@ async function getEquipmentCodeForMT(consolNo) {
 }
 
 function getOrderValue(insurance, loadValues) {
-  if (parseInt(insurance, 10) <= 0) return loadValues
-  return insurance
+  if (parseInt(insurance, 10) <= 0) return loadValues;
+  return insurance;
 }
 
 module.exports = {
@@ -1658,5 +1660,5 @@ module.exports = {
   getUserEmail,
   sendSESEmail,
   getEquipmentCodeForMT,
-  getOrderValue
+  getOrderValue,
 };
