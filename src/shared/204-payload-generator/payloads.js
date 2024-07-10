@@ -18,6 +18,7 @@ const {
   getReferencesData,
   getEquipmentCodeForMT,
   getOrderValue,
+  getOrderValueForMT,
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -272,17 +273,10 @@ async function consolPayload({
     }),
     rad_date: deliveryStop.sched_arrive_late, // Set rad_date to scheduled arrival late of SO stop
     ordered_method: 'M',
-    order_value: getOrderValue(
-      await getHighValue({
-        shipmentAparConsoleData,
-        type: 'order_value',
-      }),
-      await getHighValue({
-        shipmentAparConsoleData,
-        type: 'order_value',
-        field: 'LoadValues',
-      })
-    ),
+    order_value: await getHighValue({
+      shipmentAparConsoleData,
+      type: 'order_value',
+    }),
     pallets_required: false,
     pieces: sumNumericValues(descData, 'Pieces'),
     preloaded: false,
@@ -404,10 +398,11 @@ async function mtPayload(
     }),
     rad_date: lastStop.sched_arrive_late,
     ordered_method: 'M',
-    order_value: getOrderValue(
-      sumNumericValues(shipmentHeader, 'Insurance'),
-      sumNumericValues(shipmentHeader, 'LoadValues')
-    ),
+    order_value: getOrderValueForMT(shipmentHeader),
+    // order_value: getOrderValue(
+    //   sumNumericValues(shipmentHeader, 'Insurance'),
+    //   sumNumericValues(shipmentHeader, 'LoadValues')
+    // ),
     pallets_required: false,
     pieces: sumNumericValues(shipmentDesc, 'Pieces'),
     preloaded: false,
