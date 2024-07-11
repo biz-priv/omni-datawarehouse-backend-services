@@ -36,7 +36,7 @@ module.exports.handler = async (event, context) => {
 };
 
 async function processRecord(record) {
-  let orderNo; 
+  let orderNo;
   try {
     const body = JSON.parse(_.get(record, 'body', ''));
     const message = JSON.parse(_.get(body, 'Message', ''));
@@ -49,6 +49,7 @@ async function processRecord(record) {
     console.info('🚀 ~ Dynamo Table Name:', dynamoTableName);
 
     if (dynamoTableName === SHIPMENT_APAR_TABLE) {
+
       console.info('🚀 ~ file: index.js:38 ~ processRecord ~ dynamoTableName:', dynamoTableName);
       const fkVendorIdUpdated = oldImage.FK_VendorId === VENDOR && newImage.FK_VendorId !== VENDOR;
       console.info(
@@ -65,22 +66,9 @@ async function processRecord(record) {
       if (fkVendorIdUpdated || fkVendorIdDeleted) {
         orderNo = _.get(message, 'Keys.FK_OrderNo.S');
         console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderNo:', orderNo);
-        const aparFailureDataArray = await fetchAparFailureData(orderNo);
-        const highestObject = aparFailureDataArray.reduce((max, current) => {
-          return current.FK_SeqNo > max.FK_SeqNo ? current : max;
-        }, aparFailureDataArray[0]);
-        const Note = _.get(highestObject, 'Note');
-        console.info('note: ', Note);
-        if (!Note) {
-          throw new Error('No note found. Failed to cancel the shipment.');
-        }
-        const shipmentAparData = await fetchShipmentAparData(orderNo);
-        const FkServiceId = _.get(shipmentAparData, '[0].FK_ServiceId');
-        console.info('FkServiceId: ', FkServiceId);
-        if (shipmentAparData.length > 0 && shipmentAparData) {
-          const Body = Object.keys(newImage).length ? newImage : oldImage;
-          await processShipmentAparData({ orderId: orderNo, newImage: Body, note: Note });
-        }
+
+        const Body = Object.keys(newImage).length ? newImage : oldImage;
+        await processShipmentAparData({ orderId: orderNo, newImage: Body});
       }
     } else if (
       dynamoTableName === SHIPMENT_HEADER_TABLE &&
@@ -108,8 +96,7 @@ async function processRecord(record) {
               aparDataArray.map(async (aparData) => {
                 await processShipmentAparData({
                   orderId,
-                  newImage: aparData,
-                  note: 'Shipment got Cancelled',
+                  newImage: aparData
                 });
               })
             );
@@ -169,7 +156,7 @@ async function queryConsolStatusTable(consolNo) {
   }
 }
 
-async function processShipmentAparData({ orderId, newImage, note }) {
+async function processShipmentAparData({ orderId, newImage }) {
   try {
     const consolNo = parseInt(_.get(newImage, 'ConsolNo', null), 10);
     console.info('🚀 ~ file: index.js:117 ~ processShipmentAparData ~ consolNo:', consolNo);
@@ -216,8 +203,26 @@ async function processShipmentAparData({ orderId, newImage, note }) {
       console.info('🚀 ~ file: index.js:107 ~ processShipmentAparData ~ stationCode:', stationCode);
       type = TYPES.MULTI_STOP;
     }
-
+    let Note = '';
+    
     if (type === TYPES.NON_CONSOLE) {
+      const aparFailureDataArray = await fetchAparFailureData(orderId);
+      const highestObject = aparFailureDataArray.reduce((max, current) => {
+        return current.FK_SeqNo > max.FK_SeqNo ? current : max;
+      }, aparFailureDataArray[0]);
+      Note = _.get(highestObject, 'Note', '');
+      console.info('note: ', Note);
+      if (!Note) {
+        throw new Error('No note found. Failed to cancel the shipment.');
+      }
+      const shipmentAparData = await fetchShipmentAparData(orderId);
+      const FkServiceId = _.get(shipmentAparData, '[0].FK_ServiceId');
+      console.info('FkServiceId: ', FkServiceId);
+      if (!shipmentAparData.length) {
+        console.info('Service exception is not found');
+        throw new Error(`Service Exception is not found for FileNo: ${orderId}`)
+      }
+
       const orderStatusResult = await queryOrderStatusTable(orderId);
       if (orderStatusResult.length > 0 && orderStatusResult[0].Status === STATUSES.SENT) {
         const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
@@ -273,7 +278,7 @@ async function processShipmentAparData({ orderId, newImage, note }) {
       message: `The shipment associated with the following details has been cancelled:\n
                 Order ID: ${orderId}\n
                 Consolidation Number: ${consolNo}\n
-                Note: ${note}`,
+                Note: ${Note}`,
       userEmail,
       subject: {
         Data: `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`,
@@ -284,7 +289,7 @@ async function processShipmentAparData({ orderId, newImage, note }) {
       message: `The shipment associated with the following details has been cancelled:\n
                 Order ID: ${orderId}\n
                 Consolidation Number: ${consolNo}\n
-                Note: ${note}`,
+                Note: ${Note}`,
       stationCode,
       subject: `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`,
     });
