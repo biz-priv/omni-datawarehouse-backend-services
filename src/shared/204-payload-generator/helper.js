@@ -860,7 +860,7 @@ async function getHighValue({ shipmentAparConsoleData: aparData, type = 'high_va
   const descDataFlatten = _.flatten(descData);
   console.info('🙂 -> file: test.js:38 -> descDataFlatten:', descDataFlatten);
   const sumByInsurance = _.sumBy(descDataFlatten, (data) =>
-    parseFloat(_.get(data, 'Insurance', 0))
+    parseFloat(getOrderValue(_.get(data, 'Insurance', 0), _.get(data, 'LoadValues', 0)))
   );
   if (type === 'high_value') return sumByInsurance > 100000;
   return sumByInsurance;
@@ -1623,6 +1623,27 @@ async function getEquipmentCodeForMT(consolNo) {
   }
 }
 
+function getOrderValue(insurance, loadValues) {
+  if (parseInt(insurance, 10) <= 0 || isNaN(parseInt(insurance, 10))) {
+    return !isNaN(loadValues) ? parseFloat(loadValues) : 0;
+  }
+  return !isNaN(insurance) ? parseFloat(insurance) : 0;
+}
+
+function getOrderValueForMT(items) {
+  return _.sum(
+    items.map((item) => {
+      const loadValue = !isNaN(parseFloat(_.get(item, 'LoadValues', 0)))
+        ? parseFloat(_.get(item, 'LoadValues', 0))
+        : 0;
+      const insurance = !isNaN(parseFloat(_.get(item, 'Insurance', 0)))
+        ? parseFloat(_.get(item, 'Insurance', 0))
+        : 0;
+      return getOrderValue(insurance, loadValue);
+    })
+  );
+}
+
 module.exports = {
   getPowerBrokerCode,
   getCstTime,
@@ -1653,4 +1674,6 @@ module.exports = {
   getUserEmail,
   sendSESEmail,
   getEquipmentCodeForMT,
+  getOrderValue,
+  getOrderValueForMT,
 };
