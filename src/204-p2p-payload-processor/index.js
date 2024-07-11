@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 'use strict';
 const AWS = require('aws-sdk');
 const _ = require('lodash');
@@ -14,6 +15,7 @@ const {
   getAparDataByConsole,
   getUserEmail,
   sendSESEmail,
+  getCustomerDetails,
 } = require('../shared/204-payload-generator/helper');
 const {
   sendPayload,
@@ -214,6 +216,21 @@ module.exports.handler = async (event, context) => {
         });
         console.info('🙂 -> file: index.js:149 -> createPayloadResponse:', createPayloadResponse);
         const shipmentId = _.get(createPayloadResponse, 'id', 0);
+        const customerId = _.get(createPayloadResponse, 'customer_id');
+        const { operations_rep, operations_rep2, salesperson_id } = await getCustomerDetails({
+          customerId,
+        });
+
+        if (operations_rep) _.set(createPayloadResponse, 'operations_rep', operations_rep);
+        if (operations_rep2) _.set(createPayloadResponse, 'operations_rep2', operations_rep2);
+        if (salesperson_id) _.set(createPayloadResponse, 'customer_rep', salesperson_id);
+
+        console.info(
+          '🙂 -> file: index.js:220 -> promises -> operations_rep, operations_rep2, salesperson_id:',
+          operations_rep,
+          operations_rep2,
+          salesperson_id
+        );
         if (type === 'NON_CONSOLE') {
           await liveSendUpdate(houseBill, shipmentId);
         } else if (type === 'CONSOLE') {
@@ -250,7 +267,10 @@ module.exports.handler = async (event, context) => {
 
         // Update the stops array in the payload with the updated contact names
         _.set(createPayloadResponse, 'stops', updatedStops);
-
+        console.info(
+          '🙂 -> file: index.js:310 -> promises -> createPayloadResponse:',
+          JSON.stringify(createPayloadResponse)
+        );
         const updatedOrderResponse = await updateOrders({
           payload: createPayloadResponse,
           orderId,

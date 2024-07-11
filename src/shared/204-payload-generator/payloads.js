@@ -17,6 +17,8 @@ const {
   stationCodeInfo,
   getReferencesData,
   getEquipmentCodeForMT,
+  getOrderValue,
+  getOrderValueForMT,
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -118,7 +120,10 @@ async function nonConsolPayload({
     }),
     rad_date: deliveryStop.sched_arrive_late,
     ordered_method: 'M',
-    order_value: _.get(shipmentHeader, 'Insurance', 0),
+    order_value: getOrderValue(
+      _.get(shipmentHeader, 'Insurance', 0),
+      _.get(shipmentHeader, 'LoadValues', 0)
+    ),
     pallets_required: false,
     pieces: sumNumericValues(shipmentDesc, 'Pieces'),
     preloaded: false,
@@ -393,7 +398,11 @@ async function mtPayload(
     }),
     rad_date: lastStop.sched_arrive_late,
     ordered_method: 'M',
-    order_value: sumNumericValues(shipmentHeader, 'Insurance'),
+    order_value: getOrderValueForMT(shipmentHeader),
+    // order_value: getOrderValue(
+    //   sumNumericValues(shipmentHeader, 'Insurance'),
+    //   sumNumericValues(shipmentHeader, 'LoadValues')
+    // ),
     pallets_required: false,
     pieces: sumNumericValues(shipmentDesc, 'Pieces'),
     preloaded: false,
