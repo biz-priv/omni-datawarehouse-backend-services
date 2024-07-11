@@ -40,7 +40,7 @@ function:
     CONSOL_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
     OUTPUT_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/output/ddb.tableName}
     TRACKING_NOTES_API_URL: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/url}
-    API_USER_ID: ${ssm:/omni-dw/${self:provider.stage}/wt/username}
+    API_USER_ID: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/userId}
     API_PASS: ${ssm:/omni-dw/${self:provider.stage}/wt/password}
     INSTRUCTIONS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.tableName~true}
     INSTRUCTIONS_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.orderNoIndex}
