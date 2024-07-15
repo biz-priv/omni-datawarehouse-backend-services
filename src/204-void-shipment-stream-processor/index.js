@@ -203,6 +203,9 @@ async function processShipmentAparData({ orderId, newImage }) {
       console.info('🚀 ~ file: index.js:107 ~ processShipmentAparData ~ stationCode:', stationCode);
       type = TYPES.MULTI_STOP;
     }
+    else{
+      return;
+    }
     let Note = '';
     
     if (type === TYPES.NON_CONSOLE) {
@@ -220,7 +223,7 @@ async function processShipmentAparData({ orderId, newImage }) {
       console.info('FkServiceId: ', FkServiceId);
       if (!shipmentAparData.length) {
         console.info('Service exception is not found');
-        throw new Error(`Service Exception is not found for FileNo: ${orderId}`)
+        throw new Error(`Service Exception is not found for FileNo: ${orderId}`); 
       }
 
       const orderStatusResult = await queryOrderStatusTable(orderId);
