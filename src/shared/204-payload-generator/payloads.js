@@ -17,6 +17,8 @@ const {
   stationCodeInfo,
   getReferencesData,
   getEquipmentCodeForMT,
+  getOrderValue,
+  getOrderValueForMT,
 } = require('./helper');
 
 async function nonConsolPayload({
@@ -118,7 +120,10 @@ async function nonConsolPayload({
     }),
     rad_date: deliveryStop.sched_arrive_late,
     ordered_method: 'M',
-    order_value: _.get(shipmentHeader, 'Insurance', 0),
+    order_value: getOrderValue(
+      _.get(shipmentHeader, 'Insurance', 0),
+      _.get(shipmentHeader, 'LoadValues', 0)
+    ),
     pallets_required: false,
     pieces: sumNumericValues(shipmentDesc, 'Pieces'),
     preloaded: false,
@@ -136,6 +141,13 @@ async function nonConsolPayload({
     operational_status: 'CLIN',
     lock_miles: false,
     def_move_type: 'A',
+    freight_charge: _.get(shipmentAparData, 'Total', 0),
+    freight_charge_c: 'USD',
+    freight_charge_n: _.get(shipmentAparData, 'Total', 0),
+    freight_charge_r: 1.0,
+    rate: _.get(shipmentAparData, 'Total', 0),
+    rate_type: 'F',
+    rate_units: 1.0,
     stops: [],
   };
   // Conditionally set commodity_id if hazmat is true
@@ -282,6 +294,13 @@ async function consolPayload({
     operational_status: 'CLIN',
     lock_miles: false,
     def_move_type: 'A',
+    freight_charge: sumNumericValues(shipmentAparConsoleData, 'Total'),
+    freight_charge_c: 'USD',
+    freight_charge_n: sumNumericValues(shipmentAparConsoleData, 'Total'),
+    freight_charge_r: 1.0,
+    rate: sumNumericValues(shipmentAparConsoleData, 'Total'),
+    rate_type: 'F',
+    rate_units: 1.0,
     stops: [],
   };
   // Conditionally set commodity_id if hazmat is true
@@ -379,7 +398,11 @@ async function mtPayload(
     }),
     rad_date: lastStop.sched_arrive_late,
     ordered_method: 'M',
-    order_value: sumNumericValues(shipmentHeader, 'Insurance'),
+    order_value: getOrderValueForMT(shipmentHeader),
+    // order_value: getOrderValue(
+    //   sumNumericValues(shipmentHeader, 'Insurance'),
+    //   sumNumericValues(shipmentHeader, 'LoadValues')
+    // ),
     pallets_required: false,
     pieces: sumNumericValues(shipmentDesc, 'Pieces'),
     preloaded: false,
@@ -397,6 +420,13 @@ async function mtPayload(
     operational_status: 'CLIN',
     lock_miles: false,
     def_move_type: 'A',
+    freight_charge: sumNumericValues(shipmentApar, 'Total'),
+    freight_charge_c: 'USD',
+    freight_charge_n: sumNumericValues(shipmentApar, 'Total'),
+    freight_charge_r: 1.0,
+    rate: sumNumericValues(shipmentApar, 'Total'),
+    rate_type: 'F',
+    rate_units: 1.0,
     stops,
   };
   // Conditionally set commodity_id if hazmat is true

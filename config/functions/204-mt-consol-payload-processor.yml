@@ -31,6 +31,7 @@ function:
     USERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/users/ddb.tableName~true}
     AUTH: ${ssm:/omni-204-create-shipment/${self:provider.stage}/apis.auth}
     GET_LOC_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/get-location.url}
+    GET_CUSTOMER_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/get-customer.url}
     CREATE_LOC_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/create-location.url}
     SEND_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/create-orders.url}
     UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
@@ -39,7 +40,7 @@ function:
     OUTPUT_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/output/ddb.tableName}
     TRACKING_NOTES_API_URL: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/url}
     API_USER_ID: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/userId}
-    API_PASS: ${ssm:/omni-ivia/${self:provider.stage}/createShipment/xmlUpdate/password}
+    API_PASS: ${ssm:/omni-dw/${self:provider.stage}/wt/password}
     INSTRUCTIONS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.tableName~true}
     INSTRUCTIONS_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/instructions/ddb.orderNoIndex}
     REFERENCES_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/references/ddb.tableName~true}
