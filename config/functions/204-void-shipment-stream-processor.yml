@@ -1,0 +1,33 @@
+function:
+  handler: src/204-void-shipment-stream-processor/index.handler
+  name: 204-void-shipment-stream-processor-${self:provider.stage}
+  description: process and filters Shipment Apar, Shipment Header for 204 void Shipment - ${self:provider.stage}
+  runtime: nodejs18.x
+  timeout: 500
+  layers:
+    - !Ref DWBackendLambdaLayer
+  events:
+    - sqs:
+        arn: !GetAtt 204VoidShipmentQueue.Arn
+        batchSize: 1
+
+  package:
+    patterns:
+      - '!**/*'
+      - 'src/204-void-shipment-stream-processor/**'
+      - 'src/shared/constants/204_create_shipment.js'
+      - 'src/shared/204-payload-generator/**'
+
+  environment:
+    STAGE: ${self:provider.stage}
+    LIVE_SNS_TOPIC_ARN: ${ssm:/omni-power-broker/${self:provider.stage}/error-notification/sns/arn}
+    STATUS_TABLE: ${ssm:/omni-204-create-shipment/${self:provider.stage}/status/ddb.name}
+    AUTH: ${ssm:/omni-204-create-shipment/${self:provider.stage}/apis.auth}
+    UPDATE_PAYLOAD_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/update-orders.url}
+    CONSOLE_STATUS_TABLE: ${ssm:/omni-live-204/${self:provider.stage}/consol-status/ddb.tableName}
+    SHIPMENT_APAR_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.tableName~true}
+    SHIPMENT_HEADER_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/ddb.tableName~true}
+    USERS_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/users/ddb.tableName~true}
+    SHIPMENT_APAR_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.ConsolNoIndex}
+    APAR_FAILURE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/apar-failure/ddb.tableName~true}
+    OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}
