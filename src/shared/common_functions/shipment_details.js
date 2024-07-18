@@ -128,8 +128,14 @@ async function getTime(dateTime, dateTimeZone, timeZoneTable) {
     }
     const date = moment(dateTime);
     const week = date.week();
-    if (dateTimeZone == "" || dateTimeZone == null) {
+    if (dateTimeZone == "" || dateTimeZone == null || dateTimeZone == "LT" || dateTimeZone == "CS") {
       dateTimeZone = "CST";
+    }else if(dateTimeZone == "ET"){
+      dateTimeZone = "EST"
+    }else if(dateTimeZone = "MT"){
+      dateTimeZone = "MST"
+    }else if(dateTimeZone == "PT"){
+      dateTimeZone = "PST"
     }
     let offset = week >= 11 && week <= 44 ? 5 : 6;
     // const timezoneparams = {
