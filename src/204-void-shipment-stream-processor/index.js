@@ -61,14 +61,13 @@ async function processRecord(record) {
         '🚀 ~ file: index.js:42 ~ processRecord ~ fkVendorIdDeleted:',
         fkVendorIdDeleted
       );
-      await setDelay(45);
 
       if (fkVendorIdUpdated || fkVendorIdDeleted) {
         orderNo = _.get(message, 'Keys.FK_OrderNo.S');
         console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderNo:', orderNo);
 
         const Body = Object.keys(newImage).length ? newImage : oldImage;
-        await processShipmentAparData({ orderId: orderNo, newImage: Body});
+        await processShipmentAparData({ orderId: orderNo, newImage: Body });
       }
     } else if (
       dynamoTableName === SHIPMENT_HEADER_TABLE &&
@@ -203,36 +202,37 @@ async function processShipmentAparData({ orderId, newImage }) {
       console.info('🚀 ~ file: index.js:107 ~ processShipmentAparData ~ stationCode:', stationCode);
       type = TYPES.MULTI_STOP;
     }
-    else{
+    else {
       return;
     }
     let Note = '';
-    
-    if (type === TYPES.NON_CONSOLE) {
-      const aparFailureDataArray = await fetchAparFailureData(orderId);
-      const highestObject = aparFailureDataArray.reduce((max, current) => {
-        return current.FK_SeqNo > max.FK_SeqNo ? current : max;
-      }, aparFailureDataArray[0]);
-      Note = _.get(highestObject, 'Note', '');
-      console.info('note: ', Note);
-      if (!Note) {
-        throw new Error('No note found. Failed to cancel the shipment.');
-      }
-      const shipmentAparData = await fetchShipmentAparData(orderId);
-      const FkServiceId = _.get(shipmentAparData, '[0].FK_ServiceId');
-      console.info('FkServiceId: ', FkServiceId);
-      if (!shipmentAparData.length) {
-        console.info('Service exception is not found');
-        throw new Error(`Service Exception is not found for FileNo: ${orderId}`); 
-      }
 
+    if (type === TYPES.NON_CONSOLE) {
       const orderStatusResult = await queryOrderStatusTable(orderId);
       if (orderStatusResult.length > 0 && orderStatusResult[0].Status === STATUSES.SENT) {
+        await setDelay(45);
+        const aparFailureDataArray = await fetchAparFailureData(orderId);
+        const highestObject = aparFailureDataArray.reduce((max, current) => {
+          return current.FK_SeqNo > max.FK_SeqNo ? current : max;
+        }, aparFailureDataArray[0]);
+        Note = _.get(highestObject, 'Note', '');
+        console.info('note: ', Note);
+        if (!Note) {
+          throw new Error('No note found. Failed to cancel the shipment.');
+        }
+        const shipmentAparData = await fetchShipmentAparData(orderId);
+        const FkServiceId = _.get(shipmentAparData, '[0].FK_ServiceId');
+        console.info('FkServiceId: ', FkServiceId);
+        if (!shipmentAparData.length) {
+          console.info('Service exception is not found');
+          throw new Error(`Service Exception is not found for FileNo: ${orderId}`);
+        }
         const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
         const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
         await updateOrders({ payload: orderData, orderId, consolNo });
         await updateStatusTables({ orderId, type });
         console.info('Voided the WT orderId:', orderId, '#PRO:', id);
+        await sendCancellationNotification(orderId, consolNo, Note, userEmail, stationCode);
       }
     }
     if (type === TYPES.CONSOLE) {
@@ -250,6 +250,7 @@ async function processShipmentAparData({ orderId, newImage }) {
         await updateOrders({ payload: orderData, orderId, consolNo });
         await updateStatusTables({ orderId: consolNo, type });
         console.info('Voided the WT orderId:', orderId, '#PRO:', id);
+        await sendCancellationNotification(orderId, consolNo, Note, userEmail, stationCode);
       }
     }
     if (type === TYPES.MULTI_STOP) {
@@ -274,28 +275,9 @@ async function processShipmentAparData({ orderId, newImage }) {
         await updateOrders({ payload: orderData, orderId, consolNo });
         await updateStatusTables({ consolNo, type });
         console.info('Voided the WT consolNo:', consolNo, '#PRO:', id);
+        await sendCancellationNotification(orderId, consolNo, Note, userEmail, stationCode);
       }
     }
-    await sendSESEmail({
-      functionName,
-      message: `The shipment associated with the following details has been cancelled:\n
-                Order ID: ${orderId}\n
-                Consolidation Number: ${consolNo}\n
-                Note: ${Note}`,
-      userEmail,
-      subject: {
-        Data: `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`,
-        Charset: 'UTF-8',
-      },
-    });
-    await publishSNSTopic({
-      message: `The shipment associated with the following details has been cancelled:\n
-                Order ID: ${orderId}\n
-                Consolidation Number: ${consolNo}\n
-                Note: ${Note}`,
-      stationCode,
-      subject: `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`,
-    });
   } catch (error) {
     console.error('Error in processShipmentAparData:', error);
     throw error;
@@ -475,5 +457,29 @@ function setDelay(sec) {
         resolve(true);
       }, sec * 1000);
     }
+  });
+}
+
+async function sendCancellationNotification(orderId, consolNo, Note, userEmail, stationCode) {
+  const mess = `The shipment associated with the following details has been cancelled:\n
+                Order ID: ${orderId}\n
+                Consolidation Number: ${consolNo}\n
+                Note: ${Note}`;
+  const sub = `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`;
+  
+  await sendSESEmail({
+    functionName: 'sendSESEmail',
+    message: mess,
+    userEmail,
+    subject: {
+      Data: sub,
+      Charset: 'UTF-8',
+    },
+  });
+
+  await publishSNSTopic({
+    message: mess,
+    stationCode,
+    subject: sub,
   });
 }
