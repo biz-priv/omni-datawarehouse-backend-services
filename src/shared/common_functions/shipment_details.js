@@ -55,7 +55,7 @@ async function ChargableWeight(tableValue) {
       weightSum += weight;
 
       if (dimfactor === 0) {
-        return; 
+        return;
       }
 
       const dimWeight = Math.ceil((pieces * length * width * height) / dimfactor);
@@ -93,34 +93,6 @@ async function getPickupTime(dateTime, dateTimeZone, timeZoneTable) {
   }
 }
 
-// async function getTime(dateTime, dateTimeZone, timeZoneTable) {
-//   try {
-//     if (dateTime == 0 || dateTime == null || dateTime == "" || dateTime.substring(0, 4) == "1900") {
-//       return "";
-//     }
-//     const inputDate = moment(dateTime);
-//     if (dateTimeZone == "" || dateTimeZone == null) {
-//       dateTimeZone = "CST";
-//     }
-//     const weekNumber = inputDate.isoWeek();
-//     inputDate.subtract(Number(timeZoneTable[dateTimeZone].HoursAway), 'hours');
-//     let convertedDate = inputDate.format('YYYY-MM-DDTHH:mm:ss');
-//     if (weekNumber < 0 && weekNumber > 52) {
-//       console.info("wrong week number");
-//     } else if (weekNumber > 11 && weekNumber < 44) {
-//       convertedDate = convertedDate + "-05:00";
-//     } else {
-//       convertedDate = convertedDate + "-06:00";
-//     }
-//     if (convertedDate == 0 || convertedDate == null || convertedDate == "" || convertedDate.substring(0, 4) == "1900") {
-//       return "";
-//     }
-//     return convertedDate;
-//   } catch (error) {
-//     throw error;
-//   }
-// }
-
 async function getTime(dateTime, dateTimeZone, timeZoneTable) {
   try {
     if (dateTime == 0 || dateTime == null || dateTime == "" || dateTime.substring(0, 4) == "1900") {
@@ -128,30 +100,16 @@ async function getTime(dateTime, dateTimeZone, timeZoneTable) {
     }
     const date = moment(dateTime);
     const week = date.week();
-    if (dateTimeZone == "" || dateTimeZone == null || dateTimeZone == "LT" || dateTimeZone == "CS") {
+    if (dateTimeZone === "" || dateTimeZone === null || dateTimeZone === "LT" || dateTimeZone === "CS" || dateTimeZone === "CT") {
       dateTimeZone = "CST";
-    }else if(dateTimeZone == "ET"){
-      dateTimeZone = "EST"
-    }else if(dateTimeZone = "MT"){
-      dateTimeZone = "MST"
-    }else if(dateTimeZone == "PT"){
-      dateTimeZone = "PST"
+    }else if(dateTimeZone === "ET"){
+      dateTimeZone = "EST";
+    }else if(dateTimeZone === "MT"){
+      dateTimeZone = "MST";
+    }else if(dateTimeZone === "PT"){
+      dateTimeZone = "PST";
     }
     let offset = week >= 11 && week <= 44 ? 5 : 6;
-    // const timezoneparams = {
-    //   TableName: process.env.TIMEZONE_MASTER_TABLE,
-    //   KeyConditionExpression: `PK_TimeZoneCode = :code`,
-    //   ExpressionAttributeValues: {
-    //     ":code": dateTimeZone
-    //   }
-    // };
-    // console.info("timezoneparams:", timezoneparams);
-    // const timezoneResult = await ddb.query(timezoneparams).promise();
-    // if (timezoneResult.Items.length === 0) {
-    //   console.info(`timezoneResult have no values`);
-    //   offset = week >= 11 && week <= 44 ? "-0500" : "-0600";
-    //   return date.format("YYYY-MM-DDTHH:mm:ss") + offset;
-    // }
     const hoursaway = timeZoneTable[dateTimeZone].HoursAway;
 
     const convertedDate = date.format("YYYY-MM-DDTHH:mm:ss") + "-0" + (offset - hoursaway) + "00";
@@ -226,40 +184,6 @@ async function getShipmentDate(dateTime) {
     throw error;
   }
 }
-
-// async function getDescription(orderStatusId, serviceLevelId) {
-//   if (!orderStatusId || !serviceLevelId) {
-//     return false;
-//   }
-//   const milestoneTableParams = {
-//     TableName: process.env.MILESTONE_TABLE,
-//     IndexName: "FK_OrderStatusId-FK_ServiceLevelId",
-//     KeyConditionExpression: `#pKey = :pKey and #sKey = :sKey`,
-//     FilterExpression: "IsPublic = :IsPublic",
-//     ExpressionAttributeNames: {
-//       "#pKey": "FK_OrderStatusId",
-//       "#sKey": "FK_ServiceLevelId",
-//     },
-//     ExpressionAttributeValues: {
-//       ":pKey": orderStatusId,
-//       ":sKey": serviceLevelId,
-//       ":IsPublic": "Y",
-//     },
-//   };
-//   try {
-//     const milestoneTableResult = await ddb.query(milestoneTableParams).promise();
-//     if (milestoneTableResult.Items.length === 0) {
-//       console.info(`No Description for the FK_OrderStatusId ${orderStatusId} and FK_ServiceLevelId ${serviceLevelId}`);
-//       return false;
-//     }
-//     else {
-//       return true;
-//     }
-//   } catch (error) {
-//     console.error("Query Error:", error);
-//     throw error;
-//   }
-// }
 
 async function getDynamodbData(value) {
   let timeZoneTable = {};
@@ -356,17 +280,6 @@ async function getDynamodbData(value) {
   }
 }
 
-// async function checkIfMilestonesPublic(milestones) {
-//   const filteredMilestoned = [];
-//   await Promise.all(milestones.map(async milestone => {
-//     const description = await getDescription(get(milestone, 'FK_OrderStatusId', ""), get(milestone, 'FK_ServiceLevelId', ""));
-//     if (description) {
-//       filteredMilestoned.push(milestone);
-//     }
-//   }));
-//   return filteredMilestoned;
-// }
-
 async function MappingDataToInsert(data, timeZoneTable) {
   const shipmentMilestoneData = data[process.env.SHIPMENT_MILESTONE_TABLE];
   let highestEventDateTimeObject = {};
@@ -410,7 +323,7 @@ async function MappingDataToInsert(data, timeZoneTable) {
     console.info(`No milestones found in '${process.env.SHIPMENT_MILESTONE_TABLE} array.`);
   }
 
-  let referencePromises = data[process.env.REFERENCE_TABLE].filter(reference =>{
+  let referencePromises = data[process.env.REFERENCE_TABLE].filter(reference => {
     const refType = get(reference, 'FK_RefTypeId', "");
     return Object.keys(refTypes).includes(refType);
   })
@@ -576,7 +489,6 @@ async function upsertItem(tableName, item) {
         console.info("Updated");
         return ddb.update(params).promise();
       } else {
-        // Modify params to include customerIds
         item.customerIds = customerId;
         params = {
           TableName: tableName,
