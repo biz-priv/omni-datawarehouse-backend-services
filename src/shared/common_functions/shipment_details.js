@@ -108,6 +108,8 @@ async function getTime(dateTime, dateTimeZone, timeZoneTable) {
       dateTimeZone = "MST";
     }else if(dateTimeZone === "PT"){
       dateTimeZone = "PST";
+    }else{
+      dateTimeZone = "CST";
     }
     let offset = week >= 11 && week <= 44 ? 5 : 6;
     const hoursaway = timeZoneTable[dateTimeZone].HoursAway;
