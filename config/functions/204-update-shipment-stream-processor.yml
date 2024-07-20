@@ -4,6 +4,8 @@ function:
   description: process and filters confirmation cost and updates the status of the order in the status table stream for 204 create shipment - ${self:provider.stage}
   runtime: nodejs18.x
   timeout: 500
+  tags:
+    Name: 204-update-shipment-stream-processor-${self:provider.stage}
   layers:
     - !Ref DWBackendLambdaLayer
   events:

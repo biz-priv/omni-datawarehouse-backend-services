@@ -50,6 +50,7 @@ provider:
     environment:
         REGION: ${self:custom.region}
         STAGE: ${opt:stage, 'dev'}
+        ERROR_SNS_TOPIC_ARN: ${ssm:/omni-reports/${self:provider.stage}/error-notification/sns/arn}
 
     deploymentBucket:
         name: ${ssm:/omni-dw/${self:provider.stage}/sls/deployment/bucket}
@@ -70,6 +71,16 @@ custom:
 package:
     individually: true
 functions:
+    #  lambda's responsible for inserting values from streams to shipment-collector table
+    shipment-header-stream-to-dynamoDB: ${file(config/functions/shipment-header-stream-to-dynamoDB.yml):function}
+    consignee-stream-to-dynamoDB: ${file(config/functions/consignee-stream-to-dynamoDB.yml):function}
+    references-stream-to-dynamoDB: ${file(config/functions/references-stream-to-dynamoDB.yml):function}
+    shipment-desc-stream-to-dynamoDB: ${file(config/functions/shipment-desc-stream-to-dynamoDB.yml):function}
+    shipment-milestone-stream-to-dynamoDB: ${file(config/functions/shipment-milestone-stream-to-dynamoDB.yml):function}
+    shipper-stream-to-dynamoDB: ${file(config/functions/shipper-stream-to-dynamoDB.yml):function}
+    shipment-milestone-details-stream-to-dynamoDB: ${file(config/functions/shipment-milestone-details-stream-to-dynamoDB.yml):function}
+    tracking-notes-stream-to-dynamoDB: ${file(config/functions/tracking-notes-stream-to-dynamoDB.yml):function}
+    customer-entitlement-stream-to-dynamoDB: ${file(config/functions/customer-entitlement-stream-to-dynamoDB.yml):function}
     
     pod-doc-upload: ${file(config/functions/pod-doc-upload.yml):function}
     shipment-header-table-stream-processor: ${file(config/functions/shipment-header-table-stream-processor.yml):function}

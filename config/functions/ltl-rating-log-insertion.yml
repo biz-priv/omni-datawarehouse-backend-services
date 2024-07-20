@@ -4,6 +4,8 @@ function:
     description: insert log for ltl rating api- ${self:provider.stage}
     runtime: nodejs18.x
     timeout: 500
+    tags:
+        Name: ${self:service}-ltl-rating-log-insertion-${self:provider.stage}
     layers:
         - !Ref DWBackendLambdaLayer
     events:

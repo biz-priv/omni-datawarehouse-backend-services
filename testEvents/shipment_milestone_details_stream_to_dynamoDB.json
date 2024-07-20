@@ -1,0 +1,634 @@
+{
+  "Records": [
+    {
+      "eventID": "f48f04a0b26f9e74ccbc408b275c15bd",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386058,
+        "Keys": {
+          "FK_OrderStatusId": {
+            "S": "WEB"
+          },
+          "FK_OrderNo": {
+            "S": ""
+          }
+        },
+        "NewImage": {
+          "FK_OrderStatusId": {
+            "S": "WEB"
+          },
+          "FK_OrderNo": {
+            "S": ""
+          },
+          "Complete": {
+            "S": "N"
+          },
+          "EventDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "CreateDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "EventSeqNo": {
+            "S": "10"
+          },
+          "MileStoneSeqNo": {
+            "S": "1"
+          },
+          "FK_ServiceLevelId": {
+            "S": "EC"
+          },
+          "FK_MSSeqNo": {
+            "S": "237"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "DMS_TS": {
+            "S": "2023-11-07 19:39:52.900000"
+          },
+          "EventTimeZone": {
+            "S": ""
+          },
+          "PK_AdHocMileStoneId": {
+            "S": "61811035"
+          }
+        },
+        "SequenceNumber": "1178459700000000049696044999",
+        "SizeBytes": 321,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-milestone-detail-dev/stream/2023-07-03T16:04:15.848"
+    },
+    {
+      "eventID": "cf623a9cbcbbc982bebff08363af590d",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386058,
+        "Keys": {
+          "FK_OrderStatusId": {
+            "S": "NEW"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          }
+        },
+        "NewImage": {
+          "FK_OrderStatusId": {
+            "S": "NEW"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          },
+          "Complete": {
+            "S": "Y"
+          },
+          "EventDateTime": {
+            "S": "2023-11-07 13:39:52.000"
+          },
+          "CreateDateTime": {
+            "S": "2023-11-07 13:39:52.000"
+          },
+          "EventSeqNo": {
+            "S": "20"
+          },
+          "MileStoneSeqNo": {
+            "S": "2"
+          },
+          "FK_ServiceLevelId": {
+            "S": "EC"
+          },
+          "FK_MSSeqNo": {
+            "S": "238"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "DMS_TS": {
+            "S": "2023-11-07 19:39:52.900000"
+          },
+          "EventTimeZone": {
+            "S": "CST"
+          },
+          "PK_AdHocMileStoneId": {
+            "S": "61811036"
+          }
+        },
+        "SequenceNumber": "1178459800000000049696045249",
+        "SizeBytes": 324,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-milestone-detail-dev/stream/2023-07-03T16:04:15.848"
+    },
+    {
+      "eventID": "8ddda232a01ba9b361dcd6249ea539a7",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386058,
+        "Keys": {
+          "FK_OrderStatusId": {
+            "S": "PUO"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          }
+        },
+        "NewImage": {
+          "FK_OrderStatusId": {
+            "S": "PUO"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          },
+          "Complete": {
+            "S": "N"
+          },
+          "EventDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "CreateDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "EventSeqNo": {
+            "S": "40"
+          },
+          "MileStoneSeqNo": {
+            "S": "3"
+          },
+          "FK_ServiceLevelId": {
+            "S": "EC"
+          },
+          "FK_MSSeqNo": {
+            "S": "1020"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "DMS_TS": {
+            "S": "2023-11-07 19:39:52.900000"
+          },
+          "EventTimeZone": {
+            "S": ""
+          },
+          "PK_AdHocMileStoneId": {
+            "S": "61811037"
+          }
+        },
+        "SequenceNumber": "1178459900000000049696045268",
+        "SizeBytes": 322,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-milestone-detail-dev/stream/2023-07-03T16:04:15.848"
+    },
+    {
+      "eventID": "b548a3824e16dee05fc8ab92eba884ec",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386058,
+        "Keys": {
+          "FK_OrderStatusId": {
+            "S": "PUC"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          }
+        },
+        "NewImage": {
+          "FK_OrderStatusId": {
+            "S": "PUC"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          },
+          "Complete": {
+            "S": "N"
+          },
+          "EventDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "CreateDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "EventSeqNo": {
+            "S": "50"
+          },
+          "MileStoneSeqNo": {
+            "S": "4"
+          },
+          "FK_ServiceLevelId": {
+            "S": "EC"
+          },
+          "FK_MSSeqNo": {
+            "S": "1021"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "DMS_TS": {
+            "S": "2023-11-07 19:39:52.900000"
+          },
+          "EventTimeZone": {
+            "S": ""
+          },
+          "PK_AdHocMileStoneId": {
+            "S": "61811038"
+          }
+        },
+        "SequenceNumber": "1178460000000000049696045269",
+        "SizeBytes": 322,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-milestone-detail-dev/stream/2023-07-03T16:04:15.848"
+    },
+    {
+      "eventID": "78ba5b581a6dfc139a6993494dadcfa9",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386058,
+        "Keys": {
+          "FK_OrderStatusId": {
+            "S": "PUA"
+          },
+          "FK_OrderNo": {
+            "S": ""
+          }
+        },
+        "NewImage": {
+          "FK_OrderStatusId": {
+            "S": "PUA"
+          },
+          "FK_OrderNo": {
+            "S": ""
+          },
+          "Complete": {
+            "S": "N"
+          },
+          "EventDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "CreateDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "EventSeqNo": {
+            "S": "60"
+          },
+          "MileStoneSeqNo": {
+            "S": "5"
+          },
+          "FK_ServiceLevelId": {
+            "S": "EC"
+          },
+          "FK_MSSeqNo": {
+            "S": "240"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "DMS_TS": {
+            "S": "2023-11-07 19:39:52.900000"
+          },
+          "EventTimeZone": {
+            "S": ""
+          },
+          "PK_AdHocMileStoneId": {
+            "S": "61811039"
+          }
+        },
+        "SequenceNumber": "1178460100000000049696045270",
+        "SizeBytes": 321,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-milestone-detail-dev/stream/2023-07-03T16:04:15.848"
+    },
+    {
+      "eventID": "a853a45b5480b4021c34d66f85935f37",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386058,
+        "Keys": {
+          "FK_OrderStatusId": {
+            "S": "DPU"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          }
+        },
+        "NewImage": {
+          "FK_OrderStatusId": {
+            "S": "DPU"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          },
+          "Complete": {
+            "S": "N"
+          },
+          "EventDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "CreateDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "EventSeqNo": {
+            "S": "80"
+          },
+          "MileStoneSeqNo": {
+            "S": "6"
+          },
+          "FK_ServiceLevelId": {
+            "S": "EC"
+          },
+          "FK_MSSeqNo": {
+            "S": "5800"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "DMS_TS": {
+            "S": "2023-11-07 19:39:52.900000"
+          },
+          "EventTimeZone": {
+            "S": ""
+          },
+          "PK_AdHocMileStoneId": {
+            "S": "61811040"
+          }
+        },
+        "SequenceNumber": "1178460200000000049696045271",
+        "SizeBytes": 322,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-milestone-detail-dev/stream/2023-07-03T16:04:15.848"
+    },
+    {
+      "eventID": "be0e1303e61a88fbcec0a697aa67fa81",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386058,
+        "Keys": {
+          "FK_OrderStatusId": {
+            "S": "DIS"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          }
+        },
+        "NewImage": {
+          "FK_OrderStatusId": {
+            "S": "DIS"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          },
+          "Complete": {
+            "S": "N"
+          },
+          "EventDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "CreateDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "EventSeqNo": {
+            "S": "90"
+          },
+          "MileStoneSeqNo": {
+            "S": "7"
+          },
+          "FK_ServiceLevelId": {
+            "S": "EC"
+          },
+          "FK_MSSeqNo": {
+            "S": "242"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "DMS_TS": {
+            "S": "2023-11-07 19:39:52.900000"
+          },
+          "EventTimeZone": {
+            "S": ""
+          },
+          "PK_AdHocMileStoneId": {
+            "S": "61811041"
+          }
+        },
+        "SequenceNumber": "1178460300000000049696045272",
+        "SizeBytes": 321,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-milestone-detail-dev/stream/2023-07-03T16:04:15.848"
+    },
+    {
+      "eventID": "2e713b90ef47da22d6abec957837412e",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386058,
+        "Keys": {
+          "FK_OrderStatusId": {
+            "S": "PUP"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          }
+        },
+        "NewImage": {
+          "FK_OrderStatusId": {
+            "S": "PUP"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          },
+          "Complete": {
+            "S": "N"
+          },
+          "EventDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "CreateDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "EventSeqNo": {
+            "S": "110"
+          },
+          "MileStoneSeqNo": {
+            "S": "8"
+          },
+          "FK_ServiceLevelId": {
+            "S": "EC"
+          },
+          "FK_MSSeqNo": {
+            "S": "243"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "DMS_TS": {
+            "S": "2023-11-07 19:39:52.900000"
+          },
+          "EventTimeZone": {
+            "S": ""
+          },
+          "PK_AdHocMileStoneId": {
+            "S": "61811042"
+          }
+        },
+        "SequenceNumber": "1178460400000000049696045273",
+        "SizeBytes": 322,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-milestone-detail-dev/stream/2023-07-03T16:04:15.848"
+    },
+    {
+      "eventID": "4b4fcc6483557e1f9df3d93528b58c0f",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386058,
+        "Keys": {
+          "FK_OrderStatusId": {
+            "S": "VER"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          }
+        },
+        "NewImage": {
+          "FK_OrderStatusId": {
+            "S": "VER"
+          },
+          "FK_OrderNo": {
+            "S": "5344028"
+          },
+          "Complete": {
+            "S": "N"
+          },
+          "EventDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "CreateDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "EventSeqNo": {
+            "S": "205"
+          },
+          "MileStoneSeqNo": {
+            "S": "9"
+          },
+          "FK_ServiceLevelId": {
+            "S": "EC"
+          },
+          "FK_MSSeqNo": {
+            "S": "710"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "DMS_TS": {
+            "S": "2023-11-07 19:39:52.900000"
+          },
+          "EventTimeZone": {
+            "S": ""
+          },
+          "PK_AdHocMileStoneId": {
+            "S": "61811043"
+          }
+        },
+        "SequenceNumber": "1178460500000000049696045274",
+        "SizeBytes": 322,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-milestone-detail-dev/stream/2023-07-03T16:04:15.848"
+    },
+    {
+      "eventID": "c3e110103f95ebe2d56e0aba7f92d2d6",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699386058,
+        "Keys": {
+          "FK_OrderStatusId": {
+            "S": "RAS"
+          },
+          "FK_OrderNo": {
+            "S": ""
+          }
+        },
+        "NewImage": {
+          "FK_OrderStatusId": {
+            "S": "RAS"
+          },
+          "FK_OrderNo": {
+            "S": ""
+          },
+          "Complete": {
+            "S": "N"
+          },
+          "EventDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "CreateDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "EventSeqNo": {
+            "S": "211"
+          },
+          "MileStoneSeqNo": {
+            "S": "10"
+          },
+          "FK_ServiceLevelId": {
+            "S": "EC"
+          },
+          "FK_MSSeqNo": {
+            "S": "5030"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 13:40:49"
+          },
+          "DMS_TS": {
+            "S": "2023-11-07 19:39:52.900000"
+          },
+          "EventTimeZone": {
+            "S": ""
+          },
+          "PK_AdHocMileStoneId": {
+            "S": "61811044"
+          }
+        },
+        "SequenceNumber": "1178460600000000049696045275",
+        "SizeBytes": 324,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-milestone-detail-dev/stream/2023-07-03T16:04:15.848"
+    }
+  ]
+}

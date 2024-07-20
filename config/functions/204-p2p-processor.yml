@@ -5,6 +5,8 @@ function:
   description: 204 P2P shipments processor - ${self:provider.stage}
   runtime: nodejs16.x
   timeout: 500
+  tags:
+    Name: omni-204-p2p-processor-${self:provider.stage}
   layers:
     - { Ref: DWBackendLambdaLayer }
   package:

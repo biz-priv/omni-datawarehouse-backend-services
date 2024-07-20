@@ -4,6 +4,8 @@ function:
     description: process and filters shipment header table stream - ${self:provider.stage}
     runtime: nodejs18.x
     timeout: 500
+    tags:
+        Name: ${self:service}-shipment-header-stream-processor-${self:provider.stage}
     layers:
         - !Ref DWBackendLambdaLayer
     events:

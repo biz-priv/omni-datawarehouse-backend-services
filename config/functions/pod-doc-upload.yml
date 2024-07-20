@@ -5,6 +5,8 @@ function:
   description: upload pod doc - ${self:provider.stage}
   runtime: python3.11
   timeout: 500
+  tags:
+    Name: ${self:service}-upload-pod-doc-${self:provider.stage}
   events:
     - sqs:
         arn:

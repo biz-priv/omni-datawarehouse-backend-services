@@ -4,6 +4,8 @@ function:
   handler: src/cw-to-wt-retrigger-process/index.handler
   runtime: nodejs20.x
   timeout: 900
+  tags:
+    Name: omni-cw-to-wt-retrigger-process-${self:provider.stage}
   layers:
     - { Ref: DWBackendLambdaLayer }
   package:

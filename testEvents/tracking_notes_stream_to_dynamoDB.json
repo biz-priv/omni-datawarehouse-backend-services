@@ -1,0 +1,64 @@
+{
+  "Records": [
+    {
+      "eventID": "757ac6a879d03760fa6ab350654cdb14",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699409747,
+        "Keys": {
+          "PK_NoteNo": {
+            "S": "270134618"
+          },
+          "FK_OrderNo": {
+            "S": "5343436"
+          }
+        },
+        "NewImage": {
+          "PK_NoteNo": {
+            "S": "270134618"
+          },
+          "FK_OrderNo": {
+            "S": "5343436"
+          },
+          "EventDateTime": {
+            "S": "2023-11-07 20:14:43.000"
+          },
+          "Priority": {
+            "S": "N"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:07 20:15:47"
+          },
+          "Note": {
+            "S": "ACE LOG estimated cost 0.00 for consol# 335962 added."
+          },
+          "PublicNote": {
+            "S": "N"
+          },
+          "DMS_TS": {
+            "S": "2023-11-08 02:14:44.013000"
+          },
+          "EventTimeZone": {
+            "S": ""
+          },
+          "DateTimeEntered": {
+            "S": "2023-11-07 20:14:43.000"
+          },
+          "FK_UserId": {
+            "S": "wwaller"
+          },
+          "ConsolNo": {
+            "S": "0"
+          }
+        },
+        "SequenceNumber": "2142254300000000060514615759",
+        "SizeBytes": 327,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-tracking-notes-dev/stream/2023-03-16T06:32:22.272"
+    }
+  ]
+}
