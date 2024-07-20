@@ -1,0 +1,202 @@
+{
+  "Records": [
+    {
+      "eventID": "07f2cccdba2cb17b5be8c93283ca7c3e",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1699459508,
+        "Keys": {
+          "PK_OrderNo": {
+            "S": "5344038"
+          }
+        },
+        "NewImage": {
+          "FK_FirmsCode": {
+            "S": ""
+          },
+          "DestinationPort": {
+            "S": ""
+          },
+          "FK_ProductCode": {
+            "S": ""
+          },
+          "Housebill": {
+            "S": "3703699"
+          },
+          "ShipmentType": {
+            "S": "D"
+          },
+          "FK_PLStatus": {
+            "S": ""
+          },
+          "ShipmentDateTimeZone": {
+            "S": "MST"
+          },
+          "PK_OrderNo": {
+            "S": "5344038"
+          },
+          "ETADateTimeZone": {
+            "S": "EST"
+          },
+          "FK_CategoryCode": {
+            "S": "ALL,TRUCKLOAD,PICK UP,QUICK VIEW,TEI"
+          },
+          "ScheduledBy": {
+            "S": "B"
+          },
+          "DateTimePosted": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "Tariff": {
+            "S": ""
+          },
+          "ShipmentDateTime": {
+            "S": "2023-11-08 00:00:00.000"
+          },
+          "DestArrivalDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "ScheduledDateTime": {
+            "S": "2023-11-30 10:00:00.000"
+          },
+          "FK_ServiceLevelId": {
+            "S": "FT"
+          },
+          "AssignedInvNo": {
+            "S": "0"
+          },
+          "FK_ExemptionCode": {
+            "S": ""
+          },
+          "FK_ReasonCode": {
+            "S": ""
+          },
+          "FK_Salesperson": {
+            "S": "LAX03"
+          },
+          "ControllingStation": {
+            "S": "LAX"
+          },
+          "DestAirport": {
+            "S": "MIA"
+          },
+          "FK_ModeId": {
+            "S": "TRUCKLOAD"
+          },
+          "FK_EquipmentCode": {
+            "S": "CARGO VAN"
+          },
+          "FK_RegionCode": {
+            "S": "UT,MTN / WEST"
+          },
+          "ReadyDateTimeRange": {
+            "S": "2023-11-08 00:00:00.000"
+          },
+          "FK_ContainerCode": {
+            "S": ""
+          },
+          "HazmatCode": {
+            "S": ""
+          },
+          "ScheduledDateTimeRange": {
+            "S": "2023-11-30 00:00:00.000"
+          },
+          "FK_IncoTermCode": {
+            "S": ""
+          },
+          "OrgAirport": {
+            "S": "SLC"
+          },
+          "FK_OrderStatusId": {
+            "S": "NEW"
+          },
+          "ReadyDateTime": {
+            "S": "2023-11-08 08:00:00.000"
+          },
+          "FK_InsuranceType": {
+            "S": "LL"
+          },
+          "ReceivedDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "BillNo": {
+            "S": "4875"
+          },
+          "FK_ControlCustomerNo": {
+            "S": "4875"
+          },
+          "PODDateTimeZone": {
+            "S": ""
+          },
+          "TariffCode": {
+            "S": ""
+          },
+          "RcvdDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "ReadyDateTimeZone": {
+            "S": "MST"
+          },
+          "FK_ProjectCode": {
+            "S": ""
+          },
+          "HandlingStation": {
+            "S": "LAX"
+          },
+          "ShipQuote": {
+            "S": "S"
+          },
+          "MasterAirWaybill": {
+            "S": ""
+          },
+          "PODDateTime": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "LoadBoardID": {
+            "S": "0"
+          },
+          "OrderDate": {
+            "S": "2023-11-08 10:04:04.293"
+          },
+          "FK_TractorCode": {
+            "S": "NULL"
+          },
+          "PODName": {
+            "S": ""
+          },
+          "CloseTime": {
+            "S": "1900-01-01 17:00:00.000"
+          },
+          "Insurance": {
+            "S": "0.0000"
+          },
+          "PODDateTimeEntered": {
+            "S": "1900-01-01 00:00:00.000"
+          },
+          "ScheduledDateTimeZone": {
+            "S": "EST"
+          },
+          "UserId": {
+            "S": "ikhyzhniak"
+          },
+          "InsertedTimeStamp": {
+            "S": "2023:11:08 10:05:08"
+          },
+          "TotalMiles": {
+            "S": "0.00"
+          },
+          "ETADateTime": {
+            "S": "2023-11-30 10:00:00.000"
+          }
+        },
+        "SequenceNumber": "2339002800000000068636443243",
+        "SizeBytes": 1307,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:332281781429:table/omni-wt-rt-shipment-header-dev/stream/2023-02-27T07:58:54.654"
+    }
+  ]
+}

@@ -4,6 +4,8 @@ function:
   description: process and filters shipment apar table stream for 204 create shipment - ${self:provider.stage}
   runtime: nodejs18.x
   timeout: 500
+  tags:
+    Name: 204-create-shipment-stream-processor-${self:provider.stage}
   layers:
     - !Ref DWBackendLambdaLayer
   events:

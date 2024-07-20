@@ -4,6 +4,8 @@ function:
   handler: src/cw-to-wt-create-shipment/index.handler
   runtime: nodejs18.x
   timeout: 900
+  tags:
+    Name: omni-cw-to-wt-create-shipment-${self:provider.stage}
   layers:
     - { Ref: DWBackendLambdaLayer }
   package:
