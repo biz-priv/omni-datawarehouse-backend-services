@@ -397,6 +397,9 @@ async function MappingDataToInsert(data, timeZoneTable) {
 async function upsertItem(tableName, item) {
   const fileNumber = item.fileNumber;
   const customerIds = item.customerIds.split(',');
+  if(!fileNumber){
+    return "No fk_order found found."
+  }
   try {
     const promises = customerIds.map(async (customerId) => {
       if (!customerId.trim()) {
