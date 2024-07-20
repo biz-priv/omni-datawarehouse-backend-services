@@ -12,12 +12,12 @@ function:
 
   package:
     patterns:
-      - "!**/*"
-      - "src/shipment_detail_collector/index.js"
-      - "src/shared/**"
+      - '!**/*'
+      - 'src/shipment_detail_collector/index.js'
+      - 'src/shared/**'
 
   events:
-    - stream: 
+    - stream:
         arn: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/customer-entitlement/ddb.streamArn~true}
         batchSize: 5
         maximumRetryAttempts: 3
