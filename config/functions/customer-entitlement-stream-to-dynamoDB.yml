@@ -4,6 +4,8 @@ function:
   description: customer entitlement stream to dynamoDB - ${self:provider.stage}
   runtime: nodejs18.x
   timeout: 300
+  tags:
+    Name: ${self:service}-customer-entitlement-stream-${self:provider.stage}
   layers:
     - !Ref DWBackendLambdaLayer
   memorySize: 512

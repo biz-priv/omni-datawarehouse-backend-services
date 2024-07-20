@@ -4,6 +4,8 @@ function:
   runtime: nodejs18.x
   memorySize: 1024
   timeout: 300
+  tags:
+    Name: omni-204-p2p-payload-processor-${self:provider.stage}
   layers:
     - { Ref: DWBackendLambdaLayer }
   package:
