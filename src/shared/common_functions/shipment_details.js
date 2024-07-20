@@ -100,16 +100,16 @@ async function getTime(dateTime, dateTimeZone, timeZoneTable) {
     }
     const date = moment(dateTime);
     const week = date.week();
-    if (dateTimeZone === "" || dateTimeZone === null || dateTimeZone === "LT" || dateTimeZone === "CS" || dateTimeZone === "CT") {
+    if (dateTimeZone === "" || dateTimeZone === null || dateTimeZone === "LT" || dateTimeZone === "CS" || dateTimeZone === "CT" || dateTimeZone === "CD") {
       dateTimeZone = "CST";
-    }else if(dateTimeZone === "ET"){
+    } else if (dateTimeZone === "ET") {
       dateTimeZone = "EST";
-    }else if(dateTimeZone === "MT"){
+    } else if (dateTimeZone === "MT") {
       dateTimeZone = "MST";
-    }else if(dateTimeZone === "PT"){
+    } else if (dateTimeZone === "PT") {
       dateTimeZone = "PST";
-    }else{
-      dateTimeZone = "CST";
+    } else if (dateTimeZone === "HT") {
+      dateTimeZone = "HST"
     }
     let offset = week >= 11 && week <= 44 ? 5 : 6;
     const hoursaway = timeZoneTable[dateTimeZone].HoursAway;
@@ -397,7 +397,7 @@ async function MappingDataToInsert(data, timeZoneTable) {
 async function upsertItem(tableName, item) {
   const fileNumber = item.fileNumber;
   const customerIds = item.customerIds.split(',');
-  if(!fileNumber){
+  if (!fileNumber) {
     return "No fk_order found found."
   }
   try {
