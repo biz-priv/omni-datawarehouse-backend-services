@@ -66,7 +66,11 @@ async function processRecord(record) {
         console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderNo:', orderNo);
 
         const Body = Object.keys(newImage).length ? newImage : oldImage;
-        await processShipmentAparData({ orderId: orderNo, newImage: Body });
+        await processShipmentAparData({
+          orderId: orderNo,
+          newImage: Body,
+          tableName: SHIPMENT_APAR_TABLE,
+        });
       }
     } else if (
       dynamoTableName === SHIPMENT_HEADER_TABLE &&
@@ -95,6 +99,7 @@ async function processRecord(record) {
                 await processShipmentAparData({
                   orderId,
                   newImage: aparData,
+                  tableName: SHIPMENT_HEADER_TABLE,
                 });
               })
             );
@@ -154,7 +159,7 @@ async function queryConsolStatusTable(consolNo) {
   }
 }
 
-async function processShipmentAparData({ orderId, newImage }) {
+async function processShipmentAparData({ orderId, newImage, tableName }) {
   try {
     const consolNo = parseInt(_.get(newImage, 'ConsolNo', null), 10);
     console.info('🚀 ~ file: index.js:117 ~ processShipmentAparData ~ consolNo:', consolNo);
@@ -208,22 +213,24 @@ async function processShipmentAparData({ orderId, newImage }) {
     if (type === TYPES.NON_CONSOLE) {
       const orderStatusResult = await queryOrderStatusTable(orderId);
       if (orderStatusResult.length > 0 && orderStatusResult[0].Status === STATUSES.SENT) {
-        await setDelay(45);
-        const aparFailureDataArray = await fetchAparFailureData(orderId);
-        const highestObject = aparFailureDataArray.reduce((max, current) => {
-          return current.FK_SeqNo > max.FK_SeqNo ? current : max;
-        }, aparFailureDataArray[0]);
-        Note = _.get(highestObject, 'Note', '');
-        console.info('note: ', Note);
-        if (!Note) {
-          throw new Error('No note found. Failed to cancel the shipment.');
-        }
-        const shipmentAparData = await fetchShipmentAparData(orderId);
-        const FkServiceId = _.get(shipmentAparData, '[0].FK_ServiceId');
-        console.info('FkServiceId: ', FkServiceId);
-        if (!shipmentAparData.length) {
-          console.info('Service exception is not found');
-          throw new Error(`Service Exception is not found for FileNo: ${orderId}`);
+        if (tableName === SHIPMENT_APAR_TABLE) {
+          await setDelay(45);
+          const aparFailureDataArray = await fetchAparFailureData(orderId);
+          const highestObject = aparFailureDataArray.reduce((max, current) => {
+            return current.FK_SeqNo > max.FK_SeqNo ? current : max;
+          }, aparFailureDataArray[0]);
+          Note = _.get(highestObject, 'Note', '');
+          console.info('note: ', Note);
+          if (!Note) {
+            throw new Error('No note found. Failed to cancel the shipment.');
+          }
+          const shipmentAparData = await fetchShipmentAparData(orderId);
+          const FkServiceId = _.get(shipmentAparData, '[0].FK_ServiceId');
+          console.info('FkServiceId: ', FkServiceId);
+          if (!shipmentAparData.length) {
+            console.info('Service exception is not found');
+            throw new Error(`Service Exception is not found for FileNo: ${orderId}`);
+          }
         }
         const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
         const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
