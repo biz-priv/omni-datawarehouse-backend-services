@@ -76,7 +76,6 @@ async function processRecord(record, event) {
         await processShipmentAparData({
           orderId: orderNo,
           newImage: Body,
-          tableName: SHIPMENT_APAR_TABLE,
           fkVendorIdDeleted,
         });
       }
