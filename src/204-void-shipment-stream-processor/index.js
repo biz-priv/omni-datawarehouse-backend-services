@@ -50,16 +50,10 @@ async function processRecord(record) {
 
     if (dynamoTableName === SHIPMENT_APAR_TABLE) {
       console.info('🚀 ~ file: index.js:38 ~ processRecord ~ dynamoTableName:', dynamoTableName);
-      const fkVendorIdUpdated = oldImage.FK_VendorId === VENDOR && newImage.FK_VendorId !== VENDOR;
-      console.info(
-        '🚀 ~ file: index.js:40 ~ processRecord ~ fkVendorIdUpdated:',
-        fkVendorIdUpdated
-      );
-      const fkVendorIdDeleted = oldImage.FK_VendorId === VENDOR && !newImage.FK_VendorId;
-      console.info(
-        '🚀 ~ file: index.js:42 ~ processRecord ~ fkVendorIdDeleted:',
-        fkVendorIdDeleted
-      );
+      const fkVendorIdUpdated = oldImage.FK_VendorId === VENDOR && newImage.FK_VendorId !== undefined && newImage.FK_VendorId !== VENDOR;
+      console.info('🚀 ~ file: index.js:54 ~ processRecord ~ fkVendorIdUpdated:', fkVendorIdUpdated)
+      const fkVendorIdDeleted = oldImage.FK_VendorId === VENDOR && (!newImage.FK_VendorId || newImage.FK_VendorId === undefined);
+      console.info('🚀 ~ file: index.js:56 ~ processRecord ~ fkVendorIdDeleted:', fkVendorIdDeleted)
 
       if (fkVendorIdUpdated || fkVendorIdDeleted) {
         orderNo = _.get(message, 'Keys.FK_OrderNo.S');
@@ -70,6 +64,7 @@ async function processRecord(record) {
           orderId: orderNo,
           newImage: Body,
           tableName: SHIPMENT_APAR_TABLE,
+          fkVendorIdDeleted
         });
       }
     } else if (
@@ -159,7 +154,7 @@ async function queryConsolStatusTable(consolNo) {
   }
 }
 
-async function processShipmentAparData({ orderId, newImage, tableName }) {
+async function processShipmentAparData({ orderId, newImage, tableName, fkVendorIdDeleted = false }) {
   try {
     const consolNo = parseInt(_.get(newImage, 'ConsolNo', null), 10);
     console.info('🚀 ~ file: index.js:117 ~ processShipmentAparData ~ consolNo:', consolNo);
@@ -213,7 +208,7 @@ async function processShipmentAparData({ orderId, newImage, tableName }) {
     if (type === TYPES.NON_CONSOLE) {
       const orderStatusResult = await queryOrderStatusTable(orderId);
       if (orderStatusResult.length > 0 && orderStatusResult[0].Status === STATUSES.SENT) {
-        if (tableName === SHIPMENT_APAR_TABLE) {
+        if (tableName === SHIPMENT_APAR_TABLE && fkVendorIdDeleted === true) {
           await setDelay(45);
           const aparFailureDataArray = await fetchAparFailureData(orderId);
           const highestObject = aparFailureDataArray.reduce((max, current) => {
