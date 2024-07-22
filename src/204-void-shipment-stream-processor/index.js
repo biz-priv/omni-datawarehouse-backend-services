@@ -80,46 +80,7 @@ async function processRecord(record, event) {
         });
       }
     }
-    // } else if (
-    //   dynamoTableName === SHIPMENT_HEADER_TABLE &&
-    //   _.get(newImage, 'FK_OrderStatusId') === 'CAN'
-    // ) {
-    //   console.info('🚀 ~ file: index.js:45 ~ processRecord ~ dynamoTableName:', dynamoTableName);
-    //   orderNo = newImage.PK_OrderNo;
-    //   console.info('🚀 ~ file: index.js:46 ~ processRecord ~ orderId:', orderNo);
-    //   const shipmentAparDataArray = await fetchOrderNos(orderNo);
-    //   console.info(
-    //     '🚀 ~ file: index.js:48 ~ processRecord ~ shipmentAparDataArray:',
-    //     shipmentAparDataArray
-    //   );
-    //   const consolNo = Number(_.get(shipmentAparDataArray, '[0].ConsolNo'));
-    //   if (shipmentAparDataArray.length > 0 && consolNo === 0) {
-    //     // Grouping shipmentAparDataArray by FK_OrderNo
-    //     const orderGroups = _.groupBy(shipmentAparDataArray, 'FK_OrderNo');
-    //     console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderGroups:', orderGroups);
-
-    //     // Processing each group
-    //     await Promise.all(
-    //       _.map(orderGroups, async (aparDataArray, orderId) => {
-    //         // Process data for each orderId
-    //         await Promise.all(
-    //           aparDataArray.map(async (aparData) => {
-    //             await processShipmentAparData({
-    //               orderId,
-    //               newImage: aparData,
-    //               tableName: SHIPMENT_HEADER_TABLE,
-    //             });
-    //           })
-    //         );
-    //       })
-    //     );
-    //   } else {
-    //     console.info(
-    //       'No shipment apar data found for order IDs or the shipments are Consolidations.'
-    //     );
-    //     return;
-    //   }
-    // }
+    
   } catch (error) {
     console.error('Error processing record:', error);
     try {
@@ -243,6 +204,8 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
       if (orderStatusResult.length > 0 && orderStatusResult[0].Status === STATUSES.SENT) {
         const shipmentHeaderResult = await queryShipmentHeader({ orderId });
         const fkOrderStatusId = _.get(shipmentHeaderResult, '[0].FK_OrderStatusId', '');
+        console.info('🚀 ~ file: index.js:246 ~ fkOrderStatusId:', fkOrderStatusId)
+        console.info((fkVendorIdDeleted === true && fkOrderStatusId !== 'CAN'))
         if (fkVendorIdDeleted === true && fkOrderStatusId !== 'CAN') {
           await setDelay(45);
           const aparFailureDataArray = await fetchAparFailureData(orderId);
@@ -261,6 +224,8 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
             console.info('Service exception is not found');
             throw new Error(`Service Exception is not found for FileNo: ${orderId}`);
           }
+        } else if (fkVendorIdDeleted === true && fkOrderStatusId === 'CAN'){
+          console.info('skipping the above conditions as it is cancelled by CAN milestone.')
         }
         const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
         const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
@@ -320,23 +285,6 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
     throw error;
   }
 }
-
-// async function fetchOrderNos(orderId) {
-//   try {
-//     const params = {
-//       TableName: SHIPMENT_APAR_TABLE,
-//       KeyConditionExpression: 'FK_OrderNo = :orderNo',
-//       ExpressionAttributeValues: {
-//         ':orderNo': orderId,
-//       },
-//     };
-//     const data = await dynamoDb.query(params).promise();
-//     return _.get(data, 'Items', []);
-//   } catch (err) {
-//     console.error('Error fetching order data:', err);
-//     throw err;
-//   }
-// }
 
 async function fetchAparFailureData(orderId) {
   try {
@@ -497,11 +445,19 @@ function setDelay(sec) {
 }
 
 async function sendCancellationNotification(orderId, consolNo, Note, userEmail, stationCode) {
-  const mess = `The shipment associated with the following details has been cancelled:\n
+  let mess;
+  if(Note){
+    mess = `The shipment associated with the following details has been cancelled:\n
+    Order ID: ${orderId}\n
+    Consolidation Number: ${consolNo}\n
+    Note: ${Note}`;
+  }else{
+    mess = `The shipment associated with the following details has been cancelled:\n
                 Order ID: ${orderId}\n
-                Consolidation Number: ${consolNo}\n
-                Note: ${Note}`;
-  const sub = `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`;
+                Consolidation Number: ${consolNo}\n`;
+  }
+
+  const sub = `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} | ConsolNo: ${consolNo}`;
 
   await sendSESEmail({
     functionName: 'sendSESEmail',

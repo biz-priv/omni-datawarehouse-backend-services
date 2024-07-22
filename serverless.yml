@@ -115,7 +115,6 @@ resources:
         ConfirmationCostSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ConfirmationCostSNSTopicSubscription}
         ConsolStopHeaderSNSTopicSubscription: ${file(config/sns/204-update-table-subscriptions.yml):ConsolStopHeaderSNSTopicSubscription}
         ShipmentAparSNSTopicSubscription: ${file(config/sns/204-void-shipment-table-subcscriptions.yml):ShipmentAparSNSTopicSubscription}
-        ShipmentHeaderSNSTopicSubscription: ${file(config/sns/204-void-shipment-table-subcscriptions.yml):ShipmentHeaderSNSTopicSubscription}
 
 layers:
     DWBackend:
