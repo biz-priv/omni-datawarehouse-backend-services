@@ -1,0 +1,32 @@
+204VoidShipmentDLQ:
+  Type: AWS::SQS::Queue
+  Properties:
+    QueueName: omni-204-void-shipment-table-stream-DLQ-${self:provider.stage}
+
+204VoidShipmentQueue:
+  Type: AWS::SQS::Queue
+  Properties:
+    QueueName: omni-204-void-shipment-table-stream-queue-${self:provider.stage}
+    VisibilityTimeout: 500
+    RedrivePolicy:
+      deadLetterTargetArn: !GetAtt 204VoidShipmentDLQ.Arn
+      maxReceiveCount: 3
+
+204VoidShipmentQueuePolicy:
+  Type: AWS::SQS::QueuePolicy
+  Properties:
+    Queues:
+      - !GetAtt 204VoidShipmentQueue.QueueUrl
+    PolicyDocument:
+      Id: 204VoidShipmentQueuePolicy
+      Version: '2012-10-17'
+      Statement:
+        - Effect: Allow
+          Principal: '*'
+          Action: SQS:SendMessage
+          Resource: '*'
+          Condition:
+            ArnEquals:
+              aws:SourceArn:
+                - arn:aws:sns:us-east-1:332281781429:omni-wt-rt-shipment-apar-all-events-${self:provider.stage}
+                - ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/sns.arn~true}
