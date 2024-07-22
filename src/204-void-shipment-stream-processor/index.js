@@ -49,7 +49,6 @@ async function processRecord(record) {
     console.info('🚀 ~ Dynamo Table Name:', dynamoTableName);
 
     if (dynamoTableName === SHIPMENT_APAR_TABLE) {
-
       console.info('🚀 ~ file: index.js:38 ~ processRecord ~ dynamoTableName:', dynamoTableName);
       const fkVendorIdUpdated = oldImage.FK_VendorId === VENDOR && newImage.FK_VendorId !== VENDOR;
       console.info(
@@ -95,7 +94,7 @@ async function processRecord(record) {
               aparDataArray.map(async (aparData) => {
                 await processShipmentAparData({
                   orderId,
-                  newImage: aparData
+                  newImage: aparData,
                 });
               })
             );
@@ -201,8 +200,7 @@ async function processShipmentAparData({ orderId, newImage }) {
       stationCode = controlStation === '' ? 'SUPPORT' : controlStation;
       console.info('🚀 ~ file: index.js:107 ~ processShipmentAparData ~ stationCode:', stationCode);
       type = TYPES.MULTI_STOP;
-    }
-    else {
+    } else {
       return;
     }
     let Note = '';
@@ -240,7 +238,9 @@ async function processShipmentAparData({ orderId, newImage }) {
       const fetchedOrderData = await fetchOrderData({ consolNo });
 
       if (
-        (orderStatusResult.length > 0 && orderStatusResult[0].Status === STATUSES.SENT) ||
+        (orderStatusResult.length > 0 &&
+          orderStatusResult[0].Status === STATUSES.SENT &&
+          String(consolNo) === String(orderId)) ||
         (orderStatusResult.length > 0 &&
           orderStatusResult[0].Status === STATUSES.SENT &&
           fetchedOrderData.length === 0)
@@ -362,10 +362,9 @@ async function fetchOrderData({ consolNo }) {
       KeyConditionExpression: 'ConsolNo = :ConsolNo',
       ProjectionExpression: 'FK_OrderNo',
       FilterExpression:
-        'FK_VendorId = :FK_VendorId and Consolidation = :Consolidation and SeqNo <> :SeqNo and FK_OrderNo <> :FK_OrderNo',
+        'Consolidation = :Consolidation and SeqNo <> :SeqNo and FK_OrderNo <> :FK_OrderNo',
       ExpressionAttributeValues: {
         ':ConsolNo': String(consolNo),
-        ':FK_VendorId': VENDOR,
         ':Consolidation': 'N',
         ':SeqNo': '9999',
         ':FK_OrderNo': String(consolNo),
@@ -466,7 +465,7 @@ async function sendCancellationNotification(orderId, consolNo, Note, userEmail, 
                 Consolidation Number: ${consolNo}\n
                 Note: ${Note}`;
   const sub = `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} ~ ConsolNo: ${consolNo}`;
-  
+
   await sendSESEmail({
     functionName: 'sendSESEmail',
     message: mess,

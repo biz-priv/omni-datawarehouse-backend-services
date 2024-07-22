@@ -280,9 +280,9 @@ async function generateStopforConsole(
     referenceNumbers:
       type === 'shipper'
         ? [
-          ...populateHousebillNumbers(housebillData, descData),
-          ...generateReferenceNumbers({ references }),
-        ]
+            ...populateHousebillNumbers(housebillData, descData),
+            ...generateReferenceNumbers({ references }),
+          ]
         : [],
   };
   stopData.stopNotes.push({
