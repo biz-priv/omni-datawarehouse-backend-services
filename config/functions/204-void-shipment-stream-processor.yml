@@ -31,3 +31,4 @@ function:
     SHIPMENT_APAR_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.ConsolNoIndex}
     APAR_FAILURE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/apar-failure/ddb.tableName~true}
     OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}
+    QUEUE_URL: !GetAtt 204VoidShipmentQueue.Url

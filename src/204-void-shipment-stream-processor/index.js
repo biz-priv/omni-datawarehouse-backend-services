@@ -5,6 +5,7 @@ const AWS = require('aws-sdk');
 const sns = new AWS.SNS();
 const _ = require('lodash');
 
+const sqs = new AWS.SQS();
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const { TYPES, VENDOR, STATUSES } = require('../shared/constants/204_create_shipment');
 const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
@@ -19,6 +20,7 @@ const {
   APAR_FAILURE_TABLE,
   LIVE_SNS_TOPIC_ARN,
   STAGE,
+  QUEUE_URL,
 } = process.env;
 
 let functionName;
@@ -28,14 +30,14 @@ module.exports.handler = async (event, context) => {
   try {
     console.info('Event:', event);
 
-    await Promise.all(event.Records.map(processRecord));
+    await Promise.all(event.Records.map((record) => processRecord(record, event)));
   } catch (error) {
     console.error('Error processing records:', error);
     throw error;
   }
 };
 
-async function processRecord(record) {
+async function processRecord(record, event) {
   let orderNo;
   try {
     const body = JSON.parse(_.get(record, 'body', ''));
@@ -50,10 +52,21 @@ async function processRecord(record) {
 
     if (dynamoTableName === SHIPMENT_APAR_TABLE) {
       console.info('🚀 ~ file: index.js:38 ~ processRecord ~ dynamoTableName:', dynamoTableName);
-      const fkVendorIdUpdated = oldImage.FK_VendorId === VENDOR && newImage.FK_VendorId !== undefined && newImage.FK_VendorId !== VENDOR;
-      console.info('🚀 ~ file: index.js:54 ~ processRecord ~ fkVendorIdUpdated:', fkVendorIdUpdated)
-      const fkVendorIdDeleted = oldImage.FK_VendorId === VENDOR && (!newImage.FK_VendorId || newImage.FK_VendorId === undefined);
-      console.info('🚀 ~ file: index.js:56 ~ processRecord ~ fkVendorIdDeleted:', fkVendorIdDeleted)
+      const fkVendorIdUpdated =
+        oldImage.FK_VendorId === VENDOR &&
+        newImage.FK_VendorId !== undefined &&
+        newImage.FK_VendorId !== VENDOR;
+      console.info(
+        '🚀 ~ file: index.js:54 ~ processRecord ~ fkVendorIdUpdated:',
+        fkVendorIdUpdated
+      );
+      const fkVendorIdDeleted =
+        oldImage.FK_VendorId === VENDOR &&
+        (!newImage.FK_VendorId || newImage.FK_VendorId === undefined);
+      console.info(
+        '🚀 ~ file: index.js:56 ~ processRecord ~ fkVendorIdDeleted:',
+        fkVendorIdDeleted
+      );
 
       if (fkVendorIdUpdated || fkVendorIdDeleted) {
         orderNo = _.get(message, 'Keys.FK_OrderNo.S');
@@ -64,51 +77,72 @@ async function processRecord(record) {
           orderId: orderNo,
           newImage: Body,
           tableName: SHIPMENT_APAR_TABLE,
-          fkVendorIdDeleted
+          fkVendorIdDeleted,
         });
       }
-    } else if (
-      dynamoTableName === SHIPMENT_HEADER_TABLE &&
-      _.get(newImage, 'FK_OrderStatusId') === 'CAN'
-    ) {
-      console.info('🚀 ~ file: index.js:45 ~ processRecord ~ dynamoTableName:', dynamoTableName);
-      orderNo = newImage.PK_OrderNo;
-      console.info('🚀 ~ file: index.js:46 ~ processRecord ~ orderId:', orderNo);
-      const shipmentAparDataArray = await fetchOrderNos(orderNo);
-      console.info(
-        '🚀 ~ file: index.js:48 ~ processRecord ~ shipmentAparDataArray:',
-        shipmentAparDataArray
-      );
-      const consolNo = Number(_.get(shipmentAparDataArray, '[0].ConsolNo'));
-      if (shipmentAparDataArray.length > 0 && consolNo === 0) {
-        // Grouping shipmentAparDataArray by FK_OrderNo
-        const orderGroups = _.groupBy(shipmentAparDataArray, 'FK_OrderNo');
-        console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderGroups:', orderGroups);
-
-        // Processing each group
-        await Promise.all(
-          _.map(orderGroups, async (aparDataArray, orderId) => {
-            // Process data for each orderId
-            await Promise.all(
-              aparDataArray.map(async (aparData) => {
-                await processShipmentAparData({
-                  orderId,
-                  newImage: aparData,
-                  tableName: SHIPMENT_HEADER_TABLE,
-                });
-              })
-            );
-          })
-        );
-      } else {
-        console.info(
-          'No shipment apar data found for order IDs or the shipments are Consolidations.'
-        );
-        return;
-      }
     }
+    // } else if (
+    //   dynamoTableName === SHIPMENT_HEADER_TABLE &&
+    //   _.get(newImage, 'FK_OrderStatusId') === 'CAN'
+    // ) {
+    //   console.info('🚀 ~ file: index.js:45 ~ processRecord ~ dynamoTableName:', dynamoTableName);
+    //   orderNo = newImage.PK_OrderNo;
+    //   console.info('🚀 ~ file: index.js:46 ~ processRecord ~ orderId:', orderNo);
+    //   const shipmentAparDataArray = await fetchOrderNos(orderNo);
+    //   console.info(
+    //     '🚀 ~ file: index.js:48 ~ processRecord ~ shipmentAparDataArray:',
+    //     shipmentAparDataArray
+    //   );
+    //   const consolNo = Number(_.get(shipmentAparDataArray, '[0].ConsolNo'));
+    //   if (shipmentAparDataArray.length > 0 && consolNo === 0) {
+    //     // Grouping shipmentAparDataArray by FK_OrderNo
+    //     const orderGroups = _.groupBy(shipmentAparDataArray, 'FK_OrderNo');
+    //     console.info('🚀 ~ file: index.js:52 ~ processRecord ~ orderGroups:', orderGroups);
+
+    //     // Processing each group
+    //     await Promise.all(
+    //       _.map(orderGroups, async (aparDataArray, orderId) => {
+    //         // Process data for each orderId
+    //         await Promise.all(
+    //           aparDataArray.map(async (aparData) => {
+    //             await processShipmentAparData({
+    //               orderId,
+    //               newImage: aparData,
+    //               tableName: SHIPMENT_HEADER_TABLE,
+    //             });
+    //           })
+    //         );
+    //       })
+    //     );
+    //   } else {
+    //     console.info(
+    //       'No shipment apar data found for order IDs or the shipments are Consolidations.'
+    //     );
+    //     return;
+    //   }
+    // }
   } catch (error) {
     console.error('Error processing record:', error);
+    try {
+      const receiptHandle = _.get(event, 'Records[0].receiptHandle', '');
+
+      console.info('receiptHandle:', receiptHandle);
+
+      if (!receiptHandle) {
+        throw new Error('No receipt handle found in the event');
+      }
+
+      // Delete the message from the SQS queue
+      const deleteParams = {
+        QueueUrl: QUEUE_URL,
+        ReceiptHandle: receiptHandle,
+      };
+
+      await sqs.deleteMessage(deleteParams).promise();
+      console.info('Message deleted successfully');
+    } catch (e) {
+      console.error('Error processing SQS event:', e);
+    }
     await publishSNSTopic({
       message: `${error.message}\n
                 function name: ${functionName}`,
@@ -154,7 +188,7 @@ async function queryConsolStatusTable(consolNo) {
   }
 }
 
-async function processShipmentAparData({ orderId, newImage, tableName, fkVendorIdDeleted = false }) {
+async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = false }) {
   try {
     const consolNo = parseInt(_.get(newImage, 'ConsolNo', null), 10);
     console.info('🚀 ~ file: index.js:117 ~ processShipmentAparData ~ consolNo:', consolNo);
@@ -208,7 +242,9 @@ async function processShipmentAparData({ orderId, newImage, tableName, fkVendorI
     if (type === TYPES.NON_CONSOLE) {
       const orderStatusResult = await queryOrderStatusTable(orderId);
       if (orderStatusResult.length > 0 && orderStatusResult[0].Status === STATUSES.SENT) {
-        if (tableName === SHIPMENT_APAR_TABLE && fkVendorIdDeleted === true) {
+        const shipmentHeaderResult = await queryShipmentHeader({ orderId });
+        const fkOrderStatusId = _.get(shipmentHeaderResult, '[0].FK_OrderStatusId', '');
+        if (fkVendorIdDeleted === true && fkOrderStatusId !== 'CAN') {
           await setDelay(45);
           const aparFailureDataArray = await fetchAparFailureData(orderId);
           const highestObject = aparFailureDataArray.reduce((max, current) => {
@@ -286,22 +322,22 @@ async function processShipmentAparData({ orderId, newImage, tableName, fkVendorI
   }
 }
 
-async function fetchOrderNos(orderId) {
-  try {
-    const params = {
-      TableName: SHIPMENT_APAR_TABLE,
-      KeyConditionExpression: 'FK_OrderNo = :orderNo',
-      ExpressionAttributeValues: {
-        ':orderNo': orderId,
-      },
-    };
-    const data = await dynamoDb.query(params).promise();
-    return _.get(data, 'Items', []);
-  } catch (err) {
-    console.error('Error fetching order data:', err);
-    throw err;
-  }
-}
+// async function fetchOrderNos(orderId) {
+//   try {
+//     const params = {
+//       TableName: SHIPMENT_APAR_TABLE,
+//       KeyConditionExpression: 'FK_OrderNo = :orderNo',
+//       ExpressionAttributeValues: {
+//         ':orderNo': orderId,
+//       },
+//     };
+//     const data = await dynamoDb.query(params).promise();
+//     return _.get(data, 'Items', []);
+//   } catch (err) {
+//     console.error('Error fetching order data:', err);
+//     throw err;
+//   }
+// }
 
 async function fetchAparFailureData(orderId) {
   try {
@@ -483,4 +519,23 @@ async function sendCancellationNotification(orderId, consolNo, Note, userEmail, 
     stationCode,
     subject: sub,
   });
+}
+
+async function queryShipmentHeader({ orderId }) {
+  try {
+    const params = {
+      TableName: SHIPMENT_HEADER_TABLE,
+      KeyConditionExpression: 'PK_OrderNo = :orderNo',
+      ExpressionAttributeValues: {
+        ':orderNo': orderId,
+      },
+    };
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
+    const data = await dynamoDb.query(params).promise();
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+    return _.get(data, 'Items', []);
+  } catch (err) {
+    console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
+    throw err;
+  }
 }
