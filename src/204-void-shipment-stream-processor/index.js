@@ -203,6 +203,7 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
     }
     let Note = '';
     let shipmentId;
+    let housebill;
     if (type === TYPES.NON_CONSOLE) {
       const orderStatusResult = await queryOrderStatusTable(orderId);
       if (
@@ -211,6 +212,8 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
       ) {
         shipmentId = _.get(orderStatusResult, '[0].ShipmentId');
         console.info('🚀 ~ file: index.js:208 ~ shipmentId:', shipmentId);
+        housebill = _.get(orderStatusResult, '[0].Housebill');
+        console.info('🚀 ~ file: index.js:216 ~ housebill:', housebill);
         const fkOrderStatusId = _.get(shipmentHeaderResult, '[0].FK_OrderStatusId', '');
         console.info('🚀 ~ file: index.js:246 ~ fkOrderStatusId:', fkOrderStatusId);
 
@@ -239,7 +242,14 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
         await updateOrders({ payload: orderData, orderId, consolNo });
         await updateStatusTables({ orderId, type });
         console.info('Voided the WT orderId:', orderId, '#PRO:', id);
-        await sendCancellationNotification(orderId, consolNo, userEmail, stationCode, shipmentId);
+        await sendCancellationNotification(
+          orderId,
+          consolNo,
+          userEmail,
+          stationCode,
+          shipmentId,
+          housebill
+        );
       }
     }
     if (type === TYPES.CONSOLE) {
@@ -255,12 +265,22 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
           _.get(fetchedOrderData, 'length', []) === 0)
       ) {
         shipmentId = _.get(orderStatusResult, '[0].ShipmentId');
+        console.info('🚀 ~ file: index.js:261 ~ shipmentId:', shipmentId);
+        housebill = _.get(orderStatusResult, '[0].Housebill');
+        console.info('🚀 ~ file: index.js:263 ~ housebill:', housebill);
         const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
         const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
         await updateOrders({ payload: orderData, orderId, consolNo });
         await updateStatusTables({ orderId: consolNo, type });
         console.info('Voided the WT orderId:', orderId, '#PRO:', id);
-        await sendCancellationNotification(orderId, consolNo, userEmail, stationCode, shipmentId);
+        await sendCancellationNotification(
+          orderId,
+          consolNo,
+          userEmail,
+          stationCode,
+          shipmentId,
+          housebill
+        );
       }
     }
     if (type === TYPES.MULTI_STOP) {
@@ -281,12 +301,22 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
           _.get(fetchedOrderData, 'length', []) === 0)
       ) {
         shipmentId = _.get(consolStatusResult, '[0].ShipmentId');
+        console.info('🚀 ~ file: index.js:288 ~ shipmentId:', shipmentId);
+        housebill = _.get(consolStatusResult, '[0].Housebill');
+        console.info('🚀 ~ file: index.js:290 ~ housebill:', housebill);
         const { id, stops } = _.get(consolStatusResult, '[0].Response', {});
         const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
         await updateOrders({ payload: orderData, orderId, consolNo });
         await updateStatusTables({ consolNo, type });
         console.info('Voided the WT consolNo:', consolNo, '#PRO:', id);
-        await sendCancellationNotification(orderId, consolNo, userEmail, stationCode, shipmentId);
+        await sendCancellationNotification(
+          orderId,
+          consolNo,
+          userEmail,
+          stationCode,
+          shipmentId,
+          housebill
+        );
       }
     }
   } catch (error) {
@@ -455,7 +485,14 @@ function setDelay(sec) {
   });
 }
 
-async function sendCancellationNotification(orderId, consolNo, userEmail, stationCode, shipmentId) {
+async function sendCancellationNotification(
+  orderId,
+  consolNo,
+  userEmail,
+  stationCode,
+  shipmentId,
+  housebill
+) {
   const mess = `
   <!DOCTYPE html>
   <html>
@@ -479,9 +516,10 @@ async function sendCancellationNotification(orderId, consolNo, userEmail, statio
     <div class="container">
       <p>Dear Team,</p>
       <p>The shipment associated with the following details has been cancelled:</p>
-      <p><span class="highlight">#PRO:</span> ${shipmentId}<br>
-         <span class="highlight">File No:</span> ${orderId}<br>
-         <span class="highlight">Consolidation Number:</span> ${consolNo}</p>
+      <p><span class="highlight">#PRO:</span> <strong>${shipmentId}</strong><br>
+        <span class="highlight">Housebill:</span> <strong>${housebill}</strong><br>
+         <span class="highlight">File No:</span> <strong>${orderId}</strong><br>
+         <span class="highlight">Consolidation Number:</span> <strong>${consolNo}</strong></p>
       <p>Thank you,<br>
       Omni Automation System</p>
       <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>
@@ -499,15 +537,16 @@ async function sendCancellationNotification(orderId, consolNo, userEmail, statio
     subject: sub,
   });
 
-  const message = `Dear Team,\n\n
+  const message = `\nDear Team,\n
   The shipment associated with the following details has been cancelled:\n
-  #PRO: ${shipmentId}\n
-  File No: ${orderId}\n
-  Consolidation Number: ${consolNo}\n\n
-  Thank you,\n
+  #PRO: ${shipmentId},
+  Housebill: ${housebill},
+  File No: ${orderId},
+  Consolidation Number: ${consolNo}.\n
+  Thank you,
   Omni Automation System\n
   Note: This is a system generated email, Please do not reply to this email.`;
-    
+
   await publishSNSTopic({
     message,
     stationCode,

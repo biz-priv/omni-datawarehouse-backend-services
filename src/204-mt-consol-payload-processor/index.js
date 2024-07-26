@@ -11,6 +11,7 @@ const {
   getUserEmail,
   sendSESEmail,
   getCustomerDetails,
+  formatErrorMessage
 } = require('../shared/204-payload-generator/helper');
 const {
   sendPayload,
@@ -239,7 +240,7 @@ module.exports.handler = async (event, context) => {
       <body>
         <div class="container">
           <p>Dear Team,</p>
-          <p>${error.message}</p>
+          <p>${formatErrorMessage(error.message)}</p>
           <p>Please check details on <span class="highlight">${CONSOL_STATUS_TABLE}</span>. Look for status FAILED.</p>
           <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>
             <p>Thank you,<br>

@@ -1664,7 +1664,12 @@ async function getCustomerDetails({ customerId }) {
   return { salesperson_id, operations_rep, operations_rep2 };
 }
 
+function formatErrorMessage(message) {
+  return message.replace(/\n/g, '<br>');
+}
+
 module.exports = {
+  formatErrorMessage,
   getPowerBrokerCode,
   getCstTime,
   generateStop,

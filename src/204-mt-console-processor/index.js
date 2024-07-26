@@ -22,7 +22,7 @@ const {
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
-const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
+const { getUserEmail, sendSESEmail, formatErrorMessage } = require('../shared/204-payload-generator/helper');
 
 let functionName;
 
@@ -192,7 +192,7 @@ async function checkMultiStop(tableData) {
                 <p>Dear Team,</p>
                 <p>All tables are not populated for ConsolNo: <span class="highlight">${consolNo}</span>.</p>
                 <p>Please check if all the below fields are populated:</p>
-                <p><span class="highlight">${missingFields}</span></p>
+                <p><span class="highlight">${formatErrorMessage(missingFields)}</span></p>
                 <p>Please check <span class="highlight">${CONSOLE_STATUS_TABLE}</span> to see which table does not have data.</p>
                 <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>
                 <p>Thank you,<br>
@@ -247,7 +247,7 @@ async function checkMultiStop(tableData) {
       <body>
         <div class="container">
           <p>Dear Team,</p>
-          <p>${error.message}</p>
+          <p>${formatErrorMessage(error.message)}</p>
           <p>ConsolNo: <span class="highlight">${consolNo}</span></p>
           <p>Please check details on <span class="highlight">${CONSOLE_STATUS_TABLE}</span>. Look for status FAILED.</p>
           <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>

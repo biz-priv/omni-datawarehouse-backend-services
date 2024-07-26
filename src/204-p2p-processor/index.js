@@ -11,7 +11,7 @@ const {
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
-const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
+const { getUserEmail, sendSESEmail, formatErrorMessage } = require('../shared/204-payload-generator/helper');
 
 const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, STAGE, SHIPMENT_HEADER_TABLE, CONFIRMATION_COST } =
   process.env;
@@ -197,7 +197,7 @@ async function checkTable(tableData) {
               <p>Dear Team,</p>
               <p>All tables are not populated for ConsolNo: <span class="highlight">${orderNo}</span>.</p>
               <p>Please check if all the below fields are populated:</p>
-              <p><span class="highlight">${missingFields}</span></p>
+              <p><span class="highlight">${formatErrorMessage(missingFields)}</span></p>
               <p>Please check <span class="highlight">${STATUS_TABLE}</span> to see which table does not have data.</p>
               <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>
               <p>Thank you,<br>
@@ -248,7 +248,7 @@ async function checkTable(tableData) {
               <p>Dear Team,</p>
               <p>All tables are not populated for order ID: <span class="highlight">${orderNo}</span>.</p>
               <p>Please check if all the below fields are populated:</p>
-              <p><span class="highlight">${missingFields}</span></p>
+              <p><span class="highlight">${formatErrorMessage(missingFields)}</span></p>
               <p>Please check <span class="highlight">${STATUS_TABLE}</span> to see which table does not have data.</p>
               <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>
               <p>Thank you,<br>
@@ -316,7 +316,7 @@ async function checkTable(tableData) {
       <body>
         <div class="container">
           <p>Dear Team,</p>
-          <p>${error.message}</p>
+          <p>${formatErrorMessage(error.message)}</p>
           <p>Order ID: <span class="highlight">${get(tableData, 'ShipmentAparData.FK_OrderNo')}</span></p>
           <p>Please check details on <span class="highlight">${STATUS_TABLE}</span>. Look for status FAILED.</p>
           <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>

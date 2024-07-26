@@ -21,7 +21,7 @@ const {
 } = process.env;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
-const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
+const { getUserEmail, sendSESEmail, formatErrorMessage } = require('../shared/204-payload-generator/helper');
 
 let functionName;
 let orderId;
@@ -221,7 +221,8 @@ module.exports.handler = async (event, context) => {
         <body>
           <div class="container">
             <p>Dear Team,</p>
-            <p>Error processing order ID: <span class="highlight">${orderId}</span>, ${e.message}.</p>
+            <p>Error processing order ID: <span class="highlight">${orderId}</span>.</p>
+            <p>${formatErrorMessage(e.message)}</p>
             <p>Please retrigger the process by changing any field in <span class="highlight">omni-wt-rt-shipment-apar-${STAGE}</span> after fixing the error.</p>
             <p>Thank you,<br>
             Omni Automation System</p>
