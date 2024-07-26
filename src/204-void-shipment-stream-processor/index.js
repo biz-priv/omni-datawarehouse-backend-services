@@ -446,12 +446,10 @@ async function updateStatusTables({ consolNo, type, orderId }) {
 
 async function publishSNSTopic({ message, stationCode, subject }) {
   try {
-    let mes;
-    if (message.startsWith('The shipment associated')) {
-      mes = message;
-    } else {
-      mes = `An error occurred in ${functionName}: ${message}`;
-    }
+    const mes = message.startsWith('\nDear Team,')
+      ? message
+      : `An error occurred in ${functionName}: ${message}`;
+
     const params = {
       TopicArn: LIVE_SNS_TOPIC_ARN,
       Subject: subject,

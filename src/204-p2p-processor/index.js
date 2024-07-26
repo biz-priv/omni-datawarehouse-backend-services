@@ -11,7 +11,11 @@ const {
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
-const { getUserEmail, sendSESEmail, formatErrorMessage } = require('../shared/204-payload-generator/helper');
+const {
+  getUserEmail,
+  sendSESEmail,
+  formatErrorMessage,
+} = require('../shared/204-payload-generator/helper');
 
 const { STATUS_TABLE, LIVE_SNS_TOPIC_ARN, STAGE, SHIPMENT_HEADER_TABLE, CONFIRMATION_COST } =
   process.env;

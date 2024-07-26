@@ -16,7 +16,7 @@ const {
   getUserEmail,
   sendSESEmail,
   getCustomerDetails,
-  formatErrorMessage
+  formatErrorMessage,
 } = require('../shared/204-payload-generator/helper');
 const {
   sendPayload,

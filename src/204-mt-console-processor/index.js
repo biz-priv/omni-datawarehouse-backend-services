@@ -22,7 +22,11 @@ const {
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const sns = new AWS.SNS();
-const { getUserEmail, sendSESEmail, formatErrorMessage } = require('../shared/204-payload-generator/helper');
+const {
+  getUserEmail,
+  sendSESEmail,
+  formatErrorMessage,
+} = require('../shared/204-payload-generator/helper');
 
 let functionName;
 
