@@ -484,6 +484,7 @@ async function sendCancellationNotification(orderId, consolNo, userEmail, statio
          <span class="highlight">Consolidation Number:</span> ${consolNo}</p>
       <p>Thank you,<br>
       Omni Automation System</p>
+      <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>
     </div>
   </body>
   </html>
@@ -498,8 +499,17 @@ async function sendCancellationNotification(orderId, consolNo, userEmail, statio
     subject: sub,
   });
 
+  const message = `Dear Team,\n\n
+  The shipment associated with the following details has been cancelled:\n
+  #PRO: ${shipmentId}\n
+  File No: ${orderId}\n
+  Consolidation Number: ${consolNo}\n\n
+  Thank you,\n
+  Omni Automation System\n
+  Note: This is a system generated email, Please do not reply to this email.`;
+    
   await publishSNSTopic({
-    message: mess,
+    message,
     stationCode,
     subject: sub,
   });
