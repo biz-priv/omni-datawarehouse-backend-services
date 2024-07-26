@@ -320,14 +320,40 @@ module.exports.handler = async (event, context) => {
     console.error('Error', error);
     await sendSESEmail({
       functionName,
-      message: ` ${error.message}
-      \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
-      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0.`,
+      message: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+          }
+          .container {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+          }
+          .highlight {
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <p>Dear Team,</p>
+          <p>${error.message}</p>
+          <p>Please check details on <span class="highlight">${STATUS_TABLE}</span>. Look for status FAILED.</p>
+          <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>
+          <p>Thank you,<br>
+          Omni Automation System</p>
+          <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>
+        </div>
+      </body>
+      </html>
+      `,
+      subject: `PB Error Notification - ${STAGE} ~ Housebill: ${houseBillString} / ConsolNo: ${consolNo}`,
       userEmail,
-      subject: {
-        Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / ConsolNo: ${consolNo}`,
-        Charset: 'UTF-8',
-      },
     });
     await publishSNSTopic({
       message: ` ${error.message}

@@ -173,16 +173,42 @@ async function checkTable(tableData) {
         });
         await sendSESEmail({
           functionName,
-          message: `All tables are not populated for ConsolNo: ${orderNo}.
-        \n Please check if all the below feilds are populated: 
-        \n${missingFields}. 
-        \n Please check ${STATUS_TABLE} to see which table does not have data. 
-        \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+          message: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+              }
+              .container {
+                padding: 20px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                background-color: #f9f9f9;
+              }
+              .highlight {
+                font-weight: bold;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <p>Dear Team,</p>
+              <p>All tables are not populated for ConsolNo: <span class="highlight">${orderNo}</span>.</p>
+              <p>Please check if all the below fields are populated:</p>
+              <p><span class="highlight">${missingFields}</span></p>
+              <p>Please check <span class="highlight">${STATUS_TABLE}</span> to see which table does not have data.</p>
+              <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>
+              <p>Thank you,<br>
+              Omni Automation System</p>
+              <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>
+            </div>
+          </body>
+          </html>
+          `,
+          subject: `PB Error Notification - ${STAGE} ~ ConsolNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
           userEmail,
-          subject: {
-            Data: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
-            Charset: 'UTF-8',
-          },
         });
       } else {
         await publishSNSTopic({
@@ -198,16 +224,42 @@ async function checkTable(tableData) {
         });
         await sendSESEmail({
           functionName,
-          message: `All tables are not populated for order id: ${orderNo}.
-        \n Please check if all the below feilds are populated: 
-        \n${missingFields}. 
-        \n Please check ${STATUS_TABLE} to see which table does not have data. 
-        \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+          message: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+              }
+              .container {
+                padding: 20px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                background-color: #f9f9f9;
+              }
+              .highlight {
+                font-weight: bold;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <p>Dear Team,</p>
+              <p>All tables are not populated for order ID: <span class="highlight">${orderNo}</span>.</p>
+              <p>Please check if all the below fields are populated:</p>
+              <p><span class="highlight">${missingFields}</span></p>
+              <p>Please check <span class="highlight">${STATUS_TABLE}</span> to see which table does not have data.</p>
+              <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>
+              <p>Thank you,<br>
+              Omni Automation System</p>
+              <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>
+            </div>
+          </body>
+          </html>
+          `,
+          subject: `PB Error Notification - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
           userEmail,
-          subject: {
-            Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
-            Charset: 'UTF-8',
-          },
         });
       }
 
@@ -242,15 +294,41 @@ async function checkTable(tableData) {
     });
     await sendSESEmail({
       functionName,
-      message: ` ${error.message}
-      \n order id: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}
-      \n Please check details on ${STATUS_TABLE}. Look for status FAILED.
-      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+      message: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+          }
+          .container {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+          }
+          .highlight {
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <p>Dear Team,</p>
+          <p>${error.message}</p>
+          <p>Order ID: <span class="highlight">${get(tableData, 'ShipmentAparData.FK_OrderNo')}</span></p>
+          <p>Please check details on <span class="highlight">${STATUS_TABLE}</span>. Look for status FAILED.</p>
+          <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>
+          <p>Thank you,<br>
+          Omni Automation System</p>
+          <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>   
+        </div>
+      </body>
+      </html>
+      `,
+      subject: `PB Error Notification - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
       userEmail,
-      subject: {
-        Data: `PB ERROR NOTIFICATION - ${STAGE} ~ Housebill: ${houseBillString} / FK_OrderNo: ${get(tableData, 'ShipmentAparData.FK_OrderNo')}`,
-        Charset: 'UTF-8',
-      },
     });
     return false;
   }

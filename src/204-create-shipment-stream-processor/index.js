@@ -199,11 +199,38 @@ module.exports.handler = async (event, context) => {
     if (!e.message.includes('No shipment header data was found')) {
       await sendSESEmail({
         functionName,
-        message: `Error processing order id: ${orderId}, ${e.message}. \n Please retrigger the process by changing any field in omni-wt-rt-shipment-apar-${STAGE} after fixing the error.`,
-        subject: {
-          Data: `PB ERROR NOTIFICATION - ${STAGE} ~ FileNo: ${orderId} / Consol: ${consolNo}`,
-          Charset: 'UTF-8',
-        },
+        message: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+            }
+            .container {
+              padding: 20px;
+              border: 1px solid #ddd;
+              border-radius: 5px;
+              background-color: #f9f9f9;
+            }
+            .highlight {
+              font-weight: bold;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <p>Dear Team,</p>
+            <p>Error processing order ID: <span class="highlight">${orderId}</span>, ${e.message}.</p>
+            <p>Please retrigger the process by changing any field in <span class="highlight">omni-wt-rt-shipment-apar-${STAGE}</span> after fixing the error.</p>
+            <p>Thank you,<br>
+            Omni Automation System</p>
+            <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>
+          </div>
+        </body>
+        </html>
+        `,
+        subject: `PB Error Notification - ${STAGE} ~ FileNo: ${orderId} / Consol: ${consolNo}`,
         userEmail,
       });
     }

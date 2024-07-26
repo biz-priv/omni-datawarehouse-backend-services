@@ -1585,7 +1585,7 @@ async function sendSESEmail({ message, userEmail, subject, functionName }) {
       },
       Message: {
         Body: {
-          Text: {
+          Html: {
             Data: mes,
             Charset: 'UTF-8',
           },

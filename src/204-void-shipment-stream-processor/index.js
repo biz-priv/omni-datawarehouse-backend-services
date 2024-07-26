@@ -80,7 +80,6 @@ async function processRecord(record, event) {
         });
       }
     }
-    
   } catch (error) {
     console.error('Error processing record:', error);
     try {
@@ -113,7 +112,7 @@ async function processRecord(record, event) {
   }
 }
 
-const queryOrderStatusTable = async (orderNo) => {
+async function queryOrderStatusTable(orderNo) {
   const orderParam = {
     TableName: STATUS_TABLE,
     KeyConditionExpression: 'FK_OrderNo = :orderNo',
@@ -128,7 +127,7 @@ const queryOrderStatusTable = async (orderNo) => {
     console.error('Error querying status table:', error);
     throw error;
   }
-};
+}
 
 async function queryConsolStatusTable(consolNo) {
   try {
@@ -173,9 +172,14 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
     let stationCode;
     let type;
 
+    let shipmentHeaderResult;
     if (consolNo === 0 && ['HS', 'TL'].includes(serviceLevelId)) {
       userEmail = await getUserEmail({ userId });
-      const fetchedStation = await getControllingStation(orderId);
+      // Added delay for 45 secs to ensure the data in all the tables is populated.
+      await setDelay(45);
+      shipmentHeaderResult = await queryShipmentHeader({ orderId });
+
+      const fetchedStation = _.get(shipmentHeaderResult, '[0].ControllingStation', '');
       if (fetchedStation !== '') {
         stationCode = fetchedStation;
       } else if (controlStation !== '') {
@@ -198,16 +202,19 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
       return;
     }
     let Note = '';
-
+    let shipmentId;
     if (type === TYPES.NON_CONSOLE) {
       const orderStatusResult = await queryOrderStatusTable(orderId);
-      if (orderStatusResult.length > 0 && orderStatusResult[0].Status === STATUSES.SENT) {
-        const shipmentHeaderResult = await queryShipmentHeader({ orderId });
+      if (
+        _.get(orderStatusResult, 'length', []) > 0 &&
+        _.get(orderStatusResult, '[0].Status') === STATUSES.SENT
+      ) {
+        shipmentId = _.get(orderStatusResult, '[0].ShipmentId');
+        console.info('🚀 ~ file: index.js:208 ~ shipmentId:', shipmentId);
         const fkOrderStatusId = _.get(shipmentHeaderResult, '[0].FK_OrderStatusId', '');
-        console.info('🚀 ~ file: index.js:246 ~ fkOrderStatusId:', fkOrderStatusId)
-        console.info((fkVendorIdDeleted === true && fkOrderStatusId !== 'CAN'))
+        console.info('🚀 ~ file: index.js:246 ~ fkOrderStatusId:', fkOrderStatusId);
+
         if (fkVendorIdDeleted === true && fkOrderStatusId !== 'CAN') {
-          await setDelay(45);
           const aparFailureDataArray = await fetchAparFailureData(orderId);
           const highestObject = aparFailureDataArray.reduce((max, current) => {
             return current.FK_SeqNo > max.FK_SeqNo ? current : max;
@@ -224,15 +231,15 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
             console.info('Service exception is not found');
             throw new Error(`Service Exception is not found for FileNo: ${orderId}`);
           }
-        } else if (fkVendorIdDeleted === true && fkOrderStatusId === 'CAN'){
-          console.info('skipping the above conditions as it is cancelled by CAN milestone.')
+        } else if (fkVendorIdDeleted === true && fkOrderStatusId === 'CAN') {
+          console.info('skipping the above conditions as it is cancelled by CAN milestone.');
         }
         const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
         const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
         await updateOrders({ payload: orderData, orderId, consolNo });
         await updateStatusTables({ orderId, type });
         console.info('Voided the WT orderId:', orderId, '#PRO:', id);
-        await sendCancellationNotification(orderId, consolNo, Note, userEmail, stationCode);
+        await sendCancellationNotification(orderId, consolNo, userEmail, stationCode, shipmentId);
       }
     }
     if (type === TYPES.CONSOLE) {
@@ -240,19 +247,20 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
       const fetchedOrderData = await fetchOrderData({ consolNo });
 
       if (
-        (orderStatusResult.length > 0 &&
-          orderStatusResult[0].Status === STATUSES.SENT &&
+        (_.get(orderStatusResult, 'length', []) > 0 &&
+          _.get(orderStatusResult, '[0].Status') === STATUSES.SENT &&
           String(consolNo) === String(orderId)) ||
-        (orderStatusResult.length > 0 &&
-          orderStatusResult[0].Status === STATUSES.SENT &&
-          fetchedOrderData.length === 0)
+        (_.get(orderStatusResult, 'length', []) &&
+          _.get(orderStatusResult, '[0].Status') === STATUSES.SENT &&
+          _.get(fetchedOrderData, 'length', []) === 0)
       ) {
+        shipmentId = _.get(orderStatusResult, '[0].ShipmentId');
         const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
         const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
         await updateOrders({ payload: orderData, orderId, consolNo });
         await updateStatusTables({ orderId: consolNo, type });
         console.info('Voided the WT orderId:', orderId, '#PRO:', id);
-        await sendCancellationNotification(orderId, consolNo, Note, userEmail, stationCode);
+        await sendCancellationNotification(orderId, consolNo, userEmail, stationCode, shipmentId);
       }
     }
     if (type === TYPES.MULTI_STOP) {
@@ -264,20 +272,21 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
       const fetchedOrderData = await fetchOrderData({ consolNo });
 
       if (
-        (consolStatusResult.length > 0 &&
-          consolStatusResult[0].Status === STATUSES.SENT &&
+        (_.get(consolStatusResult, 'length', []) > 0 &&
+          _.get(consolStatusResult, '[0].Status') === STATUSES.SENT &&
           seqNo === '9999' &&
           consolidation === 'Y') ||
-        (consolStatusResult.length > 0 &&
-          consolStatusResult[0].Status === STATUSES.SENT &&
-          fetchedOrderData.length === 0)
+        (_.get(consolStatusResult, 'length', []) > 0 &&
+          _.get(consolStatusResult, '[0].Status') === STATUSES.SENT &&
+          _.get(fetchedOrderData, 'length', []) === 0)
       ) {
+        shipmentId = _.get(consolStatusResult, '[0].ShipmentId');
         const { id, stops } = _.get(consolStatusResult, '[0].Response', {});
         const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
         await updateOrders({ payload: orderData, orderId, consolNo });
         await updateStatusTables({ consolNo, type });
         console.info('Voided the WT consolNo:', consolNo, '#PRO:', id);
-        await sendCancellationNotification(orderId, consolNo, Note, userEmail, stationCode);
+        await sendCancellationNotification(orderId, consolNo, userEmail, stationCode, shipmentId);
       }
     }
   } catch (error) {
@@ -322,7 +331,7 @@ async function fetchShipmentAparData(orderId) {
   }
 }
 
-async function getControllingStation(orderId) {
+async function queryShipmentHeader({ orderId }) {
   try {
     const params = {
       TableName: SHIPMENT_HEADER_TABLE,
@@ -331,10 +340,12 @@ async function getControllingStation(orderId) {
         ':orderNo': orderId,
       },
     };
+    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
     const data = await dynamoDb.query(params).promise();
-    return _.get(data, 'Items[0].ControllingStation', '');
+    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
+    return _.get(data, 'Items', []);
   } catch (err) {
-    console.error('Error fetching order data:', err);
+    console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
     throw err;
   }
 }
@@ -444,29 +455,47 @@ function setDelay(sec) {
   });
 }
 
-async function sendCancellationNotification(orderId, consolNo, Note, userEmail, stationCode) {
-  let mess;
-  if(Note){
-    mess = `The shipment associated with the following details has been cancelled:\n
-    Order ID: ${orderId}\n
-    Consolidation Number: ${consolNo}\n
-    Note: ${Note}`;
-  }else{
-    mess = `The shipment associated with the following details has been cancelled:\n
-                Order ID: ${orderId}\n
-                Consolidation Number: ${consolNo}\n`;
-  }
+async function sendCancellationNotification(orderId, consolNo, userEmail, stationCode, shipmentId) {
+  const mess = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+      }
+      .highlight {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <p>Dear Team,</p>
+      <p>The shipment associated with the following details has been cancelled:</p>
+      <p><span class="highlight">#PRO:</span> ${shipmentId}<br>
+         <span class="highlight">File No:</span> ${orderId}<br>
+         <span class="highlight">Consolidation Number:</span> ${consolNo}</p>
+      <p>Thank you,<br>
+      Omni Automation System</p>
+    </div>
+  </body>
+  </html>
+  `;
 
-  const sub = `PB VOID NOTIFICATION - ${STAGE} ~ FK_OrderNo: ${orderId} | ConsolNo: ${consolNo}`;
+  const sub = `PB VOID NOTIFICATION - ${STAGE} ~ #PRO: ${shipmentId} | File No: ${orderId} | ConsolNo: ${consolNo}`;
 
   await sendSESEmail({
     functionName: 'sendSESEmail',
     message: mess,
     userEmail,
-    subject: {
-      Data: sub,
-      Charset: 'UTF-8',
-    },
+    subject: sub,
   });
 
   await publishSNSTopic({
@@ -474,23 +503,4 @@ async function sendCancellationNotification(orderId, consolNo, Note, userEmail, 
     stationCode,
     subject: sub,
   });
-}
-
-async function queryShipmentHeader({ orderId }) {
-  try {
-    const params = {
-      TableName: SHIPMENT_HEADER_TABLE,
-      KeyConditionExpression: 'PK_OrderNo = :orderNo',
-      ExpressionAttributeValues: {
-        ':orderNo': orderId,
-      },
-    };
-    console.info('🙂 -> file: index.js:216 -> fetchOrderData -> params:', params);
-    const data = await dynamoDb.query(params).promise();
-    console.info('🙂 -> file: index.js:138 -> fetchItemFromTable -> data:', data);
-    return _.get(data, 'Items', []);
-  } catch (err) {
-    console.error('🚀 ~ file: index.js:263 ~ fetchOrderData ~ err:', err);
-    throw err;
-  }
 }

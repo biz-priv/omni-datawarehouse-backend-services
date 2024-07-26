@@ -168,16 +168,42 @@ async function checkMultiStop(tableData) {
           });
           await sendSESEmail({
             functionName,
-            message: `All tables are not populated for consolNo: ${consolNo}.
-              \n Please check if all the below feilds are populated: 
-              \n ${missingFields} 
-              \n Please check ${CONSOLE_STATUS_TABLE} to see which table does not have data. 
-              \n Retrigger the process by changing Status to ${STATUSES.PENDING} and resetting the RetryCount to 0.`,
+            message: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                }
+                .container {
+                  padding: 20px;
+                  border: 1px solid #ddd;
+                  border-radius: 5px;
+                  background-color: #f9f9f9;
+                }
+                .highlight {
+                  font-weight: bold;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <p>Dear Team,</p>
+                <p>All tables are not populated for ConsolNo: <span class="highlight">${consolNo}</span>.</p>
+                <p>Please check if all the below fields are populated:</p>
+                <p><span class="highlight">${missingFields}</span></p>
+                <p>Please check <span class="highlight">${CONSOLE_STATUS_TABLE}</span> to see which table does not have data.</p>
+                <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>
+                <p>Thank you,<br>
+                Omni Automation System</p>
+                <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>
+              </div>
+            </body>
+            </html>
+            `,
+            subject: `PB Error Notification - ${STAGE} ~ ConsolNo: ${consolNo}`,
             userEmail,
-            subject: {
-              Data: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${consolNo}`,
-              Charset: 'UTF-8',
-            },
           });
           return await updateConosleStatusTable({
             consolNo,
@@ -199,15 +225,41 @@ async function checkMultiStop(tableData) {
     console.error('🚀 ~ file: index.js:225 ~ error:', error);
     await sendSESEmail({
       functionName,
-      message: ` ${error.message}
-      \n consolNo: ${consolNo}
-      \n Please check details on ${CONSOLE_STATUS_TABLE}. Look for status FAILED.
-      \n Retrigger the process by changes Status to ${STATUSES.PENDING} and reset the RetryCount to 0`,
+      message: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+          }
+          .container {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+          }
+          .highlight {
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <p>Dear Team,</p>
+          <p>${error.message}</p>
+          <p>ConsolNo: <span class="highlight">${consolNo}</span></p>
+          <p>Please check details on <span class="highlight">${CONSOLE_STATUS_TABLE}</span>. Look for status FAILED.</p>
+          <p>Retrigger the process by changing Status to <span class="highlight">${STATUSES.PENDING}</span> and resetting the RetryCount to 0.</p>
+          <p>Thank you,<br>
+          Omni Automation System</p>
+          <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>
+        </div>
+      </body>
+      </html>
+      `,
+      subject: `PB Error Notification - ${STAGE} ~ ConsolNo: ${consolNo}`,
       userEmail,
-      subject: {
-        Data: `PB ERROR NOTIFICATION - ${STAGE} ~ ConsolNo: ${consolNo}`,
-        Charset: 'UTF-8',
-      },
     });
     await publishSNSTopic({
       message: ` ${error.message}
