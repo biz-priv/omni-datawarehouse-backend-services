@@ -9,7 +9,7 @@ const sqs = new AWS.SQS();
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const { TYPES, VENDOR, STATUSES } = require('../shared/constants/204_create_shipment');
 const { getUserEmail, sendSESEmail } = require('../shared/204-payload-generator/helper');
-const { updateOrders } = require('../shared/204-payload-generator/apis');
+const { updateOrders, getOrders } = require('../shared/204-payload-generator/apis');
 
 const {
   STATUS_TABLE,
@@ -216,6 +216,12 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
         console.info('🚀 ~ file: index.js:216 ~ housebill:', housebill);
         const fkOrderStatusId = _.get(shipmentHeaderResult, '[0].FK_OrderStatusId', '');
         console.info('🚀 ~ file: index.js:246 ~ fkOrderStatusId:', fkOrderStatusId);
+        const brokerageStatusCheck = await checkBrokerageStatus(shipmentId);
+        if (brokerageStatusCheck !== true) {
+          console.info('Brokerage status is not one of OPEN, NEWAPI, NEWOMNI')
+          await sendVoidNotificationEmail({ shipmentId, housebill, orderId, consolNo, userEmail, stage: STAGE })
+          return;
+        }
 
         if (fkVendorIdDeleted === true && fkOrderStatusId !== 'CAN') {
           const aparFailureDataArray = await fetchAparFailureData(orderId);
@@ -268,6 +274,12 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
         console.info('🚀 ~ file: index.js:261 ~ shipmentId:', shipmentId);
         housebill = _.get(orderStatusResult, '[0].Housebill');
         console.info('🚀 ~ file: index.js:263 ~ housebill:', housebill);
+        const brokerageStatusCheck = await checkBrokerageStatus(shipmentId);
+        if (brokerageStatusCheck !== true) {
+          console.info('Brokerage status is not one of OPEN, NEWAPI, NEWOMNI')
+          await sendVoidNotificationEmail({ shipmentId, housebill, orderId, consolNo, userEmail, stage: STAGE })
+          return;
+        }
         const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
         const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
         await updateOrders({ payload: orderData, orderId, consolNo });
@@ -302,6 +314,12 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
       ) {
         shipmentId = _.get(consolStatusResult, '[0].ShipmentId');
         console.info('🚀 ~ file: index.js:288 ~ shipmentId:', shipmentId);
+        const brokerageStatusCheck = await checkBrokerageStatus(shipmentId);
+        if (brokerageStatusCheck !== true) {
+          console.info('Brokerage status is not one of OPEN, NEWAPI, NEWOMNI')
+          await sendVoidNotificationEmail({ shipmentId, housebill, orderId, consolNo, userEmail, stage: STAGE })
+          return;
+        }
         housebill = _.get(consolStatusResult, '[0].Housebill');
         console.info('🚀 ~ file: index.js:290 ~ housebill:', housebill);
         const { id, stops } = _.get(consolStatusResult, '[0].Response', {});
@@ -549,5 +567,80 @@ async function sendCancellationNotification(
     message,
     stationCode,
     subject: sub,
+  });
+}
+
+// Common reusable function
+async function checkBrokerageStatus(shipmentId, allowedStatuses = ['OPEN', 'NEWAPI', 'NEWOMNI']) {
+  try {
+    const orderResponse = await getOrders({ id: shipmentId });
+    const movements = _.get(orderResponse, 'movements', []);
+    const brokerageStatus = _.get(movements, '[0].brokerage_status', '');
+    console.info('🚀 ~ file: index.js:575 ~ checkBrokerageStatus ~ brokerageStatus:', brokerageStatus)
+
+    if (!_.includes(allowedStatuses, brokerageStatus)) {
+      console.info(`Brokerage status is not in allowed statuses: ${allowedStatuses.join(', ')}`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Error checking brokerage status:', error);
+    return false;
+  }
+}
+
+// Function to generate the email message
+function generateEmailMessage(shipmentId, housebill, orderId, consolNo) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+        }
+        .container {
+          padding: 20px;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+          background-color: #f9f9f9;
+        }
+        .highlight {
+          font-weight: bold;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <p>Dear Team,</p>
+        <p>The shipment associated with the following details could not be cancelled as carrier is already assigned:</p>
+        <p><span class="highlight">#PRO:</span> <strong>${shipmentId}</strong><br>
+          <span class="highlight">Housebill:</span> <strong>${housebill}</strong><br>
+          <span class="highlight">File No:</span> <strong>${orderId}</strong><br>
+          <span class="highlight">Consolidation Number:</span> <strong>${consolNo}</strong></p>
+        <p>Thank you,<br>
+        Omni Automation System</p>
+        <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// Function to generate the email subject
+function generateEmailSubject(stage, shipmentId, orderId, consolNo) {
+  return `PB VOID NOTIFICATION - ${stage} ~ #PRO: ${shipmentId} | File No: ${orderId} | ConsolNo: ${consolNo}`;
+}
+
+// Common function to send email
+async function sendVoidNotificationEmail({ shipmentId, housebill, orderId, consolNo, userEmail, stage }) {
+  const message = generateEmailMessage(shipmentId, housebill, orderId, consolNo);
+  const subject = generateEmailSubject(stage, shipmentId, orderId, consolNo);
+
+  await sendSESEmail({
+    functionName: 'sendSESEmail',
+    message,
+    userEmail,
+    subject,
   });
 }
