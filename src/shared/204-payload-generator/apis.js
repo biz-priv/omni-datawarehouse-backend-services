@@ -121,10 +121,8 @@ async function getOrders({ id }) {
       headers,
     });
 
-    // Handle the response using lodash or other methods as needed
     const responseData = _.get(response, 'data', {});
     console.info('🙂 -> file: apis.js:30 -> getOrders -> responseData:', responseData);
-    // Return the location ID or perform additional processing as needed
     return responseData;
   } catch (error) {
     console.error('🙂 -> file: apis.js:34 -> getOrders -> error:', error);
