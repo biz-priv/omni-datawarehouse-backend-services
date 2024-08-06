@@ -3,7 +3,7 @@ function:
   name: 204-void-shipment-stream-processor-${self:provider.stage}
   description: process and filters Shipment Apar, Shipment Header for 204 void Shipment - ${self:provider.stage}
   runtime: nodejs18.x
-  timeout: 500
+  timeout: 300
   layers:
     - !Ref DWBackendLambdaLayer
   events:

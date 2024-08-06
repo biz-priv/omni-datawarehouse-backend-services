@@ -3,7 +3,7 @@ function:
   name: 204-void-shipment-sqs-to-fifo-${self:provider.stage}
   description: process and filters Shipment Apar data - ${self:provider.stage}
   runtime: nodejs18.x
-  timeout: 500
+  timeout: 300
   layers:
     - !Ref DWBackendLambdaLayer
   events:
