@@ -33,3 +33,4 @@ function:
     OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}
     QUEUE_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/cancel-shipment-fifo/Queue.Url}
     GET_ORDERS_API_ENDPOINT: ${ssm:/omni-204-create-shipment/${self:provider.stage}/get-orders.url}
+    OMNI_DEV_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-dev/email}

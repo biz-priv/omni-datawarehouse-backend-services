@@ -327,6 +327,8 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
       ) {
         shipmentId = _.get(consolStatusResult, '[0].ShipmentId');
         console.info('🚀 ~ file: index.js:288 ~ shipmentId:', shipmentId);
+        housebill = _.get(consolStatusResult, '[0].Housebill');
+        console.info('🚀 ~ file: index.js:290 ~ housebill:', housebill);
         const brokerageStatusCheck = await checkBrokerageStatus(shipmentId);
         if (brokerageStatusCheck !== true) {
           console.info('Brokerage status is not one of OPEN, NEWAPI, NEWOMNI');
@@ -340,8 +342,6 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
           });
           return;
         }
-        housebill = _.get(consolStatusResult, '[0].Housebill');
-        console.info('🚀 ~ file: index.js:290 ~ housebill:', housebill);
         const { id, stops } = _.get(consolStatusResult, '[0].Response', {});
         const orderData = { __type: 'orders', company_id: 'TMS', id, status: 'V', stops };
         await updateOrders({ payload: orderData, orderId, consolNo });
