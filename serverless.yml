@@ -97,6 +97,7 @@ functions:
     204-p2p-payload-processor: ${file(config/functions/204-p2p-payload-processor.yml):function}
     204-update-shipment-processor: ${file(config/functions/204-update-shipment-stream-processor.yml):function}
     204-void-shipment-processor: ${file(config/functions/204-void-shipment-stream-processor.yml):function}
+    204-cancel-shipment-sqs-to-fifo: ${file(config/functions/204-void-shipment-sqs-to-fifo.yml):function}
 
 resources:
     Resources:
