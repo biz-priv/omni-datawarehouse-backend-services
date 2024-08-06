@@ -237,14 +237,96 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
           Note = _.get(highestObject, 'Note', '');
           console.info('note: ', Note);
           if (!Note) {
-            throw new Error('No note found. Failed to cancel the shipment.');
+            const mess = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                }
+                .container {
+                  padding: 20px;
+                  border: 1px solid #ddd;
+                  border-radius: 5px;
+                  background-color: #f9f9f9;
+                }
+                .highlight {
+                  font-weight: bold;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <p>Dear Team,</p>
+                <p>The shipment associated with the following details could not be cancelled due to the absence of a required <strong>Note</strong> in service exception.</p>
+                <p><span class="highlight">#PRO:</span> <strong>${shipmentId}</strong><br>
+                  <span class="highlight">Housebill:</span> <strong>${housebill}</strong><br>
+                  <span class="highlight">File No:</span> <strong>${orderId}</strong><br>
+                  <span class="highlight">Consolidation Number:</span> <strong>${consolNo}</strong></p>
+                <p>Thank you,<br>
+                Omni Automation System</p>
+                <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>
+              </div>
+            </body>
+            </html>
+            `;
+            const sub = `PB VOID NOTIFICATION - ${STAGE} ~ #PRO: ${shipmentId} | File No: ${orderId} | ConsolNo: ${consolNo}`;
+            await sendSESEmail({
+              functionName: 'sendSESEmail',
+              message: mess,
+              userEmail,
+              subject: sub,
+            });
+            return;
           }
           const shipmentAparData = await fetchShipmentAparData(orderId);
           const FkServiceId = _.get(shipmentAparData, '[0].FK_ServiceId');
           console.info('FkServiceId: ', FkServiceId);
           if (!shipmentAparData.length) {
             console.info('Service exception is not found');
-            throw new Error(`Service Exception is not found for FileNo: ${orderId}`);
+            const mess = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                }
+                .container {
+                  padding: 20px;
+                  border: 1px solid #ddd;
+                  border-radius: 5px;
+                  background-color: #f9f9f9;
+                }
+                .highlight {
+                  font-weight: bold;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <p>Dear Team,</p>
+                <p>The shipment associated with the following details could not be cancelled due to the absence of <strong>service exception</strong>.</p>
+                <p><span class="highlight">#PRO:</span> <strong>${shipmentId}</strong><br>
+                  <span class="highlight">Housebill:</span> <strong>${housebill}</strong><br>
+                  <span class="highlight">File No:</span> <strong>${orderId}</strong><br>
+                  <span class="highlight">Consolidation Number:</span> <strong>${consolNo}</strong></p>
+                <p>Thank you,<br>
+                Omni Automation System</p>
+                <p style="font-size: 0.9em; color: #888;">Note: This is a system generated email, Please do not reply to this email.</p>
+              </div>
+            </body>
+            </html>
+            `;
+            const sub = `PB VOID NOTIFICATION - ${STAGE} ~ #PRO: ${shipmentId} | File No: ${orderId} | ConsolNo: ${consolNo}`;
+            await sendSESEmail({
+              functionName: 'sendSESEmail',
+              message: mess,
+              userEmail,
+              subject: sub,
+            });
+            return;
           }
         } else if (fkVendorIdDeleted === true && fkOrderStatusId === 'CAN') {
           console.info('skipping the above conditions as it is cancelled by CAN milestone.');
