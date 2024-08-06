@@ -8,7 +8,7 @@ function:
     - !Ref DWBackendLambdaLayer
   events:
     - sqs:
-        arn: !GetAtt 204VoidShipmentQueue.Arn
+        arn: ${ssm:/omni-204-create-shipment/${self:provider.stage}/cancel-shipment-fifo/Queue.Arn}
         batchSize: 1
 
   package:
@@ -31,5 +31,5 @@ function:
     SHIPMENT_APAR_INDEX_KEY_NAME: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-apar/ddb.ConsolNoIndex}
     APAR_FAILURE_TABLE: ${ssm:/omni-wt-rt-updates/${self:provider.stage}/apar-failure/ddb.tableName~true}
     OMNI_NO_REPLY_EMAIL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/omni-no-reply/email}
-    QUEUE_URL: !GetAtt 204VoidShipmentQueue.QueueUrl
+    QUEUE_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/cancel-shipment-fifo/Queue.Url}
     GET_ORDERS_API_ENDPOINT: ${ssm:/omni-204-create-shipment/${self:provider.stage}/get-orders.url}

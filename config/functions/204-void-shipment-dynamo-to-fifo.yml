@@ -1,0 +1,22 @@
+function:
+  handler: src/204-void-shipment-sqs-to-fifo/index.handler
+  name: 204-void-shipment-sqs-to-fifo-${self:provider.stage}
+  description: process and filters Shipment Apar data - ${self:provider.stage}
+  runtime: nodejs18.x
+  timeout: 500
+  layers:
+    - !Ref DWBackendLambdaLayer
+  events:
+    - sqs:
+        arn: !GetAtt 204VoidShipmentQueue.Arn
+        batchSize: 1
+
+  package:
+    patterns:
+      - '!**/*'
+      - 'src/204-void-shipment-sqs-to-fifo/index.js'
+
+  environment:
+    STAGE: ${self:provider.stage}
+    LIVE_SNS_TOPIC_ARN: ${ssm:/omni-power-broker/${self:provider.stage}/error-notification/sns/arn}
+    QUEUE_URL: ${ssm:/omni-204-create-shipment/${self:provider.stage}/cancel-shipment-fifo/Queue.Url}

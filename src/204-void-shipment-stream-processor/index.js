@@ -29,7 +29,6 @@ module.exports.handler = async (event, context) => {
   console.info('🙂 -> file: index.js:8 -> functionName:', functionName);
   try {
     console.info('Event:', event);
-
     await Promise.all(event.Records.map((record) => processRecord(record, event)));
   } catch (error) {
     console.error('Error processing records:', error);
@@ -218,8 +217,15 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
         console.info('🚀 ~ file: index.js:246 ~ fkOrderStatusId:', fkOrderStatusId);
         const brokerageStatusCheck = await checkBrokerageStatus(shipmentId);
         if (brokerageStatusCheck !== true) {
-          console.info('Brokerage status is not one of OPEN, NEWAPI, NEWOMNI')
-          await sendVoidNotificationEmail({ shipmentId, housebill, orderId, consolNo, userEmail, stage: STAGE })
+          console.info('Brokerage status is not one of OPEN, NEWAPI, NEWOMNI');
+          await sendVoidNotificationEmail({
+            shipmentId,
+            housebill,
+            orderId,
+            consolNo,
+            userEmail,
+            stage: STAGE,
+          });
           return;
         }
 
@@ -276,8 +282,15 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
         console.info('🚀 ~ file: index.js:263 ~ housebill:', housebill);
         const brokerageStatusCheck = await checkBrokerageStatus(shipmentId);
         if (brokerageStatusCheck !== true) {
-          console.info('Brokerage status is not one of OPEN, NEWAPI, NEWOMNI')
-          await sendVoidNotificationEmail({ shipmentId, housebill, orderId, consolNo, userEmail, stage: STAGE })
+          console.info('Brokerage status is not one of OPEN, NEWAPI, NEWOMNI');
+          await sendVoidNotificationEmail({
+            shipmentId,
+            housebill,
+            orderId,
+            consolNo,
+            userEmail,
+            stage: STAGE,
+          });
           return;
         }
         const { id, stops } = _.get(orderStatusResult, '[0].Response', {});
@@ -316,8 +329,15 @@ async function processShipmentAparData({ orderId, newImage, fkVendorIdDeleted = 
         console.info('🚀 ~ file: index.js:288 ~ shipmentId:', shipmentId);
         const brokerageStatusCheck = await checkBrokerageStatus(shipmentId);
         if (brokerageStatusCheck !== true) {
-          console.info('Brokerage status is not one of OPEN, NEWAPI, NEWOMNI')
-          await sendVoidNotificationEmail({ shipmentId, housebill, orderId, consolNo, userEmail, stage: STAGE })
+          console.info('Brokerage status is not one of OPEN, NEWAPI, NEWOMNI');
+          await sendVoidNotificationEmail({
+            shipmentId,
+            housebill,
+            orderId,
+            consolNo,
+            userEmail,
+            stage: STAGE,
+          });
           return;
         }
         housebill = _.get(consolStatusResult, '[0].Housebill');
@@ -576,7 +596,10 @@ async function checkBrokerageStatus(shipmentId, allowedStatuses = ['OPEN', 'NEWA
     const orderResponse = await getOrders({ id: shipmentId });
     const movements = _.get(orderResponse, 'movements', []);
     const brokerageStatus = _.get(movements, '[0].brokerage_status', '');
-    console.info('🚀 ~ file: index.js:575 ~ checkBrokerageStatus ~ brokerageStatus:', brokerageStatus)
+    console.info(
+      '🚀 ~ file: index.js:575 ~ checkBrokerageStatus ~ brokerageStatus:',
+      brokerageStatus
+    );
 
     if (!_.includes(allowedStatuses, brokerageStatus)) {
       console.info(`Brokerage status is not in allowed statuses: ${allowedStatuses.join(', ')}`);
@@ -633,7 +656,14 @@ function generateEmailSubject(stage, shipmentId, orderId, consolNo) {
 }
 
 // Common function to send email
-async function sendVoidNotificationEmail({ shipmentId, housebill, orderId, consolNo, userEmail, stage }) {
+async function sendVoidNotificationEmail({
+  shipmentId,
+  housebill,
+  orderId,
+  consolNo,
+  userEmail,
+  stage,
+}) {
   const message = generateEmailMessage(shipmentId, housebill, orderId, consolNo);
   const subject = generateEmailSubject(stage, shipmentId, orderId, consolNo);
 

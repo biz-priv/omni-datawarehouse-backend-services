@@ -29,4 +29,3 @@
             ArnEquals:
               aws:SourceArn:
                 - arn:aws:sns:us-east-1:332281781429:omni-wt-rt-shipment-apar-all-events-${self:provider.stage}
-                - ${ssm:/omni-wt-rt-updates/${self:provider.stage}/shipment-header/sns.arn~true}
