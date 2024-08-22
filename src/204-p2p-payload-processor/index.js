@@ -21,6 +21,7 @@ const {
   sendPayload,
   updateOrders,
   liveSendUpdate,
+  updateVendorInvoice,
 } = require('../shared/204-payload-generator/apis');
 const { STATUSES, TYPES } = require('../shared/constants/204_create_shipment');
 
@@ -240,6 +241,14 @@ module.exports.handler = async (event, context) => {
           });
           await Promise.all(houseBillPromises);
         }
+        await updateVendorInvoice({
+          orderId,
+          consolNo,
+          vendorReference: shipmentId,
+          houseBillString,
+          type,
+        });
+        console.info('🚀 ~ file: index.js:251 ~ Updated shipment id in Verdor Reference:', shipmentId);
         const movements = _.get(createPayloadResponse, 'movements', []);
         // Add "brokerage_status" to each movement
         const updatedMovements = movements.map((movement) => ({

@@ -151,7 +151,6 @@ async function createLocation({ data, orderId, consolNo = 0, country, houseBill 
     // Handle the response using lodash or other methods as needed
     const responseData = _.get(response, 'data', {});
     console.info('🙂 -> file: apis.js:54 -> createLocation -> responseData:', responseData);
-    // Return the created location data or perform additional processing as needed
     return _.get(responseData, 'id', false);
   } catch (error) {
     const errorMessage = _.get(error, 'response.data', error.message);
@@ -182,7 +181,6 @@ async function sendPayload({ payload: data, orderId, consolNo = 0, houseBillStri
     // Handle the response using lodash or other methods as needed
     const responseData = _.get(response, 'data', {});
     console.info('🙂 -> file: apis.js:74 -> responseData:', responseData);
-    // Return the created location data or perform additional processing as needed
     return responseData;
   } catch (error) {
     console.info('🙂 -> file: apis.js:78 -> error:', error);
@@ -213,7 +211,6 @@ async function updateOrders({ payload: data, orderId, consolNo = 0, houseBillStr
     // Handle the response using lodash or other methods as needed
     const responseData = _.get(response, 'data', {});
     console.info('🙂 -> file: apis.js:54 -> updateOrders -> responseData:', responseData);
-    // Return the created location data or perform additional processing as needed
     return responseData;
   } catch (error) {
     console.info('🙂 -> file: apis.js:103 -> error:', error);
@@ -302,7 +299,6 @@ async function getCustomerData({ customerId, orderId, consolNo = 0, houseBillStr
     // Handle the response using lodash or other methods as needed
     const responseData = _.get(response, 'data', {});
     console.info('🙂 -> file: apis.js:74 -> responseData:', responseData);
-    // Return the created location data or perform additional processing as needed
     return responseData;
   } catch (error) {
     console.info('🙂 -> file: apis.js:78 -> error:', error);
@@ -316,6 +312,49 @@ async function getCustomerData({ customerId, orderId, consolNo = 0, houseBillStr
   }
 }
 
+async function updateVendorInvoice({ orderId, consolNo, vendorReference, houseBillString, type }) {
+  let fileNumber;
+  if (type === 'MULTI_STOP') {
+    fileNumber = consolNo;
+  } else {
+    fileNumber = orderId;
+  }
+  const data = {
+    vendorInvoiceRequest: {
+      fileNumber,
+      operation: 'UPDATE',
+      vendorReference,
+      vendorId: 'LIVELOGI',
+    },
+  };
+
+  const config = {
+    method: 'post',
+    maxBodyLength: Infinity,
+    url: 'https://dev-api.omnilogistics.com/v2/shipment/vendorinvoice',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': '3RUAtdR5NS7P492S9uTJg88xqCxSb9H913u2960K',
+    },
+    data: JSON.stringify(data),
+  };
+
+  try {
+    const response = await axios.request(config);
+    return _.get(response, 'data');
+  } catch (error) {
+    console.error('Error updating vendor invoice:', _.get(error, 'message'));
+    const errorMessage = _.get(error, 'response.data', error.message);
+    throw new Error(`\nError in Update Vendor Reference API.
+      \n FK_OrderNo: ${orderId}
+      \n ConsolNo: ${consolNo}
+      \n Housebill: ${houseBillString}
+      \n Error Details: ${errorMessage}
+      \n Payload:
+      \n ${JSON.stringify(data)}`);
+  }
+}
+
 module.exports = {
   getLocationId,
   createLocation,
@@ -324,4 +363,5 @@ module.exports = {
   liveSendUpdate,
   getOrders,
   getCustomerData,
+  updateVendorInvoice,
 };
